@@ -193,5 +193,7 @@ NTSTATUS DriverContextInit(
         g_pDriverContext->ImageData.ImageBase, 
         g_pDriverContext->ImageData.SizeOfImage);
 
+    g_pDriverContext->Initialized = TRUE;
+
     return STATUS_SUCCESS;
 }

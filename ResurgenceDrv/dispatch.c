@@ -23,6 +23,8 @@ NTSTATUS RDrvDispatch(
     ULONG inputBufferLength = ioStack->Parameters.DeviceIoControl.InputBufferLength;
     ULONG outputBufferLength = ioStack->Parameters.DeviceIoControl.OutputBufferLength;
 
+    if(!g_pDriverContext->Initialized) return (Irp->IoStatus.Status = STATUS_INTERNAL_ERROR);
+
     switch(ioStack->MajorFunction) {
         case IRP_MJ_DEVICE_CONTROL:
         {

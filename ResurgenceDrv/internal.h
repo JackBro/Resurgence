@@ -76,6 +76,8 @@ typedef void(NTAPI* tRtlInsertInvertedFunctionTable)(ULONG_PTR ImageBase, ULONG 
 
 typedef struct _DRIVER_CONTEXT
 {
+    BOOLEAN         Initialized;
+
     IMAGE_MAP_DATA  ImageData;
 
     PLIST_ENTRY     PsLoadedModuleList;
