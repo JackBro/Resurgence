@@ -7,6 +7,8 @@
 
 typedef USHORT RTL_ATOM, *PRTL_ATOM;
 
+#pragma warning(disable : 4214 4201)
+
 typedef struct _SYSTEM_SERVICE_DESCRIPTOR_TABLE 
 {
     PULONG_PTR ServiceTableBase;
@@ -20,9 +22,9 @@ typedef union _PS_PROTECTION
     UCHAR Level;
     struct
     {
-        int Type : 3;
-        int Audit : 1;
-        int Signer : 4;
+        UCHAR Type : 3;
+        UCHAR Audit : 1;
+        UCHAR Signer : 4;
     } Flags;
 } PS_PROTECTION, *PPS_PROTECTION;
 
@@ -30,17 +32,18 @@ typedef union _KEXECUTE_OPTIONS
 {
     struct
     {
-        int ExecuteDisable : 1;                     // 0x01
-        int ExecuteEnable : 1;                      // 0x02
-        int DisableThunkEmulation : 1;              // 0x04
-        int Permanent : 1;                          // 0x08
-        int ExecuteDispatchEnable : 1;              // 0x10
-        int ImageDispatchEnable : 1;                // 0x20
-        int DisableExceptionChainValidation : 1;    // 0x40
-        int Spare : 1;
+        UCHAR ExecuteDisable : 1;                 
+        UCHAR ExecuteEnable : 1;                  
+        UCHAR DisableThunkEmulation : 1;          
+        UCHAR Permanent : 1;                      
+        UCHAR ExecuteDispatchEnable : 1;          
+        UCHAR ImageDispatchEnable : 1;            
+        UCHAR DisableExceptionChainValidation : 1;
+        UCHAR Spare : 1;
     } Flags;
 
     UCHAR ExecuteOptions;
+    UCHAR ExecuteOptionsNV;
 } KEXECUTE_OPTIONS, *PKEXECUTE_OPTIONS;
 
 typedef union _EXHANDLE
@@ -53,9 +56,6 @@ typedef union _EXHANDLE
     void * GenericHandleOverlay;
     ULONG_PTR Value;
 } EXHANDLE, *PEXHANDLE;
-
-#pragma warning(disable : 4214 4201)
-
 
 typedef struct _HANDLE_TABLE_ENTRY // Size=16
 {
@@ -657,13 +657,25 @@ typedef struct _SYSTEM_BASIC_INFORMATION
 
 typedef struct _HANDLE_TABLE
 {
-    ULONG   NextHandleNeedingPool;
-    LONG    ExtraInfoPages;
-    ULONG_PTR TableCode;
-    PEPROCESS QuotaProcess;
-    LIST_ENTRY HandleTableList;
-    ULONG UniqueProcessId;
-    //...
+    ULONG       NextHandleNeedingPool;
+    LONG        ExtraInfoPages;
+    ULONG_PTR   TableCode;
+    //
+    // ...
+    //
 } HANDLE_TABLE, *PHANDLE_TABLE;
 
-#pragma warning(default : 4214)
+typedef struct _OBJECT_TYPE
+{
+    LIST_ENTRY      TypeList;
+    UNICODE_STRING  Name;
+    PVOID           DefaultObject;
+    UCHAR           Index;
+    ULONG           TotalNumberOfObjects;
+    ULONG           TotalNumberOfHandles;
+    //
+    // More stuff here
+    //
+} OBJECT_TYPE, *POBJECT_TYPE;
+
+#pragma warning(default : 4214 4201)

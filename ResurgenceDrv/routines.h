@@ -24,12 +24,16 @@ NTSTATUS RDrvGrantHandleAccess(
 );
 
 NTSTATUS RDrvProtectProcess(
-    __inout PPROTECT_PROCESS Params
+    __in PPROTECT_PROCESS Params
 );
 
 NTSTATUS RDrvOpenProcess(
     __inout POPEN_PROCESS Params
 ); 
+
+NTSTATUS RDrvSetProcessDEP(
+    __in PSET_DEP_STATE Params
+);
 
 NTSTATUS RDrvOpenThread(
     __inout POPEN_THREAD Params

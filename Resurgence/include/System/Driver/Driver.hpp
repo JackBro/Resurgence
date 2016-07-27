@@ -41,6 +41,7 @@ namespace Resurgence
             NTSTATUS        OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle);
             NTSTATUS        GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess);
             NTSTATUS        SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel);
+            NTSTATUS        SetProcessDEP(ULONG ProcessId, BOOLEAN Enable);
         private:
             std::wstring    _path;
             HANDLE          _handle;

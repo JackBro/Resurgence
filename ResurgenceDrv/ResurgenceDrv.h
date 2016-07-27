@@ -50,6 +50,10 @@
 #define RESURGENCE_OPEN_THREAD          CTL_CODE(RDRV_DEV_TYPE, 0x8009, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define RESURGENCE_OPEN_THREAD_SIZE     sizeof(OPEN_THREAD)
 
+#define RESURGENCE_SET_DEP_STATE        CTL_CODE(RDRV_DEV_TYPE, 0x800A, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define RESURGENCE_SET_DEP_STATE_SIZE   sizeof(SET_DEP_STATE)
+#pragma warning(disable : 4201)
+
 typedef struct _VERSION_INFO
 {
     ULONG           MajorVersion;
@@ -165,3 +169,17 @@ typedef struct _OPEN_THREAD
         } Out;
     };
 } OPEN_THREAD, *POPEN_THREAD;
+
+typedef struct _SET_DEP_STATE
+{
+    union
+    {
+        struct
+        {
+            ULONG   ProcessId;
+            BOOLEAN Enabled;
+        } In;
+    };
+} SET_DEP_STATE, *PSET_DEP_STATE;
+
+#pragma warning(default : 4201)

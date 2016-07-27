@@ -3,6 +3,9 @@
 #include "native_enums.h"
 #include <ntifs.h>
 
+// warning C4201: nonstandard extension used : nameless struct/union
+#pragma warning (disable : 4201)
+
 #define IMAGE_DOS_SIGNATURE                     0x5A4D      // MZ
 #define IMAGE_NT_SIGNATURE                      0x00004550  // PE00
 
@@ -330,8 +333,7 @@ typedef struct _IMAGE_IMPORT_BY_NAME {
 } IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;
 
 
-// warning C4201: nonstandard extension used : nameless struct/union
-#pragma warning (disable : 4201)
+
 
 typedef struct _IMAGE_IMPORT_DESCRIPTOR 
 {

@@ -44,6 +44,7 @@
 #   define TARGET_WINVER                0x0A000000
 #   define Off_EProcess_ObjectTable     0x00000418
 #   define Off_EProcess_Protection      0x000006AA //_PS_PROTECTION 
+#   define Off_KProcess_ExecuteOptions  0x000001BF //_KEXECUTE_OPTIONS
 #elif defined(_WIN81_)
 #   error "Unsupported platform"
 #elif defined(_WIN8_)

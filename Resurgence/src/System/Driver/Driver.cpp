@@ -276,5 +276,21 @@ namespace Resurgence
 
             return STATUS_SUCCESS;
         }
+        NTSTATUS Driver::SetProcessDEP(ULONG ProcessId, BOOLEAN Enable)
+        {
+            SET_DEP_STATE params;
+            params.In.ProcessId = ProcessId;
+            params.In.Enabled = Enable;
+
+            DWORD ioBytes;
+            if(!DeviceIoControl(
+                _handle, RESURGENCE_SET_DEP_STATE,
+                &params, RESURGENCE_SET_DEP_STATE_SIZE,
+                NULL, 0,
+                &ioBytes, NULL)) 
+                return GetLastNtStatus();
+
+            return STATUS_SUCCESS;
+        }
     }
 }
