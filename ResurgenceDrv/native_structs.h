@@ -660,6 +660,9 @@ typedef struct _HANDLE_TABLE
     ULONG       NextHandleNeedingPool;
     LONG        ExtraInfoPages;
     ULONG_PTR   TableCode;
+    PEPROCESS   QuotaProcess;
+    LIST_ENTRY  HandleTableList;
+    ULONG       UniqueProcessId;
     //
     // ...
     //

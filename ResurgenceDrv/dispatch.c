@@ -145,8 +145,21 @@ NTSTATUS RDrvDispatch(
                     }
                     break;
                 }
+                case RESURGENCE_INJECT_MODULE:
+                {
+                    if(inputBufferLength == RESURGENCE_INJECT_MODULE_SIZE &&
+                        outputBufferLength == RESURGENCE_INJECT_MODULE_SIZE) {
+                        Irp->IoStatus.Status = RDrvInjectModule((PINJECT_MODULE)ioBuffer);
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
+                            Irp->IoStatus.Information = RESURGENCE_INJECT_MODULE_SIZE;
+                        }
+                    } else {
+                        Irp->IoStatus.Status = STATUS_INFO_LENGTH_MISMATCH;
+                    }
+                    break;
+                }
                 default:
-                    DPRINT("%s: Unknown IRP_MJ_DEVICE_CONTROL 0x%X", __FUNCTION__, ioControlCode);
+                    DPRINT("Unknown IRP_MJ_DEVICE_CONTROL 0x%X", ioControlCode);
                     Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
                     break;
             }

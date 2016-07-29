@@ -38,3 +38,7 @@ NTSTATUS RDrvSetProcessDEP(
 NTSTATUS RDrvOpenThread(
     __inout POPEN_THREAD Params
 );
+
+NTSTATUS RDrvInjectModule(
+    __inout PINJECT_MODULE Params
+);

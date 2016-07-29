@@ -12,7 +12,7 @@ PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
     ULONG_PTR TableCode;        // r8@2
     ULONG_PTR TableLevel;       // rax@2
     ULONG_PTR HandleArray;      // rax@3
-    PHANDLE_TABLE_ENTRY result;           // rax@4
+    PHANDLE_TABLE_ENTRY result; // rax@4
 
     HandleValue = ExHandle.Value & 0xFFFFFFFFFFFFFFFCui64;
     if(HandleValue >= HandleTable->NextHandleNeedingPool) {

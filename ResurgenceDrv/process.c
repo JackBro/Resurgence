@@ -148,3 +148,44 @@ NTSTATUS RDrvSetProcessDEP(
         ObDereferenceObject(process);
     return status;
 }
+
+NTSTATUS RDrvInjectModule(
+    __inout PINJECT_MODULE Params
+)
+{
+
+    if(!Params) return STATUS_INVALID_PARAMETER;
+
+    NTSTATUS status = STATUS_SUCCESS;
+    PEPROCESS process = NULL;
+    KAPC_STATE apcState;
+    ULONG_PTR base;
+    status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
+    if(NT_SUCCESS(status)) {
+        KeStackAttachProcess(process, &apcState);
+
+        if(Params->In.InjectionType == InjectLdrLoadDll)
+            status = RDrvInjectLdrLoadDll(process, Params->In.ModulePath, &base);
+        else
+            status = RDrvInjectManualMap(process, Params->In.ModulePath, &base);
+
+        if(NT_SUCCESS(status)) {
+            if(Params->In.ErasePE == TRUE) {
+                RDrvStripHeaders((PVOID)base);
+            }
+            if(Params->In.HideModule == TRUE) {
+                RDrvHideFromLoadedList(process, (PVOID)base);
+            }
+        }
+
+        Params->Out.BaseAddress = base;
+
+        KeUnstackDetachProcess(&apcState);
+    } else
+        PERROR("PsLookupProcessByProcessId", status);
+
+    if(process)
+        ObDereferenceObject(process);
+
+    return status;
+}

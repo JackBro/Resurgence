@@ -44,13 +44,11 @@ NTSTATUS DriverEntry(
     UNREFERENCED_PARAMETER(DriverObject);
     UNREFERENCED_PARAMETER(RegistryPath);
 
-    //If the DriverObject is null, this probably means that
-    //the driver was loaded using TDL. On that case, we create the 
-    //driver object ourselves
     if(DriverObject != NULL && ((PIMAGE_MAP_DATA)DriverObject)->Magic == 0xFF00FF00AABBCCDD) {
         DPRINT("Creating DriverObject!");
-        //Extract the image data that is sent as the first parameter
-        //to DriverEntry by the TDL shellcode
+        //
+        //Extract the image data that is sent as the first parameter to DriverEntry by the TDL shellcode
+        //
         g_pImageData = (PIMAGE_MAP_DATA)DriverObject;
         UNICODE_STRING  drvName;
         RtlInitUnicodeString(&drvName, L"\\Driver\\" RDRV_DRIVER_NAME);

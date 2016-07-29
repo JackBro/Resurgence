@@ -298,6 +298,7 @@
     <ClCompile Include="routines.c" />
     <ClCompile Include="thread.c" />
     <ClCompile Include="utils.c" />
+    <ClCompile Include="zw_imports.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dispatch.h" />

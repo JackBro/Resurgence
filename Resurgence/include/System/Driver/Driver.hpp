@@ -42,6 +42,7 @@ namespace Resurgence
             NTSTATUS        GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess);
             NTSTATUS        SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel);
             NTSTATUS        SetProcessDEP(ULONG ProcessId, BOOLEAN Enable);
+            NTSTATUS        InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress);
         private:
             std::wstring    _path;
             HANDLE          _handle;

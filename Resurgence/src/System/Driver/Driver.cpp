@@ -292,5 +292,28 @@ namespace Resurgence
 
             return STATUS_SUCCESS;
         }
+        NTSTATUS Driver::InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        {
+            
+            INJECT_MODULE params;
+            params.In.ProcessId = ProcessId;
+            params.In.InjectionType = InjectLdrLoadDll;
+            params.In.ErasePE = EraseHeaders;
+            params.In.HideModule = HideModule;
+            wcscpy_s(params.In.ModulePath, MAX_PATH, ModulePath);
+
+            DWORD ioBytes;
+            if(!DeviceIoControl(
+                _handle, RESURGENCE_INJECT_MODULE,
+                &params, RESURGENCE_INJECT_MODULE_SIZE,
+                &params, RESURGENCE_INJECT_MODULE_SIZE,
+                &ioBytes, NULL))
+                return GetLastNtStatus();
+
+            if(BaseAddress)
+                *BaseAddress = params.Out.BaseAddress;
+
+            return STATUS_SUCCESS;
+        }
     }
 }

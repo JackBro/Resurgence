@@ -24,35 +24,47 @@
 #define PROTECTION_LIGHT        0x01
 #define PROTECTION_FULL         0x02
 
-#define RESURGENCE_QUERY_OSVERSION      CTL_CODE(RDRV_DEV_TYPE, 0x8001, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_QUERY_OSVERSION_SIZE sizeof(VERSION_INFO)
+#define RDRV_CTL_CODE(Function)             CTL_CODE(RDRV_DEV_TYPE, Function, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
-#define RESURGENCE_VM_OPERATION         CTL_CODE(RDRV_DEV_TYPE, 0x8002, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_VM_OPERATION_SIZE    sizeof(VM_OPERATION)
+#define RESURGENCE_QUERY_OSVERSION          RDRV_CTL_CODE(0x801)
+#define RESURGENCE_QUERY_OSVERSION_SIZE     sizeof(VERSION_INFO)
 
-#define RESURGENCE_VM_READ              CTL_CODE(RDRV_DEV_TYPE, 0x8003, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_VM_WRITE             CTL_CODE(RDRV_DEV_TYPE, 0x8004, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_VM_READ_SIZE         sizeof(VM_READ_WRITE)
-#define RESURGENCE_VM_WRITE_SIZE        RESURGENCE_VM_READ_SIZE
+#define RESURGENCE_VM_OPERATION             RDRV_CTL_CODE(0x802)
+#define RESURGENCE_VM_OPERATION_SIZE        sizeof(VM_OPERATION)
 
-#define RESURGENCE_VM_QUERY             CTL_CODE(RDRV_DEV_TYPE, 0x8005, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_VM_QUERY_SIZE        sizeof(VM_QUERY_INFO)
+#define RESURGENCE_VM_READ                  RDRV_CTL_CODE(0x803)
+#define RESURGENCE_VM_WRITE                 RDRV_CTL_CODE(0x804)
+#define RESURGENCE_VM_READ_SIZE             sizeof(VM_READ_WRITE)
+#define RESURGENCE_VM_WRITE_SIZE            RESURGENCE_VM_READ_SIZE
 
-#define RESURGENCE_GRANT_ACCESS         CTL_CODE(RDRV_DEV_TYPE, 0x8006, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_GRANT_ACCESS_SIZE    sizeof(GRANT_ACCESS)
+#define RESURGENCE_VM_QUERY                 RDRV_CTL_CODE(0x805)
+#define RESURGENCE_VM_QUERY_SIZE            sizeof(VM_QUERY_INFO)
 
-#define RESURGENCE_PROTECT_PROCESS      CTL_CODE(RDRV_DEV_TYPE, 0x8007, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_PROTECT_PROCESS_SIZE sizeof(PROTECT_PROCESS)
+#define RESURGENCE_GRANT_ACCESS             RDRV_CTL_CODE(0x806)
+#define RESURGENCE_GRANT_ACCESS_SIZE        sizeof(GRANT_ACCESS)
 
-#define RESURGENCE_OPEN_PROCESS         CTL_CODE(RDRV_DEV_TYPE, 0x8008, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_OPEN_PROCESS_SIZE    sizeof(OPEN_PROCESS)
+#define RESURGENCE_PROTECT_PROCESS          RDRV_CTL_CODE(0x807)
+#define RESURGENCE_PROTECT_PROCESS_SIZE     sizeof(PROTECT_PROCESS)
 
-#define RESURGENCE_OPEN_THREAD          CTL_CODE(RDRV_DEV_TYPE, 0x8009, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_OPEN_THREAD_SIZE     sizeof(OPEN_THREAD)
+#define RESURGENCE_OPEN_PROCESS             RDRV_CTL_CODE(0x808)
+#define RESURGENCE_OPEN_PROCESS_SIZE        sizeof(OPEN_PROCESS)
 
-#define RESURGENCE_SET_DEP_STATE        CTL_CODE(RDRV_DEV_TYPE, 0x800A, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define RESURGENCE_SET_DEP_STATE_SIZE   sizeof(SET_DEP_STATE)
+#define RESURGENCE_OPEN_THREAD              RDRV_CTL_CODE(0x809)
+#define RESURGENCE_OPEN_THREAD_SIZE         sizeof(OPEN_THREAD)
+
+#define RESURGENCE_SET_DEP_STATE            RDRV_CTL_CODE(0x80A)
+#define RESURGENCE_SET_DEP_STATE_SIZE       sizeof(SET_DEP_STATE)
+
+#define RESURGENCE_INJECT_MODULE            RDRV_CTL_CODE(0x80B)
+#define RESURGENCE_INJECT_MODULE_SIZE       sizeof(INJECT_MODULE)
+
 #pragma warning(disable : 4201)
+
+typedef enum _INJECT_METHOD
+{
+    InjectLdrLoadDll,
+    InjectManualMap
+} INJECT_METHOD;
 
 typedef struct _VERSION_INFO
 {
@@ -181,5 +193,26 @@ typedef struct _SET_DEP_STATE
         } In;
     };
 } SET_DEP_STATE, *PSET_DEP_STATE;
+
+typedef struct _INJECT_MODULE
+{
+    union
+    {
+        struct
+        {
+            ULONG           ProcessId;		        /// Target process
+            INJECT_METHOD   InjectionType;			/// Injection type
+            BOOLEAN         ErasePE;				/// True to erase the PE headers
+            BOOLEAN         HideModule;				/// Hide from module list
+            BOOLEAN         CallEntryPoint;			/// True to call the entry point after injection
+            ULONG_PTR       CustomParameter;		/// Parameter to be passed to the entry point (as lpReserved)
+            WCHAR           ModulePath[MAX_PATH];	/// The full module path
+        } In;
+        struct
+        {
+            ULONG_PTR       BaseAddress;
+        } Out;
+    };
+} INJECT_MODULE, *PINJECT_MODULE;
 
 #pragma warning(default : 4201)
