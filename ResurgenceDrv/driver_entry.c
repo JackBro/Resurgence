@@ -151,8 +151,7 @@ NTSTATUS DriverContextInit(
 #endif 
     PUCHAR pResult;
 
-    status = RDrvScanModule(
-        KernelBase,
+    status = RDrvFindKernelPattern(
         Pattern_PsLoadedModuleList,
         Mask_PsLoadedModuleList,
         sizeof(Mask_PsLoadedModuleList) - 1,
@@ -164,16 +163,10 @@ NTSTATUS DriverContextInit(
     }
         
     g_pDriverContext->PsLoadedModuleList = (PLIST_ENTRY)(pResult + *(PULONG)(pResult + Offset_PsLoadedModuleList) + Offset_PsLoadedModuleList2);
-    //    = RESOLVE_ABSOLUTE_ADDRESS(
-    //        PLIST_ENTRY,
-    //        pResult,
-    //        Offset_PsLoadedModuleList,
-    //        Offset_PsLoadedModuleList2);
 
     DPRINT("PsLoadedModuleList: 0x%p", g_pDriverContext->PsLoadedModuleList);
 
-    status = RDrvScanModule(
-        KernelBase,
+    status = RDrvFindKernelPattern(
         Pattern_RtlInsertInvertedTable,
         Mask_RtlInsertInvertedTable,
         sizeof(Mask_RtlInsertInvertedTable) - 1,

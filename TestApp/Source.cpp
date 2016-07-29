@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     if(NT_SUCCESS(driver.Load())) {
         Misc::NtHelpers::EnumSystemProcesses([&](PSYSTEM_PROCESSES_INFORMATION entry) -> NTSTATUS {
             if(RtlEqualUnicodeString(&uTarget, &entry->ImageName, TRUE)) {
-                driver.InjectModule((ULONG)entry->UniqueProcessId, L"C:\\test.dll", FALSE, FALSE, &base);
+                driver.InjectModule((ULONG)entry->UniqueProcessId, L"C:\\test.dll", TRUE, FALSE, &base);
                 wcout << hex << base << endl;
             }
             return STATUS_NOT_FOUND;

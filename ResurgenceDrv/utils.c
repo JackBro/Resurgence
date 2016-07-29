@@ -3,19 +3,14 @@
 
 #pragma alloc_text(PAGE, RDrvLogToFile)
 #pragma alloc_text(PAGE, RDrvOpenFile)
-#pragma alloc_text(PAGE, RDrvGetModuleContainingAddress)
 #pragma alloc_text(PAGE, RDrvGetKernelInfo)
 #pragma alloc_text(PAGE, RDrvFindPattern)
-#pragma alloc_text(PAGE, RDrvScanModule)
+#pragma alloc_text(PAGE, RDrvFindKernelPattern)
 #pragma alloc_text(PAGE, RDrvSleep)
 #pragma alloc_text(PAGE, RDrvGetModuleEntry)
 #pragma alloc_text(PAGE, RDrvGetModuleEntry32)
 #pragma alloc_text(PAGE, RDrvGetProcAddress)
 #pragma alloc_text(PAGE, RDrvCreateUserThread)
-#pragma alloc_text(PAGE, RDrvBuildWow64InjectStub)
-#pragma alloc_text(PAGE, RDrvBuildNativeInjectStub)
-#pragma alloc_text(PAGE, RDrvInjectLdrLoadDll)
-#pragma alloc_text(PAGE, RDrvInjectManualMap)
 #pragma alloc_text(PAGE, RDrvStripHeaders)
 #pragma alloc_text(PAGE, RDrvHideFromLoadedList)
 #pragma alloc_text(PAGE, GetWow64NtHeaders)
@@ -79,18 +74,22 @@ NTSTATUS RDrvOpenFile(
         FILE_SYNCHRONOUS_IO_NONALERT, NULL, 0);
 }
 
-NTSTATUS RDrvGetModuleContainingAddress(
-    __in ULONG_PTR Address,
-    __out PULONG_PTR BaseAddress,
-    __out PSIZE_T Size
+NTSTATUS RDrvGetKernelInfo(
+    __out_opt PULONG_PTR BaseAddress,
+    __out_opt PSIZE_T Size
 )
 {
-    NTSTATUS    status = STATUS_SUCCESS;
+    NTSTATUS status = STATUS_SUCCESS;
     ULONG       nRequiredSize = 0;
 
-    if(!Address) return STATUS_INVALID_PARAMETER;
-    if(!BaseAddress) return STATUS_INVALID_PARAMETER;
-    if(!Size) return STATUS_INVALID_PARAMETER;
+    //Already found
+    if(g_pDriverContext->KrnlBase != 0) {
+        if(BaseAddress)
+            *BaseAddress = (ULONG_PTR)g_pDriverContext->KrnlBase;
+        if(Size)
+            *Size = g_pDriverContext->KrnlSize;
+        return STATUS_SUCCESS;
+    }
 
     status = ZwQuerySystemInformation(SystemModuleInformation, 0, nRequiredSize, &nRequiredSize);
 
@@ -113,57 +112,22 @@ NTSTATUS RDrvGetModuleContainingAddress(
     status = ZwQuerySystemInformation(SystemModuleInformation, systemModules, nRequiredSize, &nRequiredSize);
 
     if(NT_SUCCESS(status)) {
-        status = STATUS_NOT_FOUND;
-        for(ULONG i = 0; i < systemModules->NumberOfModules; i++) {
-            ULONG_PTR base = (ULONG_PTR)systemModules->Modules[i].ImageBase;
-            SIZE_T size = systemModules->Modules[i].ImageSize;
-            if(Address >= base && Address < base + size) {
-                *BaseAddress = base;
-                *Size = size;
-                status = STATUS_SUCCESS;
-                break;
-            }
-        }
+        g_pDriverContext->KrnlBase = systemModules->Modules[0].ImageBase;
+        g_pDriverContext->KrnlSize = systemModules->Modules[0].ImageSize;
     } else {
         DPRINT("ZwQuerySystemInformation failed with status %lx!", status);
     }
-    if(systemModules)
-        ExFreePoolWithTag(systemModules, RDRV_POOLTAG);
-
-    return status;
-}
-
-NTSTATUS RDrvGetKernelInfo(
-    __out_opt PULONG_PTR BaseAddress,
-    __out_opt PSIZE_T Size
-)
-{
-    NTSTATUS status = STATUS_SUCCESS;
-
-    //Already found
-    if(g_pDriverContext->KrnlBase != 0) {
-        if(BaseAddress)
-            *BaseAddress = (ULONG_PTR)g_pDriverContext->KrnlBase;
-        if(Size)
-            *Size = g_pDriverContext->KrnlSize;
-        return STATUS_SUCCESS;
-    }
-
-    UNICODE_STRING usPsGetProcessPeb;
-
-    RtlInitUnicodeString(&usPsGetProcessPeb, L"PsGetProcessPeb");
-    PVOID pFn = MmGetSystemRoutineAddress(&usPsGetProcessPeb);
-
-    if(pFn == NULL) return STATUS_NOT_FOUND;
-
-    status = RDrvGetModuleContainingAddress((ULONG_PTR)pFn, (PULONG_PTR)&g_pDriverContext->KrnlBase, &g_pDriverContext->KrnlSize);
-
+    
     if(NT_SUCCESS(status)) {
         if(BaseAddress)
             *BaseAddress = (ULONG_PTR)g_pDriverContext->KrnlBase;
         if(Size)
             *Size = g_pDriverContext->KrnlSize;
     }
+
+    if(systemModules)
+        ExFreePoolWithTag(systemModules, RDRV_POOLTAG);
+
     return status;
 }
 
@@ -205,20 +169,18 @@ NTSTATUS RDrvFindPattern(
     return STATUS_NOT_FOUND;
 }
 
-NTSTATUS RDrvScanModule(
-    __in ULONG_PTR BaseAddress,
+NTSTATUS RDrvFindKernelPattern(
     __in PCUCHAR Pattern,
     __in PCUCHAR Mask,
     __in SIZE_T PatternSize,
     __inout PVOID* Result
 )
 {
-    if(!BaseAddress) return STATUS_INVALID_PARAMETER;
     if(!Pattern) return STATUS_INVALID_PARAMETER;
     if(!Mask) return STATUS_INVALID_PARAMETER;
     if(!Result) return STATUS_INVALID_PARAMETER;
 
-    PIMAGE_NT_HEADERS ntHdrs = RtlImageNtHeader((PVOID)BaseAddress);
+    PIMAGE_NT_HEADERS ntHdrs = RtlImageNtHeader((PVOID)g_pDriverContext->KrnlBase);
     PIMAGE_SECTION_HEADER firstSection = (PIMAGE_SECTION_HEADER)(ntHdrs + 1);
     for(PIMAGE_SECTION_HEADER section = firstSection;
         section < firstSection + ntHdrs->FileHeader.NumberOfSections;
@@ -458,170 +420,6 @@ NTSTATUS RDrvCreateUserThread(
     return status;
 }
 
-NTSTATUS RDrvBuildWow64InjectStub(
-    __in ULONG_PTR FnLdrLoadDll,
-    __in PUNICODE_STRING ModulePath,
-    __out PINJECTION_BUFFER* Buffer
-)
-{
-    NTSTATUS status = STATUS_SUCCESS;
-
-    if(!FnLdrLoadDll)	return STATUS_INVALID_PARAMETER_1;
-    if(!ModulePath)	    return STATUS_INVALID_PARAMETER_2;
-    if(!Buffer)		    return STATUS_INVALID_PARAMETER_3;
-
-    UCHAR pCodeBuffer[] =
-    {
-        0x55,                      		//push   ebp			// 0x00
-        0x89, 0xE5,                   	//mov    ebp,esp		// 0x01
-        0x68, 0x00, 0x00, 0x00, 0x00,   //push   pModuleHandle	// 0x03
-        0x68, 0x00, 0x00, 0x00, 0x00,   //push   pszModulePath	// 0x08
-        0x6A, 0x00,                    	//push   0				// 0x0D
-        0x6A, 0x00,                    	//push   0				// 0x0F
-        0xE8, 0x00, 0x00, 0x00, 0x00,  	//call   LdrLoadDll		// 0x11
-        0x5D,                      		//pop    ebp			// 0x16
-        0xC2, 0x04, 0x00             	//ret    4				// 0x17
-    };
-
-    SIZE_T regionSize = sizeof(INJECTION_BUFFER);
-    PINJECTION_BUFFER buff = NULL;
-
-    status = ZwAllocateVirtualMemory(ZwCurrentProcess(), (PVOID*)&buff, 0, &regionSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    if(NT_SUCCESS(status)) {
-        RtlZeroMemory(buff, regionSize);
-        RtlCopyMemory(buff, pCodeBuffer, sizeof(pCodeBuffer));
-
-        buff->ModulePath32.Length = ModulePath->Length;
-        buff->ModulePath32.MaximumLength = ModulePath->MaximumLength;
-        buff->ModulePath32.Buffer = (ULONG)(ULONG_PTR)buff->PathBuffer;
-
-        RtlCopyMemory((PVOID)buff->PathBuffer, ModulePath->Buffer, ModulePath->Length);
-
-        *(ULONG*)((PUCHAR)buff->CodeBuffer + 0x04) = (ULONG)(ULONG_PTR)&buff->ModuleHandle;
-        *(ULONG*)((PUCHAR)buff->CodeBuffer + 0x09) = (ULONG)(ULONG_PTR)&buff->ModulePath32;
-        *(ULONG*)((PUCHAR)buff->CodeBuffer + 0x12) = (ULONG)(ULONG_PTR)(FnLdrLoadDll - ((ULONG_PTR)buff->CodeBuffer + 0x16));
-
-        *Buffer = buff;
-    } else {
-        PERROR("ZwAllocateVirtualMemory", status);
-    }
-    return status;
-}
-
-NTSTATUS RDrvBuildNativeInjectStub(
-    __in ULONG_PTR FnLdrLoadDll,
-    __in PUNICODE_STRING ModulePath,
-    __out PINJECTION_BUFFER* Buffer
-)
-{
-    NTSTATUS status = STATUS_SUCCESS;
-
-    if(!FnLdrLoadDll)	return STATUS_INVALID_PARAMETER_1;
-    if(!ModulePath)	    return STATUS_INVALID_PARAMETER_2;
-    if(!Buffer)		    return STATUS_INVALID_PARAMETER_3;
-
-    UCHAR pCodeBuffer[] =
-    {
-        0x48, 0x83, 0xEC, 0x28,                 // sub rsp, 0x28
-        0x48, 0x31, 0xC9,                       // xor rcx, rcx
-        0x48, 0x31, 0xD2,                       // xor rdx, rdx
-        0x49, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,     // mov r8, ModuleFileName   offset +12
-        0x49, 0xB9, 0, 0, 0, 0, 0, 0, 0, 0,     // mov r9, ModuleHandle     offset +20
-        0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,     // mov rax, LdrLoadDll      offset +32
-        0xFF, 0xD0,                             // call rax
-        0x48, 0x83, 0xC4, 0x28,                 // add rsp, 0x28
-        0xC3                                    // ret
-    };
-
-    SIZE_T regionSize = sizeof(INJECTION_BUFFER);
-    PINJECTION_BUFFER buff = NULL;
-
-    status = ZwAllocateVirtualMemory(ZwCurrentProcess(), (PVOID*)&buff, 0, &regionSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    if(NT_SUCCESS(status)) {
-        RtlZeroMemory(buff, regionSize);
-        RtlCopyMemory(buff, pCodeBuffer, sizeof(pCodeBuffer));
-
-        buff->ModulePath64.Length = 0;
-        buff->ModulePath64.MaximumLength = sizeof(buff->PathBuffer);
-        buff->ModulePath64.Buffer = buff->PathBuffer;
-
-        RtlUnicodeStringCopy(&buff->ModulePath64, ModulePath);
-
-        *(ULONG_PTR*)((PUCHAR)buff->CodeBuffer + 0x0C) = (ULONG_PTR)&buff->ModulePath64;
-        *(ULONG_PTR*)((PUCHAR)buff->CodeBuffer + 0x16) = (ULONG_PTR)&buff->ModuleHandle;
-        *(ULONG_PTR*)((PUCHAR)buff->CodeBuffer + 0x20) = (ULONG_PTR)FnLdrLoadDll;
-
-        *Buffer = buff;
-    } else {
-        PERROR("ZwAllocateVirtualMemory", status);
-    }
-    return status;
-}
-
-NTSTATUS RDrvInjectLdrLoadDll(
-    __in PEPROCESS Process,
-    __in PWCHAR ModulePath,
-    __out PULONG_PTR ModuleBase
-)
-{
-    NTSTATUS		        status = STATUS_SUCCESS;
-    ULONG_PTR               fnLdrLoadDll;
-    
-    BOOLEAN isWow64 = !!PsGetProcessWow64Process(Process);
-    if(isWow64) {
-        PLDR_DATA_TABLE_ENTRY32	ntdll;
-        RDrvGetModuleEntry32(Process, L"ntdll.dll", &ntdll);
-        RDrvGetProcAddress((ULONG_PTR)ntdll->DllBase, "LdrLoadDll", &fnLdrLoadDll);
-    } else {
-        PLDR_DATA_TABLE_ENTRY   ntdll;
-        RDrvGetModuleEntry(Process, L"ntdll.dll", &ntdll);
-        RDrvGetProcAddress((ULONG_PTR)ntdll->DllBase, "LdrLoadDll", &fnLdrLoadDll);
-    }
-    if(fnLdrLoadDll != 0) {
-        UNICODE_STRING szModulePath;
-        RtlInitUnicodeString(&szModulePath, ModulePath);
-
-        PINJECTION_BUFFER pBuffer = NULL;
-        status = isWow64 ? 
-            RDrvBuildWow64InjectStub(fnLdrLoadDll, &szModulePath, &pBuffer) : 
-            RDrvBuildNativeInjectStub(fnLdrLoadDll, &szModulePath, &pBuffer);
-
-        if(ModuleBase)
-            *ModuleBase = 0;
-
-        if(NT_SUCCESS(status)) {
-            ULONG_PTR exitCode;
-            status = RDrvCreateUserThread((PVOID)pBuffer, NULL, TRUE, &exitCode);
-            if(NT_SUCCESS(status)) {
-                status = (NTSTATUS)exitCode;
-                if(NT_SUCCESS(status)) {
-                    if(ModuleBase)
-                        *ModuleBase = (ULONG_PTR)pBuffer->ModuleHandle;
-                } else {
-                    PERROR("LdrLoadDll", status);
-                }
-            } else
-                PERROR("RDrvCreateUserThread", status);
-        } else
-            PERROR("RDrvBuildWow64InjectStub/RDrvBuildNativeInjectStub", status);
-    } else
-        PERROR("RDrvGetProcAddress", status);
-
-    return status;
-}
-
-NTSTATUS RDrvInjectManualMap(
-    __in PEPROCESS Process,
-    __in PWCHAR ModulePath,
-    __out PULONG_PTR ModuleBase
-)
-{
-    UNREFERENCED_PARAMETER(Process);
-    UNREFERENCED_PARAMETER(ModulePath);
-    UNREFERENCED_PARAMETER(ModuleBase);
-    return STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS RDrvStripHeaders(
     __in PVOID BaseAddress
 )
@@ -648,7 +446,7 @@ NTSTATUS RDrvStripHeaders(
     NTSTATUS status = ZwProtectVirtualMemory(ZwCurrentProcess(), &BaseAddress, &sizeOfHeaders, PAGE_EXECUTE_READWRITE, &oldProt);
     if(NT_SUCCESS(status)) {
         RtlZeroMemory(BaseAddress, sizeOfHeaders);
-        ZwProtectVirtualMemory(ZwCurrentProcess(), &BaseAddress, &sizeOfHeaders, oldProt, &oldProt);
+        ZwProtectVirtualMemory(ZwCurrentProcess(), &BaseAddress, &sizeOfHeaders, PAGE_NOACCESS, &oldProt);
     }
     return status;
 }
@@ -782,7 +580,7 @@ PSYSTEM_SERVICE_DESCRIPTOR_TABLE GetSSDTBase(
     if(g_pDriverContext->SSDT != NULL)
         return g_pDriverContext->SSDT;
 
-    status = RDrvScanModule((ULONG_PTR)g_pDriverContext->KrnlBase, pattern, mask, sizeof(mask) - 1, &pFound);
+    status = RDrvFindKernelPattern(pattern, mask, sizeof(mask) - 1, &pFound);
     if(NT_SUCCESS(status)) {
         g_pDriverContext->SSDT = (PSYSTEM_SERVICE_DESCRIPTOR_TABLE)((PUCHAR)pFound + *(PULONG)((PUCHAR)pFound + 3) + 7);
         return g_pDriverContext->SSDT;

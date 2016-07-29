@@ -1,4 +1,5 @@
 #include "routines.h"
+#include "injection.h"
 
 #pragma alloc_text(PAGE, RDrvProtectProcess)
 #pragma alloc_text(PAGE, RDrvOpenProcess)
@@ -167,14 +168,16 @@ NTSTATUS RDrvInjectModule(
         if(Params->In.InjectionType == InjectLdrLoadDll)
             status = RDrvInjectLdrLoadDll(process, Params->In.ModulePath, &base);
         else
-            status = RDrvInjectManualMap(process, Params->In.ModulePath, &base);
+            status = RDrvInjectManualMap(process, Params->In.ModulePath, Params->In.CallEntryPoint, Params->In.CustomParameter, &base);
 
         if(NT_SUCCESS(status)) {
             if(Params->In.ErasePE == TRUE) {
-                RDrvStripHeaders((PVOID)base);
+                if(!NT_SUCCESS(status = RDrvStripHeaders((PVOID)base)))
+                    PERROR("RDrvStripHeaders", status);
             }
             if(Params->In.HideModule == TRUE) {
-                RDrvHideFromLoadedList(process, (PVOID)base);
+                if(!NT_SUCCESS(status = RDrvHideFromLoadedList(process, (PVOID)base)))
+                    PERROR("RDrvHideFromLoadedList", status);
             }
         }
 

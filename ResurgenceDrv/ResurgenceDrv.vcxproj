@@ -291,6 +291,7 @@
   <ItemGroup>
     <ClCompile Include="dispatch.c" />
     <ClCompile Include="driver_entry.c" />
+    <ClCompile Include="injection.c" />
     <ClCompile Include="internal.c" />
     <ClCompile Include="memory.c" />
     <ClCompile Include="object.c" />
@@ -303,6 +304,7 @@
   <ItemGroup>
     <ClInclude Include="dispatch.h" />
     <ClInclude Include="imports.h" />
+    <ClInclude Include="injection.h" />
     <ClInclude Include="internal.h" />
     <ClInclude Include="kernel_imports.h" />
     <ClInclude Include="native_enums.h" />
