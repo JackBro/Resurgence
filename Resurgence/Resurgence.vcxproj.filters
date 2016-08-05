@@ -27,18 +27,6 @@
     <ClInclude Include="include\misc\winnt.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\system\Driver\TDL\TDL.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\system\Driver\TDL\vbox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\system\Driver\driver.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\system\Driver\driver_shellcode.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\headers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,27 +42,39 @@
     <ClInclude Include="include\easylogging++.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\system\driver\TDL\TDL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\system\driver\TDL\vbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\system\driver\driver.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\system\driver\driver_shellcode.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="include\system\Driver\TDL\TDL.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\misc\safe_handle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\misc\winnt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\system\Driver\driver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\system\Driver\driver_shellcode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\resurgence.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\misc\logging.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\system\driver\TDL\TDL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\driver\driver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\driver\driver_shellcode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

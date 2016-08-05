@@ -28,19 +28,19 @@
     <ClInclude Include="include\misc\winnt.hpp" />
     <ClInclude Include="include\NtAPI.hpp" />
     <ClInclude Include="include\resurgence.hpp" />
-    <ClInclude Include="include\system\Driver\driver.hpp" />
-    <ClInclude Include="include\system\Driver\driver_shellcode.hpp" />
-    <ClInclude Include="include\system\Driver\TDL\TDL.h" />
-    <ClInclude Include="include\system\Driver\TDL\vbox.h" />
+    <ClInclude Include="include\system\driver\driver.hpp" />
+    <ClInclude Include="include\system\driver\driver_shellcode.hpp" />
+    <ClInclude Include="include\system\driver\TDL\TDL.h" />
+    <ClInclude Include="include\system\driver\TDL\vbox.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="include\system\Driver\TDL\TDL.cpp" />
+    <ClCompile Include="include\system\driver\TDL\TDL.cpp" />
     <ClCompile Include="src\misc\logging.cpp" />
     <ClCompile Include="src\misc\safe_handle.cpp" />
     <ClCompile Include="src\misc\winnt.cpp" />
     <ClCompile Include="src\resurgence.cpp" />
-    <ClCompile Include="src\system\Driver\driver.cpp" />
-    <ClCompile Include="src\system\Driver\driver_shellcode.cpp" />
+    <ClCompile Include="src\system\driver\driver.cpp" />
+    <ClCompile Include="src\system\driver\driver_shellcode.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6872536E-3320-48D7-91A2-363B8CA39055}</ProjectGuid>

@@ -36,6 +36,7 @@ NTSTATUS RDrvDispatch(
                         VERSION_INFO info;
                         Irp->IoStatus.Status = RDrvQueryOSVersion(&info);
                         if(NT_SUCCESS(Irp->IoStatus.Status)) {
+                            RtlCopyMemory(ioBuffer, &info, RESURGENCE_QUERY_OSVERSION_SIZE);
                             Irp->IoStatus.Information = RESURGENCE_QUERY_OSVERSION_SIZE;
                         }
                     } else {

@@ -24,6 +24,8 @@ NTSTATUS RDrvQueryOSVersion(
             (versionInfo.dwMinorVersion << 16) |
             (versionInfo.wServicePackMajor << 8) |
             versionInfo.wServicePackMinor;
+    } else {
+        PERROR("RtlGetVersion", status);
     }
     return status;
 }
