@@ -38,26 +38,25 @@
 #define PEXCEPTION() DPRINT("Exception: %lX", GetExceptionCode())
 #endif
 
-
-
-#if defined(_WIN10_)
-#   define TARGET_WINVER                        0x0A000000
-#   define Off_EThread_PreviousMode             0x00000232
-#   define Off_EProcess_ObjectTable             0x00000418
-#   define Off_EProcess_Protection              0x000006B2 //_PS_PROTECTION 
-#   define Off_KProcess_ExecuteOptions          0x000001BF //_KEXECUTE_OPTIONS
-#   define SSDTEntry_CreateThreadEx             0x000000B4
-#   define SSDTEntry_TerminateThread            0x00000053
-#   define SSDTEntry_QueryPerformanceCounter    0x00000031
-#elif defined(_WIN81_)
-#   error "Unsupported platform"
-#elif defined(_WIN8_)
-#   error "Unsupported platform"
-#elif defined(_WIN7_)
-#   error "Unsupported platform"
-#else
-#   error "Unsupported platform"
-#endif
+typedef struct _DYNAMIC_DATA
+{
+    ULONG TargetVersion;
+    ULONG TargetBuildNumber;
+    struct
+    {
+        ULONG CreateThreadEx;
+        ULONG TerminateThread;
+        ULONG QueryPerformanceCounter;
+        ULONG ProtectMemory;
+    } SSDTIndexes;
+    struct
+    {
+        ULONG PreviousMode;
+        ULONG ObjectTable;
+        ULONG Protection;
+        ULONG ExecuteOptions;
+    } Offsets;
+} DYNAMIC_DATA, *PDYNAMIC_DATA;
 
 typedef struct _IMAGE_MAP_DATA
 {
@@ -80,21 +79,16 @@ typedef void(NTAPI* tRtlInsertInvertedFunctionTable)(ULONG_PTR ImageBase, ULONG 
 
 typedef struct _DRIVER_CONTEXT
 {
-    BOOLEAN         Initialized;
-
-    IMAGE_MAP_DATA  ImageData;
-
-    PLIST_ENTRY     PsLoadedModuleList;
-
-    PVOID           KrnlBase;
-
-    SIZE_T          KrnlSize;
-
-    PSYSTEM_SERVICE_DESCRIPTOR_TABLE SSDT;
+    BOOLEAN                             Initialized;
+    IMAGE_MAP_DATA                      ImageData;
+    PVOID                               KrnlBase;
+    SIZE_T                              KrnlSize;
+    DYNAMIC_DATA                        DynData;
+    PSYSTEM_SERVICE_DESCRIPTOR_TABLE    SSDT;
     //
     // Functions
     // 
-    tRtlInsertInvertedFunctionTable RtlInsertInvertedFunctionTable;
+    tRtlInsertInvertedFunctionTable     RtlInsertInvertedFunctionTable;
 
 } DRIVER_CONTEXT, *PDRIVER_CONTEXT;
 

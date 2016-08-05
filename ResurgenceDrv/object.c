@@ -1,4 +1,5 @@
 #include "routines.h"
+#include "internal.h"
 
 #pragma alloc_text(PAGE, RDrvGrantHandleAccess)
 
@@ -15,7 +16,7 @@ NTSTATUS RDrvGrantHandleAccess(
         status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
 
         if(NT_SUCCESS(status)) {
-            PHANDLE_TABLE objTable = *(PHANDLE_TABLE*)((PUCHAR)process + Off_EProcess_ObjectTable);
+            PHANDLE_TABLE objTable = *(PHANDLE_TABLE*)((PUCHAR)process + g_pDriverContext->DynData.Offsets.ObjectTable);
             EXHANDLE exHandle; exHandle.Value = Params->In.Handle;
             PHANDLE_TABLE_ENTRY handleEntry = ExpLookupHandleTableEntry(objTable, exHandle);
             if(ExpIsValidObjectEntry(handleEntry)) {

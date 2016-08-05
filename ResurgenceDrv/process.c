@@ -20,7 +20,7 @@ NTSTATUS RDrvProtectProcess(
         
         if(NT_SUCCESS(status)) {
         #ifdef _WIN10_
-            PPS_PROTECTION psProtection = (PPS_PROTECTION)((PUCHAR)process + Off_EProcess_Protection);
+            PPS_PROTECTION psProtection = (PPS_PROTECTION)((PUCHAR)process + g_pDriverContext->DynData.Offsets.Protection);
             if(psProtection != NULL) {
                 KeStackAttachProcess(process, &apcState);
                 PPEB peb = PsGetProcessPeb(process);
@@ -122,7 +122,7 @@ NTSTATUS RDrvSetProcessDEP(
 
         if(NT_SUCCESS(status)) {
         #ifdef _WIN10_
-            PKEXECUTE_OPTIONS executeOptions = (PKEXECUTE_OPTIONS)((PUCHAR)process + Off_KProcess_ExecuteOptions);
+            PKEXECUTE_OPTIONS executeOptions = (PKEXECUTE_OPTIONS)((PUCHAR)process + g_pDriverContext->DynData.Offsets.ExecuteOptions);
             if(Params->In.Enabled == FALSE) {
                 executeOptions->ExecuteOptions = 0;
 

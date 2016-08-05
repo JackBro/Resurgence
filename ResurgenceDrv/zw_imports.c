@@ -15,9 +15,9 @@ ZwProtectVirtualMemory(
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    fnNtProtectVirtualMemory NtProtectVirtualMemory = (fnNtProtectVirtualMemory)(ULONG_PTR)GetSSDTEntry(SSDTEntry_ProtectMemory);
+    fnNtProtectVirtualMemory NtProtectVirtualMemory = (fnNtProtectVirtualMemory)(ULONG_PTR)GetSSDTEntry(g_pDriverContext->DynData.SSDTIndexes.ProtectMemory);
     if(NtProtectVirtualMemory) {
-        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
+        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + g_pDriverContext->DynData.Offsets.PreviousMode;
         UCHAR prevMode = *pPrevMode;
         *pPrevMode = KernelMode;
 
@@ -49,13 +49,13 @@ ZwCreateThreadEx(
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    tNtCreateThreadEx NtCreateThreadEx = (tNtCreateThreadEx)(ULONG_PTR)GetSSDTEntry(SSDTEntry_CreateThreadEx);
+    tNtCreateThreadEx NtCreateThreadEx = (tNtCreateThreadEx)(ULONG_PTR)GetSSDTEntry(g_pDriverContext->DynData.SSDTIndexes.CreateThreadEx);
     if(NtCreateThreadEx) {
         //
         // If previous mode is UserMode, addresses passed into ZwCreateThreadEx must be in user-mode space
         // Switching to KernelMode allows usage of kernel-mode addresses
         //
-        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
+        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + g_pDriverContext->DynData.Offsets.PreviousMode;
         UCHAR prevMode = *pPrevMode;
         *pPrevMode = KernelMode;
 
@@ -77,9 +77,9 @@ NTSTATUS NTAPI ZwTerminateThread(IN HANDLE ThreadHandle, IN NTSTATUS ExitStatus)
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    tNtTerminateThread NtTerminateThread = (tNtTerminateThread)(ULONG_PTR)GetSSDTEntry(SSDTEntry_TerminateThread);
+    tNtTerminateThread NtTerminateThread = (tNtTerminateThread)(ULONG_PTR)GetSSDTEntry(g_pDriverContext->DynData.SSDTIndexes.TerminateThread);
     if(NtTerminateThread) {
-        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
+        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + g_pDriverContext->DynData.Offsets.PreviousMode;
         UCHAR prevMode = *pPrevMode;
         *pPrevMode = KernelMode;
 
@@ -101,9 +101,9 @@ ZwQueryPerformanceCounter(
     NTSTATUS status = STATUS_SUCCESS;
 
     tNtQueryPerformanceCounter NtQueryPerformanceCounter 
-        = (tNtQueryPerformanceCounter)(ULONG_PTR)GetSSDTEntry(SSDTEntry_QueryPerformanceCounter);
+        = (tNtQueryPerformanceCounter)(ULONG_PTR)GetSSDTEntry(g_pDriverContext->DynData.SSDTIndexes.QueryPerformanceCounter);
     if(NtQueryPerformanceCounter) {
-        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
+        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + g_pDriverContext->DynData.Offsets.PreviousMode;
         UCHAR prevMode = *pPrevMode;
         *pPrevMode = KernelMode;
 

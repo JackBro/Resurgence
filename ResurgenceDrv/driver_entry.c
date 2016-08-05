@@ -19,9 +19,14 @@ NTSTATUS DriverContextInit(
     VOID
 );
 
+NTSTATUS DriverLoadDynamicData(
+    VOID
+);
+
 #pragma alloc_text(INIT, DriverEntry)
 #pragma alloc_text(PAGE, InitializeDriver)
 #pragma alloc_text(PAGE, DriverContextInit)
+#pragma alloc_text(PAGE, DriverLoadDynamicData)
 
 /// <summary>
 ///     Defines the driver entry point
@@ -53,7 +58,7 @@ NTSTATUS DriverEntry(
         UNICODE_STRING  drvName;
         RtlInitUnicodeString(&drvName, L"\\Driver\\" RDRV_DRIVER_NAME);
         status = IoCreateDriver(&drvName, &InitializeDriver);
-        if(NT_ERROR(status)) {
+        if(!NT_SUCCESS(status)) {
             DPRINT("IoCreateDriver failed with status %lX", status);
         }
     }
@@ -71,15 +76,7 @@ NTSTATUS InitializeDriver(
 
     UNREFERENCED_PARAMETER(RegistryPath);
     DPRINT("Initializing driver!", status);
-
-    VERSION_INFO version;
-    if(NT_SUCCESS(RDrvQueryOSVersion(&version))) {
-        if(version.VersionLong != TARGET_WINVER) {
-            DPRINT("OS UNSUPPORTED %X. Target: %X", version.VersionLong, TARGET_WINVER);
-            return STATUS_NOT_SUPPORTED;
-        }
-    }
-
+    
     RtlInitUnicodeString(&usDeviceName, RDRV_DEVICE_NAME);
     RtlInitUnicodeString(&usDosDeviceName, RDRV_DOSDEVICE_NAME);
 
@@ -91,7 +88,7 @@ NTSTATUS InitializeDriver(
         FILE_DEVICE_SECURE_OPEN,
         FALSE, &pDevObj);
 
-    if(NT_ERROR(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("IoCreateDevice failed with status %lX", status);
         return status;
     }
@@ -101,7 +98,7 @@ NTSTATUS InitializeDriver(
 
     status = IoCreateSymbolicLink(&usDosDeviceName, &usDeviceName);
 
-    if(NT_ERROR(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("IoCreateSymbolicLink failed with status %lX", status);
         return status;
     }
@@ -114,9 +111,16 @@ NTSTATUS InitializeDriver(
     RtlCopyMemory(&g_pDriverContext->ImageData, g_pImageData, sizeof(IMAGE_MAP_DATA));
     ExFreePoolWithTag((PVOID)g_pImageData, 'SldT');
 
+    status = DriverLoadDynamicData();
+
+    if(!NT_SUCCESS(status)) {
+        DPRINT("DriverLoadDynamicData failed with status %lX!", status);
+        return status;
+    }
+
     status = DriverContextInit();
 
-    if(NT_ERROR(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("DriverContextInit failed with status %lX!", status);
         return status;
     }
@@ -134,7 +138,7 @@ NTSTATUS DriverContextInit(
 {
     ULONG_PTR KernelBase;
     NTSTATUS status = RDrvGetKernelInfo(&KernelBase, NULL);
-    if(NT_ERROR(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("RDrvGetKernelInfo failed with status %lX", status);
         return status;
     }
@@ -142,29 +146,8 @@ NTSTATUS DriverContextInit(
 #ifdef _WIN10_
     CONST UCHAR Pattern_RtlInsertInvertedTable[] = "\x48\x89\x5C\x24\x00\x55\x56\x57\x48\x83\xEC\x30\x8B\xF2";
     CONST UCHAR Mask_RtlInsertInvertedTable[] = "xxxx?xxxxxxxxx";
-
-    //nt!IopWriteDriverList+0x24
-    CONST UCHAR Pattern_PsLoadedModuleList[] = "\x48\x8B\x1D\x00\x00\x00\x00\x4C\x8D\x2D\x00\x00\x00\x00\x45\x33\xE4";
-    CONST UCHAR Mask_PsLoadedModuleList[]    = "xxx????xxx????xxx";
-    CONST ULONG Offset_PsLoadedModuleList    = 3;
-    CONST ULONG Offset_PsLoadedModuleList2   = 7;
 #endif 
     PUCHAR pResult;
-
-    status = RDrvFindKernelPattern(
-        Pattern_PsLoadedModuleList,
-        Mask_PsLoadedModuleList,
-        sizeof(Mask_PsLoadedModuleList) - 1,
-        &pResult);
-
-    if(NT_ERROR(status)) {
-        DPRINT("Failed to retrieve PsLoadedModuleList address!");
-        return status;
-    }
-        
-    g_pDriverContext->PsLoadedModuleList = (PLIST_ENTRY)(pResult + *(PULONG)(pResult + Offset_PsLoadedModuleList) + Offset_PsLoadedModuleList2);
-
-    DPRINT("PsLoadedModuleList: 0x%p", g_pDriverContext->PsLoadedModuleList);
 
     status = RDrvFindKernelPattern(
         Pattern_RtlInsertInvertedTable,
@@ -172,7 +155,7 @@ NTSTATUS DriverContextInit(
         sizeof(Mask_RtlInsertInvertedTable) - 1,
         &pResult);
 
-    if(NT_ERROR(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("Failed to retrieve RtlInsertInvertedFunctionTable address!");
         return status;
     }
@@ -180,11 +163,48 @@ NTSTATUS DriverContextInit(
     g_pDriverContext->RtlInsertInvertedFunctionTable = (tRtlInsertInvertedFunctionTable)pResult;
     DPRINT("RtlInsertInvertedFunctionTable: 0x%p", g_pDriverContext->RtlInsertInvertedFunctionTable);
 
-    //g_pDriverContext->RtlInsertInvertedFunctionTable(
-    //    g_pDriverContext->ImageData.ImageBase, 
-    //    g_pDriverContext->ImageData.SizeOfImage);
-
     g_pDriverContext->Initialized = TRUE;
+
+    return STATUS_SUCCESS;
+}
+
+NTSTATUS DriverLoadDynamicData(
+    VOID
+)
+{
+    VERSION_INFO version;
+    NTSTATUS status = RDrvQueryOSVersion(&version);
+
+    if(!NT_SUCCESS(status)) {
+        PERROR("RDrvQueryOSVersion", status);
+        return status;
+    }
+
+    switch(version.VersionLong) {
+        case 0x0A000000: //Win10
+            switch(version.BuildNumber) {
+                default:
+                    DPRINT("Build %d is not known. Values for build %d will be used instead.", version.BuildNumber, 10586);
+                case 10586:
+                {
+                    PDYNAMIC_DATA data = &g_pDriverContext->DynData;
+                    data->TargetBuildNumber                     = 10586;
+                    data->TargetVersion                         = version.VersionLong;
+                    data->SSDTIndexes.CreateThreadEx            = 0x000000B4;
+                    data->SSDTIndexes.TerminateThread           = 0x00000053;
+                    data->SSDTIndexes.QueryPerformanceCounter   = 0x00000031;
+                    data->SSDTIndexes.ProtectMemory             = 0x00000000;
+                    data->Offsets.ExecuteOptions                = 0x000001BF;
+                    data->Offsets.ObjectTable                   = 0x00000418;
+                    data->Offsets.PreviousMode                  = 0x00000232;
+                    data->Offsets.Protection                    = 0x000006B2;
+                    break;
+                }
+            }
+            break;
+        default:
+            status = STATUS_NOT_SUPPORTED;
+    }
 
     return STATUS_SUCCESS;
 }

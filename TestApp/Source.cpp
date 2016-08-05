@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
             wcerr << "failed" << endl;
             wcerr << misc::winnt::get_status_message(get_last_ntstatus()) << endl;
         }
+        driver.InjectModule(4920, L"C:\\test_x64.dll", FALSE, FALSE, NULL);
     } else {
         wcerr << "Load failed" << endl;
         wcerr << misc::winnt::get_status_message(get_last_ntstatus()) << endl;

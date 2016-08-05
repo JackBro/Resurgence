@@ -1,8 +1,8 @@
 #pragma once
 
-#define DEFAULT_DRIVER_WIN7 TEXT(".\\ResurgenceDrvWin10.sys")
-#define DEFAULT_DRIVER_WIN8 TEXT(".\\ResurgenceDrvWin10.sys")
-#define DEFAULT_DRIVER_WIN81 TEXT(".\\ResurgenceDrvWin10.sys")
+#define DEFAULT_DRIVER_WIN7 TEXT(".\\ResurgenceDrvWin7.sys")
+#define DEFAULT_DRIVER_WIN8 TEXT(".\\ResurgenceDrvWin8.sys")
+#define DEFAULT_DRIVER_WIN81 TEXT(".\\ResurgenceDrvWin81.sys")
 #define DEFAULT_DRIVER_WIN10 TEXT(".\\ResurgenceDrvWin10.sys")
 
 #include <misc/exceptions.hpp>
