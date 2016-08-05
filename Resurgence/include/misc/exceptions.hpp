@@ -10,54 +10,44 @@ namespace resurgence
 {
     namespace misc
     {
-        class Exception
+        class exception
         {
         public:
-            Exception()
+            exception()
                 : _message(L"")
             {
-                SetType(L"Exception");
+
             }
 
-            Exception(std::wstring msg)
+            exception(std::wstring msg)
                 : _message(std::move(msg))
             {
-                SetType(L"Exception");
-            }
 
-            virtual const std::wstring& GetType() const
-            {
-                return _type;
             }
-
+        
             const std::wstring& GetMessage() const
             {
                 return _message;
             }
         protected:
-            void SetType(std::wstring str)
-            {
-                _type = std::move(str);
-            }
 
             std::wstring _message;
-            std::wstring _type;
         };
 
-        class FileNotFoundException
-            : public Exception
+        class file_not_found_exception
+            : public exception
         {
         public:
-            FileNotFoundException()
-                : Exception()
+            file_not_found_exception()
+                : exception()
             {
-                SetType(L"FileNotFoundException");
+
             }
 
-            FileNotFoundException(std::wstring msg)
-                : Exception(msg)
+            file_not_found_exception(std::wstring msg)
+                : exception(msg)
             {
-                SetType(L"FileNotFoundException");
+
             }
         };
     }

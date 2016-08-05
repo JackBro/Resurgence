@@ -7,19 +7,19 @@ namespace resurgence
 {
     namespace misc
     {
-        enum LogOutputMode
+        enum log_output
         {
             LogNone,
             LogStdOut,
             LogFile
         };
-        class Logging
+        class logger
         {
         public:
-            static void Enable();
-            static void Disable();
-            static void SetOutputMode(LogOutputMode mode, const std::string& fileName = "");
-            static void SetFormat(const std::string& format);
+            static void enable();
+            static void disable();
+            static void set_output(log_output mode, const std::string& fileName = "");
+            static void set_format(const std::string& format);
         };
     }
 }

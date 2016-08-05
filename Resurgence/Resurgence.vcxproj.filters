@@ -18,9 +18,6 @@
     <ClInclude Include="include\misc\exceptions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\misc\pointer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\misc\safe_handle.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

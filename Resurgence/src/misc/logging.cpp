@@ -4,19 +4,19 @@ namespace resurgence
 {
     namespace misc
     {
-        void Logging::Enable()
+        void logger::enable()
         {
             el::Configurations default;
             default.setGlobally(el::ConfigurationType::Enabled, "true");
             el::Loggers::reconfigureLogger("default", default);
         }
-        void Logging::Disable()
+        void logger::disable()
         {
             el::Configurations default;
             default.setGlobally(el::ConfigurationType::Enabled, "false");
             el::Loggers::reconfigureLogger("default", default);
         }
-        void Logging::SetOutputMode(LogOutputMode mode, const std::string& fileName /*= ""*/)
+        void logger::set_output(log_output mode, const std::string& fileName /*= ""*/)
         {
             el::Configurations default;
             default.setGlobally(el::ConfigurationType::ToStandardOutput, (mode & LogStdOut) != 0 ? "true" : "false");
@@ -28,7 +28,7 @@ namespace resurgence
             }
             el::Loggers::reconfigureLogger("default", default);
         }
-        void Logging::SetFormat(const std::string& format)
+        void logger::set_format(const std::string& format)
         {
             el::Configurations default;
             default.setGlobally(el::ConfigurationType::Format, format);

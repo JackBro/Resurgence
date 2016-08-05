@@ -167,7 +167,7 @@ namespace resurgence
         }
         ntstatus_code winnt::write_file(const std::wstring& path, std::uint8_t* buffer, std::size_t length)
         {
-            auto handle = SafeGenericHandle(CreateFile(std::data(path), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, 0, nullptr));
+            auto handle = safe_generic_handle(CreateFile(std::data(path), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, 0, nullptr));
 
             if(!handle.IsValid())
                 return get_last_ntstatus();

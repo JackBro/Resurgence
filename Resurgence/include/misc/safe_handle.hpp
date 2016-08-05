@@ -1,70 +1,54 @@
 #pragma once
 
 #include <headers.hpp>
-#include "pointer.hpp"
 
 namespace resurgence
 {
     namespace misc
     {
-        class SafeHandle
+        namespace detail
+        {
+            class safe_handle
+            {
+            public:
+                safe_handle(HANDLE invalidValue);
+                safe_handle(HANDLE value, HANDLE invalidValue);
+                safe_handle(const safe_handle& rhs);
+                virtual ~safe_handle();
+
+                HANDLE  Get() const;
+                void    Set(HANDLE value);
+                void    Close();
+                bool    IsValid() const;
+
+                safe_handle& operator=(const safe_handle& rhs);
+
+            protected:
+                void Duplicate(safe_handle& other) const;
+
+                HANDLE _value;
+                HANDLE _invalid;
+            };
+        }
+
+        class safe_process_handle
+            : public detail::safe_handle
         {
         public:
-            SafeHandle(HANDLE invalidValue);
-            SafeHandle(HANDLE value, HANDLE invalidValue);
-            SafeHandle(const SafeHandle& rhs);
-            virtual ~SafeHandle();
-
-            inline HANDLE  Get() const;
-            inline void    Set(HANDLE value);
-            inline void    Close();
-            inline bool    IsValid() const;
-
-            SafeHandle& operator=(const SafeHandle& rhs);
-
-        protected:
-            void Duplicate(SafeHandle& other) const;
-
-            HANDLE _value;
-            HANDLE _invalid;
+            safe_process_handle();
+            safe_process_handle(HANDLE value);
+            safe_process_handle(const safe_process_handle& rhs);
+            virtual ~safe_process_handle() {}
         };
 
-        inline HANDLE SafeHandle::Get() const
-        {
-            return _value;
-        }
-        inline void SafeHandle::Set(HANDLE value)
-        {
-            if(IsValid()) Close();
-            _value = value;
-        }
-        inline void SafeHandle::Close()
-        {
-            CloseHandle(_value);
-        }
-        inline bool SafeHandle::IsValid() const
-        {
-            return _value != _invalid;
-        }
-
-        class SafeProcessHandle
-            : public SafeHandle
+        class safe_generic_handle
+            : public detail::safe_handle
         {
         public:
-            SafeProcessHandle();
-            SafeProcessHandle(HANDLE value);
-            SafeProcessHandle(const SafeProcessHandle& rhs);
-            virtual ~SafeProcessHandle() {}
-        };
-
-        class SafeGenericHandle
-            : public SafeHandle
-        {
-        public:
-            SafeGenericHandle();
-            SafeGenericHandle(HANDLE value);
-            SafeGenericHandle(const SafeGenericHandle& rhs);
-            virtual ~SafeGenericHandle() {}
+            safe_generic_handle();
+            safe_generic_handle(HANDLE value);
+            safe_generic_handle(const safe_generic_handle& rhs);
+            virtual ~safe_generic_handle() {}
         };
     }
 }

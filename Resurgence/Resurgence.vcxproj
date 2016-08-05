@@ -23,7 +23,6 @@
     <ClInclude Include="include\headers.hpp" />
     <ClInclude Include="include\misc\exceptions.hpp" />
     <ClInclude Include="include\misc\logging.hpp" />
-    <ClInclude Include="include\misc\pointer.hpp" />
     <ClInclude Include="include\misc\safe_handle.hpp" />
     <ClInclude Include="include\misc\winnt.hpp" />
     <ClInclude Include="include\NtAPI.hpp" />
