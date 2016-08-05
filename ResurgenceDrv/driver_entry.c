@@ -180,9 +180,9 @@ NTSTATUS DriverContextInit(
     g_pDriverContext->RtlInsertInvertedFunctionTable = (tRtlInsertInvertedFunctionTable)pResult;
     DPRINT("RtlInsertInvertedFunctionTable: 0x%p", g_pDriverContext->RtlInsertInvertedFunctionTable);
 
-    g_pDriverContext->RtlInsertInvertedFunctionTable(
-        g_pDriverContext->ImageData.ImageBase, 
-        g_pDriverContext->ImageData.SizeOfImage);
+    //g_pDriverContext->RtlInsertInvertedFunctionTable(
+    //    g_pDriverContext->ImageData.ImageBase, 
+    //    g_pDriverContext->ImageData.SizeOfImage);
 
     g_pDriverContext->Initialized = TRUE;
 

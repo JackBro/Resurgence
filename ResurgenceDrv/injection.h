@@ -18,10 +18,3 @@ NTSTATUS RDrvInjectLdrLoadDll(
     __out PULONG_PTR ModuleBase
 );
 
-NTSTATUS RDrvInjectManualMap(
-    __in PEPROCESS Process,
-    __in PWCHAR ModulePath,
-    __in BOOLEAN CallEntryPoint,
-    __in ULONG_PTR CustomArg,
-    __out PULONG_PTR ModuleBase
-);

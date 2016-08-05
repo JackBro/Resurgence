@@ -76,7 +76,7 @@
 #else
 #   define ELPP_COMPILER_INTEL 0
 #endif
-// Operating System Evaluation
+// Operating system Evaluation
 // Windows
 #if (defined(_WIN32) || defined(_WIN64)) 
 #   define ELPP_OS_WINDOWS 1
@@ -314,7 +314,7 @@
 #if (!(ELPP_CXX0X || ELPP_CXX11))
 #   error "Easylogging++ 9.0+ is only compatible with C++0x (or higher) compliant compiler"
 #endif  // (!(ELPP_CXX0X || ELPP_CXX11))
-// Headers
+// headers
 #if defined(ELPP_SYSLOG)
 #   include <syslog.h>
 #endif  // defined(ELPP_SYSLOG)
@@ -1456,7 +1456,7 @@ public:
        return buff_;
     }
 };
-/// @brief Operating System helper static class used internally. You should not use it.
+/// @brief Operating system helper static class used internally. You should not use it.
 class OS : base::StaticClass {
 public:
 #if ELPP_OS_WINDOWS

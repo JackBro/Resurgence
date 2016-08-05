@@ -41,22 +41,22 @@
 
 
 #if defined(_WIN10_)
-#   define TARGET_WINVER                0x0A000000
-#   define Off_EThread_PreviousMode     0x00000232
-#   define Off_EProcess_ObjectTable     0x00000418
-#   define Off_EProcess_Protection      0x000006B2 //_PS_PROTECTION 
-#   define Off_KProcess_ExecuteOptions  0x000001BF //_KEXECUTE_OPTIONS
-#   define SSDTEntry_CreateThreadEx     0x000000B4
-#   define SSDTEntry_TerminateThread    0x00000053
+#   define TARGET_WINVER                        0x0A000000
+#   define Off_EThread_PreviousMode             0x00000232
+#   define Off_EProcess_ObjectTable             0x00000418
+#   define Off_EProcess_Protection              0x000006B2 //_PS_PROTECTION 
+#   define Off_KProcess_ExecuteOptions          0x000001BF //_KEXECUTE_OPTIONS
+#   define SSDTEntry_CreateThreadEx             0x000000B4
+#   define SSDTEntry_TerminateThread            0x00000053
+#   define SSDTEntry_QueryPerformanceCounter    0x00000031
 #elif defined(_WIN81_)
 #   error "Unsupported platform"
 #elif defined(_WIN8_)
 #   error "Unsupported platform"
 #elif defined(_WIN7_)
-#   define TARGET_WINVER 0x06010100
+#   error "Unsupported platform"
 #else
 #   error "Unsupported platform"
-#   define TARGET_WINVER 0x00000000
 #endif
 
 typedef struct _IMAGE_MAP_DATA

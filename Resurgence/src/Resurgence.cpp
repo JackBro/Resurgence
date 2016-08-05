@@ -1,4 +1,4 @@
-#include <Resurgence.hpp>
+#include <resurgence.hpp>
 
 INITIALIZE_EASYLOGGINGPP
 

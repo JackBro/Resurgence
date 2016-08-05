@@ -155,7 +155,7 @@ typedef struct _IO_STATUS_BLOCK
 {
     union
     {
-        NTSTATUS Status;
+        ntstatus_code Status;
         PVOID pointer;
     } DUMMYUNIONNAME;
 
@@ -412,7 +412,7 @@ typedef enum _PROCESSINFOCLASS
 
 typedef struct _PROCESS_BASIC_INFORMATION
 {
-    NTSTATUS ExitStatus;
+    ntstatus_code ExitStatus;
     PVOID PebBaseAddress;
     ULONG_PTR AffinityMask;
     KPRIORITY BasePriority;
@@ -1507,7 +1507,7 @@ typedef struct _SYSDBG_VIRTUAL
 */
 
 /*
-** System Table START
+** system Table START
 */
 #define NUMBER_SERVICE_TABLES 2
 #define SERVICE_NUMBER_MASK ((1 << 12) -  1)
@@ -1544,12 +1544,12 @@ typedef struct _KSERVICE_TABLE_DESCRIPTOR
     PUCHAR Number; //e.g. KiArgumentTable
 } KSERVICE_TABLE_DESCRIPTOR, *PKSERVICE_TABLE_DESCRIPTOR;
 /*
-** System Table END
+** system Table END
 */
 
 
 /*
-** System Boot Environment START
+** system Boot Environment START
 */
 
 typedef struct _SYSTEM_BOOT_ENVIRONMENT_INFORMATION_V1 // size=20
@@ -1566,7 +1566,7 @@ typedef struct _SYSTEM_BOOT_ENVIRONMENT_INFORMATION // size=32
 } SYSTEM_BOOT_ENVIRONMENT_INFORMATION, *PSYSTEM_BOOT_ENVIRONMENT_INFORMATION;
 
 /*
-** System Boot Environment END
+** system Boot Environment END
 */
 
 /*
@@ -1845,7 +1845,7 @@ typedef struct _SYSTEM_HANDLE_INFORMATION
 #define SE_MAX_WELL_KNOWN_PRIVILEGE SE_CREATE_SYMBOLIC_LINK_PRIVILEGE
 
 #ifndef NT_SUCCESS
-#define NT_SUCCESS(Status) (((NTSTATUS)(Status)) >= 0)
+#define NT_SUCCESS(Status) (((ntstatus_code)(Status)) >= 0)
 #endif
 
 /*
@@ -2829,7 +2829,7 @@ typedef struct _DRIVER_EXTENSION
 {
 
     //
-    // Back pointer to Driver Object
+    // Back pointer to driver Object
     //
 
     struct _DRIVER_OBJECT *DriverObject;
@@ -2860,7 +2860,7 @@ typedef struct _DRIVER_EXTENSION
 
 #define DRVO_UNLOAD_INVOKED             0x00000001
 #define DRVO_LEGACY_DRIVER              0x00000002
-#define DRVO_BUILTIN_DRIVER             0x00000004    // Driver objects for Hal, PnP Mgr
+#define DRVO_BUILTIN_DRIVER             0x00000004    // driver objects for Hal, PnP Mgr
 #define DRVO_REINIT_REGISTERED          0x00000008
 #define DRVO_INITIALIZED                0x00000010
 #define DRVO_BOOTREINIT_REGISTERED      0x00000020
@@ -3035,7 +3035,7 @@ typedef struct _MEMORY_REGION_INFORMATION
 */
 
 /*
-** System Firmware START
+** system Firmware START
 */
 
 typedef enum _SYSTEM_FIRMWARE_TABLE_ACTION
@@ -3054,7 +3054,7 @@ typedef struct _SYSTEM_FIRMWARE_TABLE_INFORMATION
 } SYSTEM_FIRMWARE_TABLE_INFORMATION, *PSYSTEM_FIRMWARE_TABLE_INFORMATION;
 
 /*
-** System Firmware END
+** system Firmware END
 */
 
 //
@@ -3360,7 +3360,7 @@ typedef struct _TEB
     LCID CurrentLocale;
     ULONG FpSoftwareStatusRegister;
     PVOID SystemReserved1[54];
-    NTSTATUS ExceptionCode;
+    ntstatus_code ExceptionCode;
     PVOID ActivationContextStackpointer;
 #if defined(_M_X64)
     UCHAR SpareBytes[24];
@@ -3385,7 +3385,7 @@ typedef struct _TEB
     PVOID glCurrentRC;
     PVOID glContext;
 
-    NTSTATUS LastStatusValue;
+    ntstatus_code LastStatusValue;
     UNICODE_STRING StaticUnicodeString;
     WCHAR StaticUnicodeBuffer[261];
 
@@ -3725,52 +3725,52 @@ VOID(NTAPI *PLDR_LOADED_MODULE_ENUMERATION_CALLBACK_FUNCTION)(
     _In_ OUT BOOLEAN *StopEnumeration
     );
 
-NTSTATUS NTAPI LdrEnumerateLoadedModules(
+ntstatus_code NTAPI LdrEnumerateLoadedModules(
     _In_opt_ ULONG Flags,
     _In_     PLDR_LOADED_MODULE_ENUMERATION_CALLBACK_FUNCTION CallbackFunction,
     _In_opt_ PVOID Context
 );
 
-NTSTATUS NTAPI LdrGetProcedureAddress(
+ntstatus_code NTAPI LdrGetProcedureAddress(
     _In_     PVOID DllHandle,
     _In_opt_ CONST ANSI_STRING* ProcedureName,
     _In_opt_ ULONG ProcedureNumber,
     _Out_    PVOID *ProcedureAddress
 );
 
-NTSTATUS NTAPI LdrLoadDll(
+ntstatus_code NTAPI LdrLoadDll(
     _In_opt_ PCWSTR DllPath,
     _In_opt_ PULONG DllCharacteristics,
     _In_     PCUNICODE_STRING DllName,
     _Out_    PVOID *DllHandle
 );
 
-NTSTATUS NTAPI LdrUnloadDll(
+ntstatus_code NTAPI LdrUnloadDll(
     _In_ PVOID DllHandle
 );
 
-NTSTATUS NTAPI LdrGetDllHandle(
+ntstatus_code NTAPI LdrGetDllHandle(
     _In_opt_ PCWSTR DllPath OPTIONAL,
     _In_opt_ PULONG DllCharacteristics OPTIONAL,
     _In_ PCUNICODE_STRING DllName,
     _Out_ PVOID *DllHandle
 );
 
-NTSTATUS NTAPI LdrFindResource_U(
+ntstatus_code NTAPI LdrFindResource_U(
     _In_ PVOID DllHandle,
     _In_ CONST ULONG_PTR* ResourceIdPath,
     _In_ ULONG ResourceIdPathLength,
     _Out_ PIMAGE_RESOURCE_DATA_ENTRY *ResourceDataEntry
 );
 
-NTSTATUS NTAPI LdrAccessResource(
+ntstatus_code NTAPI LdrAccessResource(
     _In_ PVOID DllHandle,
     _In_ CONST IMAGE_RESOURCE_DATA_ENTRY* ResourceDataEntry,
     _Out_opt_ PVOID *Address,
     _Out_opt_ PULONG size
 );
 
-NTSTATUS NTAPI LdrFindEntryForAddress(
+ntstatus_code NTAPI LdrFindEntryForAddress(
     _In_ PVOID Address,
     _Out_ PLDR_DATA_TABLE_ENTRY *TableEntry
 );
@@ -3836,34 +3836,34 @@ BOOLEAN NTAPI RtlPrefixUnicodeString(
     _In_ BOOLEAN CaseInSensitive
 );
 
-NTSTATUS NTAPI RtlGetVersion(
+ntstatus_code NTAPI RtlGetVersion(
     _Inout_	PRTL_OSVERSIONINFOW lpVersionInformation
 );
 
-ULONG NTAPI RtlNtStatusToDosError(
-    _In_ NTSTATUS Status
+ULONG NTAPI Rtlntstatus_codeToDosError(
+    _In_ ntstatus_code Status
 );
 
-NTSTATUS NTAPI RtlGetOwnerSecurityDescriptor(
+ntstatus_code NTAPI RtlGetOwnerSecurityDescriptor(
     _In_  PSECURITY_DESCRIPTOR SecurityDescriptor,
     _Out_ PSID *Owner,
     _Out_ PBOOLEAN OwnerDefaulted
 );
 
-NTSTATUS NTAPI RtlGetGroupSecurityDescriptor(
+ntstatus_code NTAPI RtlGetGroupSecurityDescriptor(
     _In_  PSECURITY_DESCRIPTOR SecurityDescriptor,
     _Out_ PSID *Group,
     _Out_ PBOOLEAN GroupDefaulted
 );
 
-NTSTATUS NTAPI RtlGetDaclSecurityDescriptor(
+ntstatus_code NTAPI RtlGetDaclSecurityDescriptor(
     _In_  PSECURITY_DESCRIPTOR SecurityDescriptor,
     _Out_ PBOOLEAN DaclPresent,
     _Out_ PACL *Dacl,
     _Out_ PBOOLEAN DaclDefaulted
 );
 
-NTSTATUS NTAPI RtlGetSaclSecurityDescriptor(
+ntstatus_code NTAPI RtlGetSaclSecurityDescriptor(
     _In_  PSECURITY_DESCRIPTOR SecurityDescriptor,
     _Out_ PBOOLEAN SaclPresent,
     _Out_ PACL *Sacl,
@@ -3884,7 +3884,7 @@ VOID NTAPI RtlInitString(
     PCSZ SourceString
 );
 
-NTSTATUS NTAPI RtlExpandEnvironmentStrings_U(
+ntstatus_code NTAPI RtlExpandEnvironmentStrings_U(
     _In_opt_	PVOID Environment,
     _In_		PCUNICODE_STRING Source,
     _Out_		PUNICODE_STRING Destination,
@@ -3929,7 +3929,7 @@ PVOID NTAPI RtlFreeSid(
     IN PSID Sid
 );
 
-NTSTATUS NTAPI RtlAllocateAndInitializeSid(
+ntstatus_code NTAPI RtlAllocateAndInitializeSid(
     IN PSID_IDENTIFIER_AUTHORITY IdentifierAuthority,
     IN UCHAR SubAuthorityCount,
     IN ULONG SubAuthority0,
@@ -3943,7 +3943,7 @@ NTSTATUS NTAPI RtlAllocateAndInitializeSid(
     OUT PSID *Sid
 );
 
-NTSTATUS NTAPI RtlInitializeSid(
+ntstatus_code NTAPI RtlInitializeSid(
     PSID Sid,
     PSID_IDENTIFIER_AUTHORITY IdentifierAuthority,
     UCHAR SubAuthorityCount
@@ -3966,13 +3966,13 @@ ULONG NTAPI RtlLengthSid(
     PSID Sid
 );
 
-NTSTATUS NTAPI RtlCopySid(
+ntstatus_code NTAPI RtlCopySid(
     ULONG DestinationSidLength,
     PSID DestinationSid,
     PSID SourceSid
 );
 
-NTSTATUS NTAPI RtlCopySidAndAttributesArray(
+ntstatus_code NTAPI RtlCopySidAndAttributesArray(
     ULONG ArrayLength,
     PSID_AND_ATTRIBUTES Source,
     ULONG TargetSidBufferSize,
@@ -3982,23 +3982,23 @@ NTSTATUS NTAPI RtlCopySidAndAttributesArray(
     PULONG RemainingTargetSidSize
 );
 
-NTSTATUS NTAPI RtlLengthSidAsUnicodeString(
+ntstatus_code NTAPI RtlLengthSidAsUnicodeString(
     PSID Sid,
     PULONG StringLength
 );
 
-NTSTATUS NTAPI RtlConvertSidToUnicodeString(
+ntstatus_code NTAPI RtlConvertSidToUnicodeString(
     PUNICODE_STRING UnicodeString,
     PSID Sid,
     BOOLEAN AllocateDestinationString
 );
 
-NTSTATUS NTAPI RtlCreateSecurityDescriptor(
+ntstatus_code NTAPI RtlCreateSecurityDescriptor(
     PSECURITY_DESCRIPTOR SecurityDescriptor,
     ULONG Revision
 );
 
-NTSTATUS NTAPI RtlSetOwnerSecurityDescriptor(
+ntstatus_code NTAPI RtlSetOwnerSecurityDescriptor(
     PSECURITY_DESCRIPTOR SecurityDescriptor,
     PSID Owner,
     BOOLEAN OwnerDefaulted
@@ -4019,7 +4019,7 @@ RtlConvertLongToLuid(
     return(TempLuid);
 }
 
-NTSTATUS NTAPI RtlFormatCurrentUserKeyPath(
+ntstatus_code NTAPI RtlFormatCurrentUserKeyPath(
     _Out_ PUNICODE_STRING CurrentUserKeyPath
 );
 
@@ -4031,7 +4031,7 @@ VOID NTAPI RtlFreeAnsiString(
     PANSI_STRING AnsiString
 );
 
-NTSTATUS NTAPI RtlAnsiStringToUnicodeString(
+ntstatus_code NTAPI RtlAnsiStringToUnicodeString(
     PUNICODE_STRING DestinationString,
     PCANSI_STRING SourceString,
     BOOLEAN AllocateDestinationString
@@ -4044,13 +4044,13 @@ BOOLEAN NTAPI RtlDosPathNameToNtPathName_U(
     PVOID Reserved
 );
 
-NTSTATUS NTAPI RtlGetCompressionWorkSpaceSize(
+ntstatus_code NTAPI RtlGetCompressionWorkSpaceSize(
     _In_ USHORT CompressionFormatAndEngine,
     _Out_ PULONG CompressBufferWorkSpaceSize,
     _Out_ PULONG CompressFragmentWorkSpaceSize
 );
 
-NTSTATUS NTAPI RtlCompressBuffer(
+ntstatus_code NTAPI RtlCompressBuffer(
     _In_ USHORT CompressionFormatAndEngine,
     _In_ PUCHAR UncompressedBuffer,
     _In_ ULONG UncompressedBufferSize,
@@ -4061,7 +4061,7 @@ NTSTATUS NTAPI RtlCompressBuffer(
     _In_ PVOID WorkSpace
 );
 
-NTSTATUS NTAPI RtlDecompressBuffer(
+ntstatus_code NTAPI RtlDecompressBuffer(
     _In_ USHORT CompressionFormat,
     _Out_ PUCHAR UncompressedBuffer,
     _In_ ULONG UncompressedBufferSize,
@@ -4133,7 +4133,7 @@ PWSTR NTAPI RtlIpv4AddressToStringW(
     __out_ecount(16) PWSTR S
 );
 
-NTSTATUS NTAPI RtlAdjustPrivilege(
+ntstatus_code NTAPI RtlAdjustPrivilege(
     ULONG Privilege,
     BOOLEAN Enable,
     BOOLEAN Client,
@@ -4187,7 +4187,7 @@ typedef VOID(NTAPI *PRTL_AVL_FREE_ROUTINE)(
     _In_ _Post_invalid_ PVOID Buffer
     );
 
-typedef NTSTATUS(NTAPI *PRTL_AVL_MATCH_FUNCTION)(
+typedef ntstatus_code(NTAPI *PRTL_AVL_MATCH_FUNCTION)(
     _In_ PRTL_AVL_TABLE Table,
     _In_ PVOID UserData,
     _In_ PVOID MatchData
@@ -4306,11 +4306,11 @@ BOOLEAN NTAPI RtlIsGenericTableEmptyAvl(
 */
 #define LOGICAL ULONG
 
-NTSTATUS NTAPI RtlEnterCriticalSection(
+ntstatus_code NTAPI RtlEnterCriticalSection(
     PRTL_CRITICAL_SECTION CriticalSection
 );
 
-NTSTATUS NTAPI RtlLeaveCriticalSection(
+ntstatus_code NTAPI RtlLeaveCriticalSection(
     PRTL_CRITICAL_SECTION CriticalSection
 );
 
@@ -4330,7 +4330,7 @@ LOGICAL NTAPI RtlTryEnterCriticalSection(
     PRTL_CRITICAL_SECTION CriticalSection
 );
 
-NTSTATUS NTAPI RtlInitializeCriticalSection(
+ntstatus_code NTAPI RtlInitializeCriticalSection(
     PRTL_CRITICAL_SECTION CriticalSection
 );
 
@@ -4338,7 +4338,7 @@ VOID NTAPI RtlEnableEarlyCriticalSectionEventCreation(
     VOID
 );
 
-NTSTATUS NTAPI RtlInitializeCriticalSectionAndSpinCount(
+ntstatus_code NTAPI RtlInitializeCriticalSectionAndSpinCount(
     PRTL_CRITICAL_SECTION CriticalSection,
     ULONG SpinCount
 );
@@ -4348,7 +4348,7 @@ ULONG NTAPI RtlSetCriticalSectionSpinCount(
     ULONG SpinCount
 );
 
-NTSTATUS NTAPI RtlDeleteCriticalSection(
+ntstatus_code NTAPI RtlDeleteCriticalSection(
     PRTL_CRITICAL_SECTION CriticalSection
 );
 
@@ -4361,7 +4361,7 @@ NTSTATUS NTAPI RtlDeleteCriticalSection(
 ** Loader API START
 */
 
-NTSTATUS NTAPI LdrGetProcedureAddress(
+ntstatus_code NTAPI LdrGetProcedureAddress(
     _In_ PVOID DllHandle,
     _In_opt_ CONST ANSI_STRING* ProcedureName,
     _In_opt_ ULONG ProcedureNumber,
@@ -4376,17 +4376,17 @@ NTSTATUS NTAPI LdrGetProcedureAddress(
 ** Native API START
 */
 
-NTSTATUS NTAPI NtClose(
+ntstatus_code NTAPI NtClose(
     _In_ HANDLE Handle
 );
 
-NTSTATUS NTAPI NtOpenDirectoryObject(
+ntstatus_code NTAPI NtOpenDirectoryObject(
     _Out_  PHANDLE				DirectoryHandle,
     _In_   ACCESS_MASK			DesiredAccess,
     _In_   POBJECT_ATTRIBUTES	ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryDirectoryObject(
+ntstatus_code NTAPI NtQueryDirectoryObject(
     _In_       HANDLE DirectoryHandle,
     _Out_opt_  PVOID Buffer,
     _In_       ULONG Length,
@@ -4396,7 +4396,7 @@ NTSTATUS NTAPI NtQueryDirectoryObject(
     PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtQueryObject(
+ntstatus_code NTAPI NtQueryObject(
     _In_opt_   HANDLE Handle,
     _In_       OBJECT_INFORMATION_CLASS ObjectInformationClass,
     _Out_opt_  PVOID ObjectInformation,
@@ -4404,27 +4404,27 @@ NTSTATUS NTAPI NtQueryObject(
     _Out_opt_  PULONG ReturnLength
 );
 
-NTSTATUS WINAPI NtQuerySystemInformation(
+ntstatus_code WINAPI NtQuerySystemInformation(
     _In_       SYSTEM_INFORMATION_CLASS SystemInformationClass,
     _Inout_    PVOID SystemInformation,
     _In_       ULONG SystemInformationLength,
     _Out_opt_  PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtCreateMutant(
+ntstatus_code NTAPI NtCreateMutant(
     _Out_		PHANDLE MutantHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_opt_	POBJECT_ATTRIBUTES ObjectAttributes,
     _In_		BOOLEAN InitialOwner
 );
 
-NTSTATUS NTAPI NtOpenMutant(
+ntstatus_code NTAPI NtOpenMutant(
     _Out_	PHANDLE MutantHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryMutant(
+ntstatus_code NTAPI NtQueryMutant(
     _In_		HANDLE MutantHandle,
     _In_		MUTANT_INFORMATION_CLASS MutantInformationClass,
     _Out_		PVOID MutantInformation,
@@ -4432,19 +4432,19 @@ NTSTATUS NTAPI NtQueryMutant(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtReleaseMutant(
+ntstatus_code NTAPI NtReleaseMutant(
     _In_		HANDLE MutantHandle,
     _Out_opt_	PLONG PreviousCount
 );
 
-NTSTATUS NTAPI NtCreateTimer(
+ntstatus_code NTAPI NtCreateTimer(
     _In_		PHANDLE TimerHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_opt_	POBJECT_ATTRIBUTES ObjectAttributes,
     _In_		TIMER_TYPE TimerType
 );
 
-NTSTATUS NtSetTimer(
+ntstatus_code NtSetTimer(
     _In_		HANDLE TimerHandle,
     _In_		PLARGE_INTEGER DueTime,
     _In_opt_	PTIMER_APC_ROUTINE TimerApcRoutine,
@@ -4454,13 +4454,13 @@ NTSTATUS NtSetTimer(
     _Out_opt_	PBOOLEAN PreviousState
 );
 
-NTSTATUS NTAPI NtOpenTimer(
+ntstatus_code NTAPI NtOpenTimer(
     _In_	PHANDLE TimerHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryTimer(
+ntstatus_code NTAPI NtQueryTimer(
     _In_       HANDLE TimerHandle,
     _In_       TIMER_INFORMATION_CLASS TimerInformationClass,
     _Out_      PVOID TimerInformation,
@@ -4468,26 +4468,26 @@ NTSTATUS NTAPI NtQueryTimer(
     _Out_opt_  PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtCreateSymbolicLinkObject(
+ntstatus_code NTAPI NtCreateSymbolicLinkObject(
     _Out_   PHANDLE LinkHandle,
     _In_    ACCESS_MASK DesiredAccess,
     _In_    POBJECT_ATTRIBUTES ObjectAttributes,
     _In_    PUNICODE_STRING LinkTarget
 );
 
-NTSTATUS WINAPI NtOpenSymbolicLinkObject(
+ntstatus_code WINAPI NtOpenSymbolicLinkObject(
     _Out_	PHANDLE LinkHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQuerySymbolicLinkObject(
+ntstatus_code NTAPI NtQuerySymbolicLinkObject(
     _In_		HANDLE LinkHandle,
     _Inout_		PUNICODE_STRING LinkTarget,
     _Out_opt_	PULONG  ReturnedLength
 );
 
-NTSTATUS NTAPI NtQuerySemaphore(
+ntstatus_code NTAPI NtQuerySemaphore(
     _In_		HANDLE SemaphoreHandle,
     _In_		SEMAPHORE_INFORMATION_CLASS SemaphoreInformationClass,
     _Out_		PVOID SemaphoreInformation,
@@ -4495,7 +4495,7 @@ NTSTATUS NTAPI NtQuerySemaphore(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtQueryDirectoryFile(
+ntstatus_code NTAPI NtQueryDirectoryFile(
     _In_		HANDLE FileHandle,
     _In_opt_	HANDLE Event,
     _In_opt_	PIO_APC_ROUTINE ApcRoutine,
@@ -4509,7 +4509,7 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
     _In_		BOOLEAN RestartScan
 );
 
-NTSTATUS NTAPI NtQuerySection(
+ntstatus_code NTAPI NtQuerySection(
     _In_		HANDLE SectionHandle,
     _In_		SECTION_INFORMATION_CLASS SectionInformationClass,
     _Out_		PVOID SectionInformation,
@@ -4517,13 +4517,13 @@ NTSTATUS NTAPI NtQuerySection(
     _Out_opt_	PSIZE_T ReturnLength
 );
 
-NTSTATUS NtOpenSection(
+ntstatus_code NtOpenSection(
     _Out_	PHANDLE SectionHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtCreateSection(
+ntstatus_code NTAPI NtCreateSection(
     _Out_		PHANDLE SectionHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_opt_	POBJECT_ATTRIBUTES ObjectAttributes,
@@ -4533,7 +4533,7 @@ NTSTATUS NTAPI NtCreateSection(
     _In_opt_	HANDLE FileHandle
 );
 
-NTSTATUS NTAPI NtMapViewOfSection(
+ntstatus_code NTAPI NtMapViewOfSection(
     _In_		HANDLE SectionHandle,
     _In_		HANDLE ProcessHandle,
     __inout		PVOID *BaseAddress,
@@ -4546,19 +4546,19 @@ NTSTATUS NTAPI NtMapViewOfSection(
     _In_		ULONG Win32Protect
 );
 
-NTSTATUS NTAPI NtUnmapViewOfSection(
+ntstatus_code NTAPI NtUnmapViewOfSection(
     _In_	HANDLE ProcessHandle,
     _In_	PVOID BaseAddress
 );
 
-NTSTATUS NTAPI NtOpenProcessToken(
+ntstatus_code NTAPI NtOpenProcessToken(
     _In_	HANDLE ProcessHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _Out_	PHANDLE TokenHandle
 );
 
 
-NTSTATUS NTAPI NtOpenThreadTokenEx(
+ntstatus_code NTAPI NtOpenThreadTokenEx(
     _In_       HANDLE ThreadHandle,
     _In_       ACCESS_MASK DesiredAccess,
     _In_       BOOLEAN OpenAsSelf,
@@ -4566,7 +4566,7 @@ NTSTATUS NTAPI NtOpenThreadTokenEx(
     _Out_      PHANDLE TokenHandle
 );
 
-NTSTATUS NTAPI NtAdjustPrivilegesToken(
+ntstatus_code NTAPI NtAdjustPrivilegesToken(
     _In_		HANDLE TokenHandle,
     _In_		BOOLEAN DisableAllPrivileges,
     _In_opt_	PTOKEN_PRIVILEGES NewState,
@@ -4575,7 +4575,7 @@ NTSTATUS NTAPI NtAdjustPrivilegesToken(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtQueryInformationToken(
+ntstatus_code NTAPI NtQueryInformationToken(
     _In_	HANDLE TokenHandle,
     _In_	TOKEN_INFORMATION_CLASS TokenInformationClass,
     _Out_	PVOID TokenInformation,
@@ -4583,13 +4583,13 @@ NTSTATUS NTAPI NtQueryInformationToken(
     _Out_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtOpenKey(
+ntstatus_code NTAPI NtOpenKey(
     _Out_	PHANDLE KeyHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryKey(
+ntstatus_code NTAPI NtQueryKey(
     _In_		HANDLE KeyHandle,
     _In_		KEY_INFORMATION_CLASS KeyInformationClass,
     _Out_opt_	PVOID KeyInformation,
@@ -4597,7 +4597,7 @@ NTSTATUS NTAPI NtQueryKey(
     _Out_		PULONG ResultLength
 );
 
-NTSTATUS NTAPI NtQueryValueKey(
+ntstatus_code NTAPI NtQueryValueKey(
     _In_       HANDLE KeyHandle,
     _In_       PUNICODE_STRING ValueName,
     _In_       KEY_VALUE_INFORMATION_CLASS KeyValueInformationClass,
@@ -4606,22 +4606,22 @@ NTSTATUS NTAPI NtQueryValueKey(
     _Out_      PULONG ResultLength
 );
 
-NTSTATUS NTAPI NtDeleteKey(
+ntstatus_code NTAPI NtDeleteKey(
     _In_       HANDLE KeyHandle
 );
 
-NTSTATUS NTAPI NtDeleteValueKey(
+ntstatus_code NTAPI NtDeleteValueKey(
     _In_       HANDLE KeyHandle,
     _In_       PUNICODE_STRING ValueName
 );
 
-NTSTATUS NTAPI NtOpenJobObject(
+ntstatus_code NTAPI NtOpenJobObject(
     _Out_	PHANDLE JobHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryInformationJobObject(
+ntstatus_code NTAPI NtQueryInformationJobObject(
     _In_opt_	HANDLE JobHandle,
     _In_		JOBOBJECTINFOCLASS JobObjectInformationClass,
     _Out_		PVOID JobObjectInformation,
@@ -4629,13 +4629,13 @@ NTSTATUS NTAPI NtQueryInformationJobObject(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtOpenIoCompletion(
+ntstatus_code NTAPI NtOpenIoCompletion(
     _Out_	PHANDLE IoCompletionHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryIoCompletion(
+ntstatus_code NTAPI NtQueryIoCompletion(
     _In_		HANDLE IoCompletionHandle,
     _In_		IO_COMPLETION_INFORMATION_CLASS IoCompletionInformationClass,
     _Out_		PVOID IoCompletionInformation,
@@ -4643,7 +4643,7 @@ NTSTATUS NTAPI NtQueryIoCompletion(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtQueryInformationFile(
+ntstatus_code NTAPI NtQueryInformationFile(
     _In_	HANDLE FileHandle,
     _Out_	PIO_STATUS_BLOCK IoStatusBlock,
     _Out_	PVOID FileInformation,
@@ -4651,7 +4651,7 @@ NTSTATUS NTAPI NtQueryInformationFile(
     _In_	FILE_INFORMATION_CLASS FileInformationClass
 );
 
-NTSTATUS NTAPI NtFsControlFile(
+ntstatus_code NTAPI NtFsControlFile(
     _In_     HANDLE FileHandle,
     _In_opt_ HANDLE Event,
     _In_opt_ PIO_APC_ROUTINE ApcRoutine,
@@ -4664,7 +4664,7 @@ NTSTATUS NTAPI NtFsControlFile(
     _In_     ULONG OutputBufferLength
 );
 
-NTSTATUS NTAPI NtQueryDirectoryFile(
+ntstatus_code NTAPI NtQueryDirectoryFile(
     _In_      HANDLE FileHandle,
     _In_opt_  HANDLE Event,
     _In_opt_  PIO_APC_ROUTINE ApcRoutine,
@@ -4678,7 +4678,7 @@ NTSTATUS NTAPI NtQueryDirectoryFile(
     _In_      BOOLEAN RestartScan
 );
 
-NTSTATUS NTAPI NtQueryEaFile(
+ntstatus_code NTAPI NtQueryEaFile(
     _In_ HANDLE FileHandle,
     _Out_ PIO_STATUS_BLOCK IoStatusBlock,
     __out_bcount(Length) PVOID Buffer,
@@ -4690,14 +4690,14 @@ NTSTATUS NTAPI NtQueryEaFile(
     _In_ BOOLEAN RestartScan
 );
 
-NTSTATUS NTAPI NtSetEaFile(
+ntstatus_code NTAPI NtSetEaFile(
     _In_ HANDLE FileHandle,
     _Out_ PIO_STATUS_BLOCK IoStatusBlock,
     __in_bcount(Length) PVOID Buffer,
     _In_ ULONG Length
 );
 
-NTSTATUS NTAPI NtQueryVolumeInformationFile(
+ntstatus_code NTAPI NtQueryVolumeInformationFile(
     _In_    HANDLE FileHandle,
     _Out_   PIO_STATUS_BLOCK IoStatusBlock,
     _Out_   PVOID FsInformation,
@@ -4705,7 +4705,7 @@ NTSTATUS NTAPI NtQueryVolumeInformationFile(
     _In_    FS_INFORMATION_CLASS FsInformationClass
 );
 
-NTSTATUS NTAPI NtOpenFile(
+ntstatus_code NTAPI NtOpenFile(
     _Out_	PHANDLE FileHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes,
@@ -4714,7 +4714,7 @@ NTSTATUS NTAPI NtOpenFile(
     _In_	ULONG OpenOptions
 );
 
-NTSTATUS NTAPI NtReadFile(
+ntstatus_code NTAPI NtReadFile(
     _In_     HANDLE FileHandle,
     _In_opt_ HANDLE Event,
     _In_opt_ PIO_APC_ROUTINE ApcRoutine,
@@ -4726,7 +4726,7 @@ NTSTATUS NTAPI NtReadFile(
     _In_opt_ PULONG Key
 );
 
-NTSTATUS NTAPI NtWriteFile(
+ntstatus_code NTAPI NtWriteFile(
     _In_ HANDLE FileHandle,
     _In_opt_ HANDLE Event,
     _In_opt_ PIO_APC_ROUTINE ApcRoutine,
@@ -4738,12 +4738,12 @@ NTSTATUS NTAPI NtWriteFile(
     _In_opt_ PULONG Key
 );
 
-NTSTATUS NTAPI NtFlushBuffersFile(
+ntstatus_code NTAPI NtFlushBuffersFile(
     _In_ HANDLE FileHandle,
     _Out_ PIO_STATUS_BLOCK IoStatusBlock
 );
 
-NTSTATUS NTAPI NtSetInformationFile(
+ntstatus_code NTAPI NtSetInformationFile(
     _In_ HANDLE FileHandle,
     _Out_ PIO_STATUS_BLOCK IoStatusBlock,
     __in_bcount(Length) PVOID FileInformation,
@@ -4751,29 +4751,29 @@ NTSTATUS NTAPI NtSetInformationFile(
     _In_ FILE_INFORMATION_CLASS FileInformationClass
 );
 
-NTSTATUS NTAPI NtDeleteFile(
+ntstatus_code NTAPI NtDeleteFile(
     _In_ POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtOpenEvent(
+ntstatus_code NTAPI NtOpenEvent(
     _Out_	PHANDLE EventHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtOpenKeyedEvent(
+ntstatus_code NTAPI NtOpenKeyedEvent(
     _Out_	PHANDLE KeyedEventHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtOpenSemaphore(
+ntstatus_code NTAPI NtOpenSemaphore(
     _Out_	PHANDLE SemaphoreHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
-NTSTATUS NTAPI NtQueryEvent(
+ntstatus_code NTAPI NtQueryEvent(
     _In_		HANDLE EventHandle,
     _In_		EVENT_INFORMATION_CLASS EventInformationClass,
     _Out_		PVOID EventInformation,
@@ -4781,14 +4781,14 @@ NTSTATUS NTAPI NtQueryEvent(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtOpenEventPair(
+ntstatus_code NTAPI NtOpenEventPair(
     _Out_	PHANDLE EventPairHandle,
     _In_	ACCESS_MASK DesiredAccess,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes
 );
 
 //TmTx
-NTSTATUS NTAPI NtCreateTransaction(
+ntstatus_code NTAPI NtCreateTransaction(
     _Out_     PHANDLE TransactionHandle,
     _In_      ACCESS_MASK DesiredAccess,
     _In_opt_  POBJECT_ATTRIBUTES ObjectAttributes,
@@ -4802,7 +4802,7 @@ NTSTATUS NTAPI NtCreateTransaction(
 );
 
 //TmRm
-NTSTATUS NTAPINtCreateResourceManager(
+ntstatus_code NTAPINtCreateResourceManager(
     _Out_     PHANDLE ResourceManagerHandle,
     _In_      ACCESS_MASK DesiredAccess,
     _In_      HANDLE TmHandle,
@@ -4813,7 +4813,7 @@ NTSTATUS NTAPINtCreateResourceManager(
 );
 
 //TmEn
-NTSTATUS NTAPI NtCreateEnlistment(
+ntstatus_code NTAPI NtCreateEnlistment(
     _Out_     PHANDLE EnlistmentHandle,
     _In_      ACCESS_MASK DesiredAccess,
     _In_      HANDLE ResourceManagerHandle,
@@ -4825,7 +4825,7 @@ NTSTATUS NTAPI NtCreateEnlistment(
 );
 
 //TmTm
-NTSTATUS NTAPI NtCreateTransactionManager(
+ntstatus_code NTAPI NtCreateTransactionManager(
     _Out_     PHANDLE TmHandle,
     _In_      ACCESS_MASK DesiredAccess,
     _In_opt_  POBJECT_ATTRIBUTES ObjectAttributes,
@@ -4834,7 +4834,7 @@ NTSTATUS NTAPI NtCreateTransactionManager(
     _In_opt_  ULONG CommitStrength
 );
 
-NTSTATUS NTAPI NtCreateFile(
+ntstatus_code NTAPI NtCreateFile(
     _Out_		PHANDLE FileHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_		POBJECT_ATTRIBUTES ObjectAttributes,
@@ -4848,52 +4848,52 @@ NTSTATUS NTAPI NtCreateFile(
     _In_		ULONG EaLength
 );
 
-NTSTATUS NTAPI NtOpenProcess(
+ntstatus_code NTAPI NtOpenProcess(
     _Out_		PHANDLE ProcessHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_		POBJECT_ATTRIBUTES ObjectAttributes,
     _In_opt_	PCLIENT_ID ClientId
 );
 
-NTSTATUS NTAPI NtTerminateProcess(
+ntstatus_code NTAPI NtTerminateProcess(
     _In_opt_	HANDLE ProcessHandle,
-    _In_		NTSTATUS ExitStatus
+    _In_		ntstatus_code ExitStatus
 );
 
-NTSTATUS NTAPI NtSuspendThread(
+ntstatus_code NTAPI NtSuspendThread(
     _In_		HANDLE ThreadHandle,
     _Out_opt_	PULONG PreviousSuspendCount
 );
 
-NTSTATUS NTAPI NtResumeThread(
+ntstatus_code NTAPI NtResumeThread(
     _In_		HANDLE ThreadHandle,
     _Out_opt_	PULONG PreviousSuspendCount
 );
 
-NTSTATUS NTAPI NtOpenThread(
+ntstatus_code NTAPI NtOpenThread(
     _Out_       PHANDLE ThreadHandle,
     _In_        ACCESS_MASK DesiredAccess,
     _In_        POBJECT_ATTRIBUTES ObjectAttributes,
     _In_opt_    PCLIENT_ID ClientId
 );
 
-NTSTATUS NTAPI NtImpersonateThread(
+ntstatus_code NTAPI NtImpersonateThread(
     _In_        HANDLE ServerThreadHandle,
     _In_        HANDLE ClientThreadHandle,
     _In_        PSECURITY_QUALITY_OF_SERVICE SecurityQos
 );
 
-NTSTATUS NTAPI NtSetContextThread(
+ntstatus_code NTAPI NtSetContextThread(
     _In_        HANDLE ThreadHandle,
     _In_        PCONTEXT ThreadContext
 );
 
-NTSTATUS NTAPI NtGetContextThread(
+ntstatus_code NTAPI NtGetContextThread(
     _In_        HANDLE ThreadHandle,
     _Inout_     PCONTEXT ThreadContext
 );
 
-NTSTATUS NTAPI NtQueryInformationProcess(
+ntstatus_code NTAPI NtQueryInformationProcess(
     _In_		HANDLE ProcessHandle,
     _In_		PROCESSINFOCLASS ProcessInformationClass,
     _Out_		PVOID ProcessInformation,
@@ -4901,7 +4901,7 @@ NTSTATUS NTAPI NtQueryInformationProcess(
     _Out_opt_	PULONG ReturnLength
 );
 
-NTSTATUS NTAPI NtDuplicateObject(
+ntstatus_code NTAPI NtDuplicateObject(
     _In_		HANDLE SourceProcessHandle,
     _In_		HANDLE SourceHandle,
     _In_opt_	HANDLE TargetProcessHandle,
@@ -4911,13 +4911,13 @@ NTSTATUS NTAPI NtDuplicateObject(
     _In_		ULONG Options
 );
 
-NTSTATUS NTAPI NtSetSecurityObject(
+ntstatus_code NTAPI NtSetSecurityObject(
     _In_	HANDLE Handle,
     _In_	SECURITY_INFORMATION SecurityInformation,
     _In_	PSECURITY_DESCRIPTOR SecurityDescriptor
 );
 
-NTSTATUS NTAPI NtQuerySecurityObject(
+ntstatus_code NTAPI NtQuerySecurityObject(
     _In_	HANDLE Handle,
     _In_	SECURITY_INFORMATION SecurityInformation,
     _Out_	PSECURITY_DESCRIPTOR SecurityDescriptor,
@@ -4925,14 +4925,14 @@ NTSTATUS NTAPI NtQuerySecurityObject(
     _Out_	PULONG LengthNeeded
 );
 
-NTSTATUS NtCreateIoCompletion(
+ntstatus_code NtCreateIoCompletion(
     _Out_		PHANDLE IoCompletionHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_opt_	POBJECT_ATTRIBUTES ObjectAttributes,
     _In_opt_	ULONG Count
 );
 
-NTSTATUS NTAPI NtCreateEvent(
+ntstatus_code NTAPI NtCreateEvent(
     _Out_		PHANDLE EventHandle,
     _In_		ACCESS_MASK DesiredAccess,
     _In_opt_	POBJECT_ATTRIBUTES ObjectAttributes,
@@ -4940,7 +4940,7 @@ NTSTATUS NTAPI NtCreateEvent(
     _In_		BOOLEAN InitialState
 );
 
-NTSTATUS NTAPI NtAllocateVirtualMemory(
+ntstatus_code NTAPI NtAllocateVirtualMemory(
     _In_        HANDLE ProcessHandle,
     _Inout_     PVOID *BaseAddress,
     _In_        ULONG_PTR ZeroBits,
@@ -4949,14 +4949,14 @@ NTSTATUS NTAPI NtAllocateVirtualMemory(
     _In_        ULONG Protect
 );
 
-NTSTATUS NTAPI NtFreeVirtualMemory(
+ntstatus_code NTAPI NtFreeVirtualMemory(
     _In_       HANDLE ProcessHandle,
     _Inout_    PVOID *BaseAddress,
     _Inout_    PSIZE_T RegionSize,
     _In_       ULONG FreeType
 );
 
-NTSTATUS NTAPI NtQueryVirtualMemory(
+ntstatus_code NTAPI NtQueryVirtualMemory(
     _In_		HANDLE ProcessHandle,
     _In_		PVOID BaseAddress,
     _In_		MEMORY_INFORMATION_CLASS MemoryInformationClass,
@@ -4965,7 +4965,7 @@ NTSTATUS NTAPI NtQueryVirtualMemory(
     _Out_opt_	PSIZE_T ReturnLength
 );
 
-NTSTATUS NTAPI NtReadVirtualMemory(
+ntstatus_code NTAPI NtReadVirtualMemory(
     _In_		HANDLE ProcessHandle,
     _In_opt_	PVOID BaseAddress,
     _Out_		PVOID Buffer,
@@ -4973,7 +4973,7 @@ NTSTATUS NTAPI NtReadVirtualMemory(
     _Out_opt_	PSIZE_T NumberOfBytesRead
 );
 
-NTSTATUS NTAPI NtWriteVirtualMemory(
+ntstatus_code NTAPI NtWriteVirtualMemory(
     _In_        HANDLE ProcessHandle,
     _In_opt_    PVOID BaseAddress,
     _In_        VOID *Buffer,
@@ -4981,7 +4981,7 @@ NTSTATUS NTAPI NtWriteVirtualMemory(
     _Out_opt_   PSIZE_T NumberOfBytesWritten
 );
 
-NTSTATUS NTAPI NtProtectVirtualMemory(
+ntstatus_code NTAPI NtProtectVirtualMemory(
     _In_        HANDLE ProcessHandle,
     _Inout_     PVOID *BaseAddress,
     _Inout_     PSIZE_T RegionSize,
@@ -4989,7 +4989,7 @@ NTSTATUS NTAPI NtProtectVirtualMemory(
     _Out_       PULONG OldProtect
 );
 
-NTSTATUS NTAPI NtEnumerateKey(
+ntstatus_code NTAPI NtEnumerateKey(
     _In_		HANDLE KeyHandle,
     _In_		ULONG Index,
     _In_		KEY_INFORMATION_CLASS KeyInformationClass,
@@ -4998,7 +4998,7 @@ NTSTATUS NTAPI NtEnumerateKey(
     _Out_		PULONG ResultLength
 );
 
-NTSTATUS NTAPI NtCreatePort(
+ntstatus_code NTAPI NtCreatePort(
     _Out_	PHANDLE PortHandle,
     _In_	POBJECT_ATTRIBUTES ObjectAttributes,
     _In_	ULONG MaxConnectionInfoLength,
@@ -5006,48 +5006,48 @@ NTSTATUS NTAPI NtCreatePort(
     _In_	ULONG MaxPoolUsage
 );
 
-NTSTATUS NTAPI NtCompleteConnectPort(
+ntstatus_code NTAPI NtCompleteConnectPort(
     _In_	HANDLE PortHandle
 );
 
-NTSTATUS NTAPI NtListenPort(
+ntstatus_code NTAPI NtListenPort(
     _In_	HANDLE PortHandle,
     _Out_	PPORT_MESSAGE ConnectionRequest
 );
 
-NTSTATUS NTAPI NtReplyPort(
+ntstatus_code NTAPI NtReplyPort(
     _In_	HANDLE PortHandle,
     _In_	PPORT_MESSAGE ReplyMessage
 );
 
-NTSTATUS NTAPI NtReplyWaitReplyPort(
+ntstatus_code NTAPI NtReplyWaitReplyPort(
     _In_	HANDLE PortHandle,
     _Inout_	PPORT_MESSAGE ReplyMessage
 );
 
-NTSTATUS NTAPI NtRequestPort(
+ntstatus_code NTAPI NtRequestPort(
     _In_	HANDLE PortHandle,
     _In_	PPORT_MESSAGE RequestMessage
 );
 
-NTSTATUS NTAPI NtRequestWaitReplyPort(
+ntstatus_code NTAPI NtRequestWaitReplyPort(
     _In_	HANDLE PortHandle,
     _In_	PPORT_MESSAGE RequestMessage,
     _Out_	PPORT_MESSAGE ReplyMessage
 );
 
-NTSTATUS NTAPI NtClosePort(
+ntstatus_code NTAPI NtClosePort(
     _In_	HANDLE PortHandle
 );
 
-NTSTATUS NTAPI NtReplyWaitReceivePort(
+ntstatus_code NTAPI NtReplyWaitReceivePort(
     _In_		HANDLE PortHandle,
     _Out_opt_	PVOID *PortContext,
     _In_opt_	PPORT_MESSAGE ReplyMessage,
     _Out_		PPORT_MESSAGE ReceiveMessage
 );
 
-NTSTATUS NTAPI NtWriteRequestData(
+ntstatus_code NTAPI NtWriteRequestData(
     _In_		HANDLE PortHandle,
     _In_		PPORT_MESSAGE Message,
     _In_		ULONG DataEntryIndex,
@@ -5056,7 +5056,7 @@ NTSTATUS NTAPI NtWriteRequestData(
     _Out_opt_	PULONG NumberOfBytesWritten
 );
 
-NTSTATUS NTAPI NtReadRequestData(
+ntstatus_code NTAPI NtReadRequestData(
     _In_		HANDLE PortHandle,
     _In_		PPORT_MESSAGE Message,
     _In_		ULONG DataEntryIndex,
@@ -5065,7 +5065,7 @@ NTSTATUS NTAPI NtReadRequestData(
     _Out_opt_	PULONG NumberOfBytesRead
 );
 
-NTSTATUS NTAPI NtConnectPort(
+ntstatus_code NTAPI NtConnectPort(
     _Out_			PHANDLE PortHandle,
     _In_			PUNICODE_STRING PortName,
     _In_			PSECURITY_QUALITY_OF_SERVICE SecurityQos,
@@ -5076,7 +5076,7 @@ NTSTATUS NTAPI NtConnectPort(
     _Inout_opt_		PULONG ConnectionInformationLength
 );
 
-NTSTATUS NTAPI NtAcceptConnectPort(
+ntstatus_code NTAPI NtAcceptConnectPort(
     _Out_			PHANDLE PortHandle,
     _In_opt_		PVOID PortContext,
     _In_			PPORT_MESSAGE ConnectionRequest,
@@ -5084,6 +5084,38 @@ NTSTATUS NTAPI NtAcceptConnectPort(
     _Inout_opt_		PPORT_VIEW ServerView,
     _Out_opt_		PREMOTE_PORT_VIEW ClientView
 );
+
+#define RTL_NT_PATH_NAME_TO_DOS_PATH_NAME_AMBIGUOUS   (0x00000001)
+#define RTL_NT_PATH_NAME_TO_DOS_PATH_NAME_UNC         (0x00000002)
+#define RTL_NT_PATH_NAME_TO_DOS_PATH_NAME_DRIVE       (0x00000003)
+#define RTL_NT_PATH_NAME_TO_DOS_PATH_NAME_ALREADY_DOS (0x00000004)
+
+typedef struct _RTL_BUFFER
+{
+    PUCHAR    Buffer;
+    PUCHAR    StaticBuffer;
+    SIZE_T    Size;
+    SIZE_T    StaticSize;
+    SIZE_T    ReservedForAllocatedSize; // for future doubling
+    PVOID     ReservedForIMalloc;       // for future pluggable growth
+} RTL_BUFFER, *PRTL_BUFFER;
+
+typedef struct _RTL_UNICODE_STRING_BUFFER
+{
+    UNICODE_STRING String;
+    RTL_BUFFER     ByteBuffer;
+    UCHAR          MinimumStaticBufferForTerminalNul[sizeof(WCHAR)];
+} RTL_UNICODE_STRING_BUFFER, *PRTL_UNICODE_STRING_BUFFER;
+
+ntstatus_code
+NTAPI
+RtlNtPathNameToDosPathName(
+    __in ULONG Flags,
+    __inout PRTL_UNICODE_STRING_BUFFER Path,
+    __out_opt PULONG Disposition,
+    __inout_opt PWSTR* FilePart
+);
+
 #ifdef __cplusplus
 }
 #endif

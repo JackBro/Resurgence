@@ -14,9 +14,9 @@
 #define THREAD_CREATE_FLAGS_SKIP_THREAD_ATTACH      0x00000002
 #define THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER      0x00000004
 
-typedef NTSTATUS(NTAPI* fnNtTerminateThread)(__in HANDLE ThreadHandle, __in NTSTATUS ExitStatus);
+typedef NTSTATUS(NTAPI* tNtTerminateThread)(__in HANDLE ThreadHandle, __in NTSTATUS ExitStatus);
 
-typedef NTSTATUS(NTAPI* fnNtCreateThreadEx)
+typedef NTSTATUS(NTAPI* tNtCreateThreadEx)
 (
     __out PHANDLE hThread,
     __in ACCESS_MASK DesiredAccess,
@@ -29,6 +29,11 @@ typedef NTSTATUS(NTAPI* fnNtCreateThreadEx)
     __in SIZE_T SizeOfStackCommit,
     __in SIZE_T SizeOfStackReserve,
     __out PVOID lpBytesBuffer
+);
+
+typedef NTSTATUS(NTAPI* tNtQueryPerformanceCounter)(
+        __out PLARGE_INTEGER PerformanceCounter,
+        __out_opt PLARGE_INTEGER PerformanceFrequency
     );
 
 #if defined(_WIN8_) || defined (_WIN7_)
@@ -88,4 +93,11 @@ NTAPI
 ZwTerminateThread(
     __in HANDLE ThreadHandle,
     __in NTSTATUS ExitStatus
+);
+
+NTSTATUS
+NTAPI
+ZwQueryPerformanceCounter(
+    __out PLARGE_INTEGER PerformanceCounter,
+    __out_opt PLARGE_INTEGER PerformanceFrequency
 );

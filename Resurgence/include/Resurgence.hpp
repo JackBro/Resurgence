@@ -1,10 +1,10 @@
 #pragma once
 
-#include <Misc/Exceptions.hpp>
-#include <Misc/Pointer.hpp>
-#include <Misc/NtHelpers.hpp>
-#include <Misc/SafeHandle.hpp>
-#include <Misc/Logging.hpp>
+#include <misc/exceptions.hpp>
+#include <misc/pointer.hpp>
+#include <misc/winnt.hpp>
+#include <misc/safe_handle.hpp>
+#include <misc/logging.hpp>
 
-#include <System/Driver/Driver.hpp>
+#include <system/driver/driver.hpp>
 

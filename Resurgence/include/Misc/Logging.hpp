@@ -3,9 +3,9 @@
 #define ELPP_DISABLE_LOGS
 #include <easylogging++.h>
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace Misc
+    namespace misc
     {
         enum LogOutputMode
         {

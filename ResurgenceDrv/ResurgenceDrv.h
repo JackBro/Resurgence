@@ -200,13 +200,15 @@ typedef struct _INJECT_MODULE
     {
         struct
         {
-            ULONG           ProcessId;		        /// Target process
-            INJECT_METHOD   InjectionType;			/// Injection type
-            BOOLEAN         ErasePE;				/// True to erase the PE headers
-            BOOLEAN         HideModule;				/// Hide from module list
-            BOOLEAN         CallEntryPoint;			/// True to call the entry point after injection
-            ULONG_PTR       CustomParameter;		/// Parameter to be passed to the entry point (as lpReserved)
-            WCHAR           ModulePath[MAX_PATH];	/// The full module path
+            ULONG           ProcessId;		        
+            INJECT_METHOD   InjectionType;			
+            BOOLEAN         ErasePE;				
+            BOOLEAN         HideModule;				
+            BOOLEAN         CallEntryPoint;			
+            ULONG_PTR       CustomParameter;
+            ULONG_PTR       ModuleBase;             
+            ULONG           ModuleSize;           
+            WCHAR           ModulePath[MAX_PATH];
         } In;
         struct
         {

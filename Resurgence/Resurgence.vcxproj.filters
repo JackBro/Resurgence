@@ -15,66 +15,66 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Resurgence.hpp">
+    <ClInclude Include="include\misc\exceptions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Misc\Pointer.hpp">
+    <ClInclude Include="include\misc\pointer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Misc\SafeHandle.hpp">
+    <ClInclude Include="include\misc\safe_handle.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\System\Driver\Driver.hpp">
+    <ClInclude Include="include\misc\winnt.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Misc\Exceptions.hpp">
+    <ClInclude Include="include\system\Driver\TDL\TDL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\System\Driver\Shellcode.hpp">
+    <ClInclude Include="include\system\Driver\TDL\vbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Headers.hpp">
+    <ClInclude Include="include\system\Driver\driver.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\NtApi.hpp">
+    <ClInclude Include="include\system\Driver\driver_shellcode.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Misc\Logging.hpp">
+    <ClInclude Include="include\headers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\NtAPI.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\resurgence.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\misc\logging.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\easylogging++.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\System\Driver\TDL\TDL.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\System\Driver\TDL\vbox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Misc\NtHelpers.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Resurgence.cpp">
+    <ClCompile Include="include\system\Driver\TDL\TDL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Misc\SafeHandle.cpp">
+    <ClCompile Include="src\misc\safe_handle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\System\Driver\Driver.cpp">
+    <ClCompile Include="src\misc\winnt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\System\Driver\Shellcode.cpp">
+    <ClCompile Include="src\system\Driver\driver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Misc\Logging.cpp">
+    <ClCompile Include="src\system\Driver\driver_shellcode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="include\System\Driver\TDL\TDL.cpp">
+    <ClCompile Include="src\resurgence.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Misc\NtHelpers.cpp">
+    <ClCompile Include="src\misc\logging.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

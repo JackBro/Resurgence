@@ -17,8 +17,6 @@ ZwProtectVirtualMemory(
 
     fnNtProtectVirtualMemory NtProtectVirtualMemory = (fnNtProtectVirtualMemory)(ULONG_PTR)GetSSDTEntry(SSDTEntry_ProtectMemory);
     if(NtProtectVirtualMemory) {
-        // If previous mode is UserMode, addresses passed into NtProtectVirtualMemory must be in user-mode space
-        // Switching to KernelMode allows usage of kernel-mode addresses
         PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
         UCHAR prevMode = *pPrevMode;
         *pPrevMode = KernelMode;
@@ -51,7 +49,7 @@ ZwCreateThreadEx(
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    fnNtCreateThreadEx NtCreateThreadEx = (fnNtCreateThreadEx)(ULONG_PTR)GetSSDTEntry(SSDTEntry_CreateThreadEx);
+    tNtCreateThreadEx NtCreateThreadEx = (tNtCreateThreadEx)(ULONG_PTR)GetSSDTEntry(SSDTEntry_CreateThreadEx);
     if(NtCreateThreadEx) {
         //
         // If previous mode is UserMode, addresses passed into ZwCreateThreadEx must be in user-mode space
@@ -79,7 +77,7 @@ NTSTATUS NTAPI ZwTerminateThread(IN HANDLE ThreadHandle, IN NTSTATUS ExitStatus)
 {
     NTSTATUS status = STATUS_SUCCESS;
 
-    fnNtTerminateThread NtTerminateThread = (fnNtTerminateThread)(ULONG_PTR)GetSSDTEntry(SSDTEntry_TerminateThread);
+    tNtTerminateThread NtTerminateThread = (tNtTerminateThread)(ULONG_PTR)GetSSDTEntry(SSDTEntry_TerminateThread);
     if(NtTerminateThread) {
         PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
         UCHAR prevMode = *pPrevMode;
@@ -90,5 +88,30 @@ NTSTATUS NTAPI ZwTerminateThread(IN HANDLE ThreadHandle, IN NTSTATUS ExitStatus)
     } else
         status = STATUS_NOT_FOUND;
 
+    return status;
+}
+
+NTSTATUS
+NTAPI
+ZwQueryPerformanceCounter(
+    __out PLARGE_INTEGER PerformanceCounter,
+    __out_opt PLARGE_INTEGER PerformanceFrequency
+)
+{
+    NTSTATUS status = STATUS_SUCCESS;
+
+    tNtQueryPerformanceCounter NtQueryPerformanceCounter 
+        = (tNtQueryPerformanceCounter)(ULONG_PTR)GetSSDTEntry(SSDTEntry_QueryPerformanceCounter);
+    if(NtQueryPerformanceCounter) {
+        PUCHAR pPrevMode = (PUCHAR)PsGetCurrentThread() + Off_EThread_PreviousMode;
+        UCHAR prevMode = *pPrevMode;
+        *pPrevMode = KernelMode;
+
+        status = NtQueryPerformanceCounter(PerformanceCounter, PerformanceFrequency);
+
+        *pPrevMode = prevMode;
+    } else {
+        status = STATUS_NOT_FOUND;
+    }
     return status;
 }

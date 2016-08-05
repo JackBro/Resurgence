@@ -2,47 +2,48 @@
 
 #include <cstdint>
 #include <string>
-#include <Misc/SafeHandle.hpp>
-#include <Headers.hpp>
+#include <misc/safe_handle.hpp>
+#include <headers.hpp>
 
 #include "../../../../ResurgenceDrv/ResurgenceDrv.h"
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace System
+    namespace system
     {
-        class Driver
+        class driver
         {
         public:
-            Driver(const std::wstring& path);
-            ~Driver();
+            driver(const std::wstring& path);
+            ~driver();
 
             BOOL            IsLoaded();
-            NTSTATUS        Load();
-            NTSTATUS        Open();
+            ntstatus_code   Load();
+            ntstatus_code   Open();
 
-            NTSTATUS        QueryVersionInfo(PVERSION_INFO pVersion);
+            ntstatus_code   QueryVersionInfo(PVERSION_INFO pVersion);
 
             //
             // Virtual Memory Management
             //
-            NTSTATUS        AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags);
-            NTSTATUS        ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection);
-            NTSTATUS        FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType);
-            NTSTATUS        QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo);
-            NTSTATUS        ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize);
-            NTSTATUS        WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize);
+            ntstatus_code   AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags);
+            ntstatus_code   ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection);
+            ntstatus_code   FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType);
+            ntstatus_code   QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo);
+            ntstatus_code   ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize);
+            ntstatus_code   WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize);
 
             //
             // Process/Thread Management
             //
-            NTSTATUS        OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle);
-            NTSTATUS        OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle);
-            NTSTATUS        OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle);
-            NTSTATUS        GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess);
-            NTSTATUS        SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel);
-            NTSTATUS        SetProcessDEP(ULONG ProcessId, BOOLEAN Enable);
-            NTSTATUS        InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress);
+            ntstatus_code   OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle);
+            ntstatus_code   OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle);
+            ntstatus_code   OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle);
+            ntstatus_code   GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess);
+            ntstatus_code   SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel);
+            ntstatus_code   SetProcessDEP(ULONG ProcessId, BOOLEAN Enable);
+            ntstatus_code   InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress);
+            ntstatus_code   MMapModule(ULONG ProcessId, LPVOID ModuleBase, ULONG ModuleSize, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress);
         private:
             std::wstring    _path;
             HANDLE          _handle;

@@ -1,7 +1,8 @@
-#include <System/Driver/Shellcode.hpp>
+#include <system/driver/driver_shellcode.hpp>
 
-#include <Headers.hpp>
-namespace Resurgence
+#include <headers.hpp>
+
+namespace resurgence
 {
     namespace Internal
     {

@@ -1,72 +1,72 @@
-#include <System/Driver/Driver.hpp>
-#include <Shlwapi.h>
-#include <Misc/NtHelpers.hpp>
-#include <System/Driver/Shellcode.hpp>
+#include <system/driver/driver.hpp>
+#include <system/driver/driver_shellcode.hpp>
+#include <misc/winnt.hpp>
 
-#include <System/Driver/TDL/TDL.h>
+#include <Shlwapi.h>
+
+#include <system/driver/TDL/TDL.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
 #define BUFFER_IMAGE_OFFSET (BOOTSTRAP_IMAGE_OFFSET + 0x14)
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace System
+    namespace system
     {
-
-        Driver::Driver(const std::wstring& path)
+        driver::driver(const std::wstring& path)
             : _handle(INVALID_HANDLE_VALUE)
         {
             _path.reserve(MAX_PATH);
-            Misc::NtHelpers::GetFullPath(path.data(), const_cast<LPWSTR>(_path.data()));
+            _path = misc::winnt::get_full_path(path);
         }
-        Driver::~Driver()
+        driver::~driver()
         {
             if(IsLoaded())
                 CloseHandle(_handle);
             _handle = INVALID_HANDLE_VALUE;
         }
-        BOOL Driver::IsLoaded()
+        BOOL driver::IsLoaded()
         {
             return _handle != INVALID_HANDLE_VALUE;
         }
-        NTSTATUS Driver::Load()
+        ntstatus_code driver::Load()
         {
-            NTSTATUS    status = STATUS_SUCCESS;
+            ntstatus_code    status = STATUS_SUCCESS;
 
             if(IsLoaded()) return STATUS_SUCCESS;
 
             if(!PathFileExistsW(_path.data()))  return STATUS_FILE_INVALID;
 
-            status = TDLLoadDriver(_path.data());
+            status = TDLload_driver(_path.data());
             
             if(NT_SUCCESS(status))
                 return Open();
             return status;
         }
 
-        NTSTATUS Driver::Open()
+        ntstatus_code driver::Open()
         {
-            NTSTATUS status = STATUS_NO_SUCH_DEVICE;
+            ntstatus_code status = STATUS_NO_SUCH_DEVICE;
             int tries = 0;
 
             while(tries++ < 10) {
-                status = Misc::NtHelpers::GetDeviceHandle(RDRV_SYMLINK, &_handle);
+                status = misc::winnt::get_driver_device(RDRV_SYMLINK, &_handle);
                 if(NT_SUCCESS(status))
                     break;
                 Sleep(1000);
             }
             return status;
         }
-        NTSTATUS Driver::QueryVersionInfo(PVERSION_INFO pVersion)
+        ntstatus_code driver::QueryVersionInfo(PVERSION_INFO pVersion)
         {
-            if(!pVersion) return SetLastNtStatus(STATUS_INVALID_PARAMETER);
+            if(!pVersion) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
             DWORD ioBytes;
             if(!DeviceIoControl(_handle, RESURGENCE_QUERY_OSVERSION, NULL, 0, pVersion, sizeof(VERSION_INFO), &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags)
+        ntstatus_code driver::AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags)
         {
             VM_OPERATION params;
             RtlZeroMemory(&params, sizeof(params));
@@ -83,14 +83,14 @@ namespace Resurgence
                 &params, RESURGENCE_VM_OPERATION_SIZE,
                 &params, RESURGENCE_VM_OPERATION_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             *BaseAddress = (PVOID)params.Out.BaseAddress;
             *RegionSize = params.Out.RegionSize;
 
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection)
+        ntstatus_code driver::ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection)
         {
             VM_OPERATION params;
             RtlZeroMemory(&params, sizeof(params));
@@ -106,14 +106,14 @@ namespace Resurgence
                 &params, RESURGENCE_VM_OPERATION_SIZE,
                 &params, RESURGENCE_VM_OPERATION_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             if(OldProtection)
                 *OldProtection = params.Out.OldProtection;
 
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType)
+        ntstatus_code driver::FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType)
         {
             VM_OPERATION params;
             RtlZeroMemory(&params, sizeof(params));
@@ -129,13 +129,13 @@ namespace Resurgence
                 &params, RESURGENCE_VM_OPERATION_SIZE,
                 &params, RESURGENCE_VM_OPERATION_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo)
+        ntstatus_code driver::QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo)
         {
-            if(!MemInfo) return SetLastNtStatus(STATUS_INVALID_PARAMETER);
+            if(!MemInfo) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
 
             VM_QUERY_INFO params;
             params.In.ProcessId = ProcessId;
@@ -146,13 +146,13 @@ namespace Resurgence
                 &params, RESURGENCE_VM_QUERY_SIZE,
                 &params, RESURGENCE_VM_QUERY_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             *MemInfo = params.Out;
 
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
+        ntstatus_code driver::ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
         {
             VM_READ_WRITE params;
             params.ProcessId = ProcessId;
@@ -165,10 +165,10 @@ namespace Resurgence
                 &params, RESURGENCE_VM_READ_SIZE,
                 &params, RESURGENCE_VM_READ_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
+        ntstatus_code driver::WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
         {
             VM_READ_WRITE params;
             params.ProcessId        = ProcessId;
@@ -181,12 +181,12 @@ namespace Resurgence
                 &params, RESURGENCE_VM_WRITE_SIZE,
                 &params, RESURGENCE_VM_WRITE_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle)
+        ntstatus_code driver::OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle)
         {
-            if(!Handle) return SetLastNtStatus(STATUS_INVALID_PARAMETER_3);
+            if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
 
             OPEN_PROCESS params;
             params.In.ProcessId = ProcessId;
@@ -199,14 +199,14 @@ namespace Resurgence
                 &params, RESURGENCE_OPEN_PROCESS_SIZE,
                 &params, RESURGENCE_OPEN_PROCESS_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             *Handle = (HANDLE)params.Out.Handle;
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
+        ntstatus_code driver::OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
         {
-            if(!Handle) return SetLastNtStatus(STATUS_INVALID_PARAMETER_3);
+            if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
 
             OPEN_PROCESS params;
             params.In.ProcessId = 0;
@@ -219,14 +219,14 @@ namespace Resurgence
                 &params, RESURGENCE_OPEN_PROCESS_SIZE,
                 &params, RESURGENCE_OPEN_PROCESS_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             *Handle = (HANDLE)params.Out.Handle;
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
+        ntstatus_code driver::OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
         {
-            if(!Handle) return SetLastNtStatus(STATUS_INVALID_PARAMETER_3);
+            if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
 
             OPEN_THREAD params;
             params.In.ThreadId = ThreadId;
@@ -238,12 +238,12 @@ namespace Resurgence
                 &params, RESURGENCE_OPEN_THREAD_SIZE,
                 &params, RESURGENCE_OPEN_THREAD_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             *Handle = (HANDLE)params.Out.Handle;
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess)
+        ntstatus_code driver::GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess)
         {
             GRANT_ACCESS params;
             params.In.ProcessId = ProcessId;
@@ -256,12 +256,12 @@ namespace Resurgence
                 &params, RESURGENCE_GRANT_ACCESS_SIZE,
                 &params, RESURGENCE_GRANT_ACCESS_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
             if(OldAccess)
                 *OldAccess = params.Out.OldAccessMask;
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel)
+        ntstatus_code driver::SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel)
         {
             PROTECT_PROCESS params;
             params.In.ProcessId = ProcessId;
@@ -272,11 +272,11 @@ namespace Resurgence
                 &params, RESURGENCE_PROTECT_PROCESS_SIZE,
                 NULL, 0,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::SetProcessDEP(ULONG ProcessId, BOOLEAN Enable)
+        ntstatus_code driver::SetProcessDEP(ULONG ProcessId, BOOLEAN Enable)
         {
             SET_DEP_STATE params;
             params.In.ProcessId = ProcessId;
@@ -288,18 +288,20 @@ namespace Resurgence
                 &params, RESURGENCE_SET_DEP_STATE_SIZE,
                 NULL, 0,
                 &ioBytes, NULL)) 
-                return GetLastNtStatus();
+                return get_last_ntstatus();
 
             return STATUS_SUCCESS;
         }
-        NTSTATUS Driver::InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        ntstatus_code driver::InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
         {
-            
+
             INJECT_MODULE params;
             params.In.ProcessId = ProcessId;
             params.In.InjectionType = InjectLdrLoadDll;
             params.In.ErasePE = EraseHeaders;
             params.In.HideModule = HideModule;
+            params.In.ModuleBase = 0;
+            params.In.ModuleSize = 0;
             wcscpy_s(params.In.ModulePath, MAX_PATH, ModulePath);
 
             DWORD ioBytes;
@@ -308,7 +310,31 @@ namespace Resurgence
                 &params, RESURGENCE_INJECT_MODULE_SIZE,
                 &params, RESURGENCE_INJECT_MODULE_SIZE,
                 &ioBytes, NULL))
-                return GetLastNtStatus();
+                return get_last_ntstatus();
+
+            if(BaseAddress)
+                *BaseAddress = params.Out.BaseAddress;
+
+            return STATUS_SUCCESS;
+        }
+        ntstatus_code driver::MMapModule(ULONG ProcessId, LPVOID ModuleBase, ULONG ModuleSize, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        {
+
+            INJECT_MODULE params;
+            params.In.ProcessId = ProcessId;
+            params.In.InjectionType = InjectManualMap;
+            params.In.ErasePE = EraseHeaders;
+            params.In.HideModule = HideModule;
+            params.In.ModuleBase = (ULONG_PTR)ModuleBase;
+            params.In.ModuleSize = ModuleSize;
+
+            DWORD ioBytes;
+            if(!DeviceIoControl(
+                _handle, RESURGENCE_INJECT_MODULE,
+                &params, RESURGENCE_INJECT_MODULE_SIZE,
+                &params, RESURGENCE_INJECT_MODULE_SIZE,
+                &ioBytes, NULL))
+                return get_last_ntstatus();
 
             if(BaseAddress)
                 *BaseAddress = params.Out.BaseAddress;

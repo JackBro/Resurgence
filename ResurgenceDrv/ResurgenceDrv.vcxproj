@@ -294,6 +294,7 @@
     <ClCompile Include="injection.c" />
     <ClCompile Include="internal.c" />
     <ClCompile Include="memory.c" />
+    <ClCompile Include="mmap.c" />
     <ClCompile Include="object.c" />
     <ClCompile Include="process.c" />
     <ClCompile Include="routines.c" />
@@ -307,6 +308,7 @@
     <ClInclude Include="injection.h" />
     <ClInclude Include="internal.h" />
     <ClInclude Include="kernel_imports.h" />
+    <ClInclude Include="mmap.h" />
     <ClInclude Include="native_enums.h" />
     <ClInclude Include="native_structs.h" />
     <ClInclude Include="pe_structs.h" />

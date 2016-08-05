@@ -1,5 +1,6 @@
 #include "routines.h"
 #include "injection.h"
+#include "mmap.h"
 
 #pragma alloc_text(PAGE, RDrvProtectProcess)
 #pragma alloc_text(PAGE, RDrvOpenProcess)
@@ -155,38 +156,59 @@ NTSTATUS RDrvInjectModule(
 )
 {
 
+    NTSTATUS    status = STATUS_SUCCESS;
+    PEPROCESS   process = NULL;
+    KAPC_STATE  apcState;
+    ULONG_PTR   base = 0;
+    SIZE_T      pathSize = 0;
+
     if(!Params) return STATUS_INVALID_PARAMETER;
 
-    NTSTATUS status = STATUS_SUCCESS;
-    PEPROCESS process = NULL;
-    KAPC_STATE apcState;
-    ULONG_PTR base;
-    status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
-    if(NT_SUCCESS(status)) {
-        KeStackAttachProcess(process, &apcState);
+    RtlStringCbLengthW(Params->In.ModulePath, MAX_PATH, &pathSize);
 
-        if(Params->In.InjectionType == InjectLdrLoadDll)
-            status = RDrvInjectLdrLoadDll(process, Params->In.ModulePath, &base);
-        else
-            status = RDrvInjectManualMap(process, Params->In.ModulePath, Params->In.CallEntryPoint, Params->In.CustomParameter, &base);
+    //
+    // Cant continue if ModuleBase and Path are invalid
+    //
+    if(!Params->In.ModuleBase && pathSize == 0) return STATUS_INVALID_PARAMETER;
 
+    __try {
+        status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
         if(NT_SUCCESS(status)) {
-            if(Params->In.ErasePE == TRUE) {
-                if(!NT_SUCCESS(status = RDrvStripHeaders((PVOID)base)))
-                    PERROR("RDrvStripHeaders", status);
+
+            if(Params->In.InjectionType == InjectLdrLoadDll) {
+                status = RDrvInjectLdrLoadDll(process, Params->In.ModulePath, &base);
+            } else if(Params->In.InjectionType == InjectManualMap) {
+                //PVOID systemBuffer;
+                //ULONG imageSize;
+                //if(Params->In.ModuleBase != 0) {
+                //    status = RDrvLoadImageFromMemory(Params->In.ModuleBase, &systemBuffer, &imageSize);
+                //} else {
+                //    RDrvLoadImageFromFile(Params->In.ModulePath, &systemBuffer, &imageSize);
+                //}
+                //status = RDrvInjectManualMap(process, systemBuffer, imageSize, Params->In.ModulePath, Params->In.CallEntryPoint, Params->In.CustomParameter, &base);
             }
-            if(Params->In.HideModule == TRUE) {
-                if(!NT_SUCCESS(status = RDrvHideFromLoadedList(process, (PVOID)base)))
-                    PERROR("RDrvHideFromLoadedList", status);
+            if(NT_SUCCESS(status)) {
+                KeStackAttachProcess(process, &apcState);
+                if(Params->In.ErasePE == TRUE) {
+                    if(!NT_SUCCESS(status = RDrvStripHeaders((PVOID)base)))
+                        PERROR("RDrvStripHeaders", status);
+                }
+                if(Params->In.HideModule == TRUE) {
+                    if(!NT_SUCCESS(status = RDrvHideFromLoadedList(process, (PVOID)base)))
+                        PERROR("RDrvHideFromLoadedList", status);
+                }
+                KeUnstackDetachProcess(&apcState);
             }
-        }
 
-        Params->Out.BaseAddress = base;
+            Params->Out.BaseAddress = base;
 
-        KeUnstackDetachProcess(&apcState);
-    } else
-        PERROR("PsLookupProcessByProcessId", status);
-
+        } else
+            PERROR("PsLookupProcessByProcessId", status);
+    } __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        PEXCEPTION();
+        status = GetExceptionCode();
+    }
     if(process)
         ObDereferenceObject(process);
 

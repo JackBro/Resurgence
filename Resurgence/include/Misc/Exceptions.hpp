@@ -6,9 +6,9 @@
 #undef GetMessage
 #endif
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace Misc
+    namespace misc
     {
         class Exception
         {

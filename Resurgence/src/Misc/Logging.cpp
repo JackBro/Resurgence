@@ -1,8 +1,8 @@
-#include <Misc/Logging.hpp>
+#include <misc/logging.hpp>
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace Misc
+    namespace misc
     {
         void Logging::Enable()
         {

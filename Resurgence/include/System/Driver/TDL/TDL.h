@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Headers.hpp>
+#include <headers.hpp>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-long __stdcall TDLLoadDriver(
+long __stdcall TDLload_driver(
     LPCWSTR lpDriverFullName
 );
 

@@ -1,8 +1,8 @@
-#include <Misc/SafeHandle.hpp>
+#include <misc/safe_handle.hpp>
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace Misc
+    namespace misc
     {
         SafeHandle::SafeHandle(HANDLE invalidValue)
             : _value(invalidValue),

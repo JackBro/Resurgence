@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Headers.hpp>
+#include <headers.hpp>
 
-namespace Resurgence
+namespace resurgence
 {
     namespace Internal
     {
@@ -10,8 +10,8 @@ namespace Resurgence
         extern uint8_t g_pLoaderCode[463];
 
         #define SHELLCODE_VULNERABLE_DRIVER_SIZE (17072 * 4)
-        #define SHELLCODE_VULNERABLE_DRIVER ((PBYTE)Resurgence::Internal::g_pVulnerableDriverData)
-        #define SHELLCODE_LOADER ((PBYTE)Resurgence::Internal::g_pLoaderCode)
+        #define SHELLCODE_VULNERABLE_DRIVER ((PBYTE)resurgence::Internal::g_pVulnerableDriverData)
+        #define SHELLCODE_LOADER ((PBYTE)resurgence::Internal::g_pLoaderCode)
         #define SHELLCODE_LOADER_SIZE (463)
 
         #define BOOTSTRAP_IMAGE_OFFSET 0x200

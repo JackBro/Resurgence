@@ -92,3 +92,20 @@ PSYSTEM_SERVICE_DESCRIPTOR_TABLE GetSSDTBase(
 PVOID GetSSDTEntry(
     __in ULONG Index
 );
+
+NTSTATUS RDrvLoadImageFromFile(
+    __in PWCHAR ModulePath,
+    __out PVOID* ImageBase,
+    __out PULONG ImageSize
+);
+
+NTSTATUS RDrvLoadImageFromMemory(
+    __in PVOID UserBuffer,
+    __out PVOID* ImageBase,
+    __out PULONG ImageSize
+);
+
+NTSTATUS RDrvGenerateRandomString(
+    __in ULONG Length,
+    __out PWSTR String
+);

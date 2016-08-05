@@ -1,8 +1,11 @@
 #include <iostream>
 #include <string>
-#include <Resurgence.hpp>
+#include <Windows.h>
 #include <TlHelp32.h>
 #include <algorithm>
+#include "resource.h"
+#include <resurgence.hpp>
+#include <d3d9.h>
 
 PVOID mainModule(HANDLE pid)
 {
@@ -19,26 +22,31 @@ PVOID mainModule(HANDLE pid)
 
 int main(int argc, char** argv) {
     using namespace std;
-    using namespace Resurgence;
+    using namespace resurgence;
+    
+    if(argc < 2) return 1;
 
-    System::Driver driver(L".\\ResurgenceDrvWin10.sys");
-
+    system::driver driver(L".\\ResurgenceDrvWin10.sys");
+    
     ULONG_PTR base;
     UNICODE_STRING uTarget;
-    RtlInitUnicodeString(&uTarget, L"ProcessHacker.exe");
-
+    RtlInitUnicodeString(&uTarget, L"csgo.exe");
+    
     if(NT_SUCCESS(driver.Load())) {
-        Misc::NtHelpers::EnumSystemProcesses([&](PSYSTEM_PROCESSES_INFORMATION entry) -> NTSTATUS {
+        misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION entry) -> NTSTATUS {
             if(RtlEqualUnicodeString(&uTarget, &entry->ImageName, TRUE)) {
-                driver.InjectModule((ULONG)entry->UniqueProcessId, L"C:\\test.dll", TRUE, FALSE, &base);
+                WCHAR path[MAX_PATH];
+                MultiByteToWideChar(CP_UTF8, 0, argv[1], strlen(argv[1]), path, sizeof(path));
+                wcout << path << endl;
+                driver.InjectModule((ULONG)entry->UniqueProcessId, path, FALSE, FALSE, &base);
                 wcout << hex << base << endl;
             }
             return STATUS_NOT_FOUND;
         });
     } else {
         wcerr << "Load failed" << endl;
-        wcerr << Misc::NtHelpers::GetSystemErrorMessage(GetLastNtStatus()) << endl;
+        wcerr << misc::winnt::get_status_message(get_last_ntstatus()) << endl;
     }
 
-    system("pause");
+    return 0;
 }

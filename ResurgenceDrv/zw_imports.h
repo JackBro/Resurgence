@@ -512,14 +512,6 @@ ZwQueryIntervalProfile(
 NTSYSAPI
 NTSTATUS
 NTAPI
-ZwQueryPerformanceCounter(
-    __out PLARGE_INTEGER PerformanceCounter,
-    __out_opt PLARGE_INTEGER PerformanceFrequency
-    );
-
-NTSYSAPI
-NTSTATUS
-NTAPI
 ZwCreateKeyedEvent(
     __out PHANDLE KeyedEventHandle,
     __in ACCESS_MASK DesiredAccess,

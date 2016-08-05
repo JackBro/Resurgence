@@ -5,7 +5,6 @@
 #pragma alloc_text(PAGE, RDrvBuildWow64InjectStub)
 #pragma alloc_text(PAGE, RDrvBuildNativeInjectStub)
 #pragma alloc_text(PAGE, RDrvInjectLdrLoadDll)
-#pragma alloc_text(PAGE, RDrvInjectManualMap)
 
 
 NTSTATUS RDrvBuildWow64InjectStub(
@@ -117,18 +116,24 @@ NTSTATUS RDrvInjectLdrLoadDll(
     NTSTATUS	status;
     ULONG_PTR   fnLdrLoadDll;
     BOOLEAN     isWow64;
+    KAPC_STATE  apcState;
+
+    DPRINT("Injecting file %ws to process %X", ModulePath, PsGetProcessId(Process));
 
     isWow64 = !!PsGetProcessWow64Process(Process);
+    KeStackAttachProcess(Process, &apcState);
     if(isWow64) {
         PLDR_DATA_TABLE_ENTRY32	ntdll;
         RDrvGetModuleEntry32(Process, L"ntdll.dll", &ntdll);
-        RDrvGetProcAddress((ULONG_PTR)ntdll->DllBase, "LdrLoadDll", &fnLdrLoadDll);
+        status = RDrvGetProcAddress((ULONG_PTR)ntdll->DllBase, "LdrLoadDll", &fnLdrLoadDll);
     } else {
         PLDR_DATA_TABLE_ENTRY ntdll;
         RDrvGetModuleEntry(Process, L"ntdll.dll", &ntdll);
-        RDrvGetProcAddress((ULONG_PTR)ntdll->DllBase, "LdrLoadDll", &fnLdrLoadDll);
+        status = RDrvGetProcAddress((ULONG_PTR)ntdll->DllBase, "LdrLoadDll", &fnLdrLoadDll);
     }
     if(fnLdrLoadDll != 0) {
+        DPRINT("LdrLoadDll found at %p", fnLdrLoadDll);
+
         UNICODE_STRING szModulePath;
         RtlInitUnicodeString(&szModulePath, ModulePath);
 
@@ -136,6 +141,8 @@ NTSTATUS RDrvInjectLdrLoadDll(
         status = isWow64 ?
             RDrvBuildWow64InjectStub(fnLdrLoadDll, &szModulePath, &pBuffer) :
             RDrvBuildNativeInjectStub(fnLdrLoadDll, &szModulePath, &pBuffer);
+
+        DPRINT("Injection stub written to %p", pBuffer);
 
         if(ModuleBase)
             *ModuleBase = 0;
@@ -158,16 +165,8 @@ NTSTATUS RDrvInjectLdrLoadDll(
     } else
         PERROR("RDrvGetProcAddress", status);
 
+    KeUnstackDetachProcess(&apcState);
+
     return status;
 }
 
-NTSTATUS RDrvInjectManualMap(
-    __in PEPROCESS Process,
-    __in PWCHAR ModulePath,
-    __in BOOLEAN CallEntryPoint,
-    __in ULONG_PTR CustomArg,
-    __out PULONG_PTR ModuleBase
-)
-{
-    return STATUS_NOT_IMPLEMENTED;
-}

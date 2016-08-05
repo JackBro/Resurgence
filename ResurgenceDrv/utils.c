@@ -105,7 +105,7 @@ NTSTATUS RDrvGetKernelInfo(
 
     if(systemModules == NULL) {
         DPRINT("ExAllocatePoolWithTag failed!");
-        return STATUS_UNSUCCESSFUL;
+        return STATUS_INSUFFICIENT_RESOURCES;
     }
     RtlZeroMemory(systemModules, nRequiredSize);
 
@@ -225,6 +225,7 @@ NTSTATUS RDrvGetModuleEntry(
 
     BOOLEAN returnFirstModule = !ModuleName;
     INT waitCount = 0;
+
     PPEB peb = PsGetProcessPeb(Process);
     if(!peb) {
         DPRINT("PsGetProcessPeb failed");
@@ -392,7 +393,7 @@ NTSTATUS RDrvCreateUserThread(
         0, 0x1000, 0x100000, NULL
     );
 
-    if(NT_ERROR(status)) {
+    if(!NT_SUCCESS(status)) {
         PERROR("ZwCreateThreadEx", status);
     } else {
         if(wait) {
@@ -603,4 +604,64 @@ PVOID GetSSDTEntry(
     }
 
     return NULL;
+}
+
+NTSTATUS RDrvLoadImageFromFile(
+    __in PWCHAR ModulePath,
+    __out PVOID* ImageBase,
+    __out PULONG ImageSize
+)
+{
+    NTSTATUS                    status;
+    HANDLE                      fileHandle;
+    IO_STATUS_BLOCK             ioStatus;
+    FILE_STANDARD_INFORMATION   fileInfo;
+    WCHAR                       NtPath[MAX_PATH] = L"\\??\\";
+
+    UNREFERENCED_PARAMETER(ImageBase);
+    UNREFERENCED_PARAMETER(ImageSize);
+
+    RtlStringCbCatW(NtPath, sizeof(NtPath), ModulePath);
+
+    status = RDrvOpenFile(NtPath, FALSE, FALSE, &fileHandle);
+    if(NT_SUCCESS(status)) {
+        status = ZwQueryInformationFile(fileHandle, &ioStatus, &fileInfo, sizeof(fileInfo), FileStandardInformation);
+        if(NT_SUCCESS(status)) {
+            DPRINT("HighPart: %lX", fileInfo.EndOfFile.HighPart);
+            DPRINT("LowPart : %lX", fileInfo.EndOfFile.LowPart);
+            DPRINT("QuadPart: %lX", fileInfo.EndOfFile.QuadPart);
+        } else {
+            PERROR("ZwQueryInformationFile", status);
+        }
+        ZwClose(fileHandle);
+    } else {
+        PERROR("RDrvOpenFile", status);
+    }
+    return status;
+}
+
+NTSTATUS RDrvGenerateRandomString(
+    __in ULONG Length,
+    __out PWSTR String
+)
+{
+    if(!String) return STATUS_INVALID_PARAMETER;
+    
+    LARGE_INTEGER counter;
+
+    ZwQueryPerformanceCounter(&counter, NULL);
+    RtlZeroMemory(String, Length * sizeof(WCHAR));
+    ULONG seed = counter.LowPart;
+    for(ULONG i = 0ul; i < Length - 1; i++) {
+        ULONG random = RtlRandomEx(&seed) % 52;
+        if(random >= 26) {
+            String[i] = (WCHAR)((random - 26) + 'A');
+        } else {
+            String[i] = (WCHAR)(random + 'a');
+        }
+    }
+
+    String[Length] = 0;
+
+    return STATUS_SUCCESS;
 }

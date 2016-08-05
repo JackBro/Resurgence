@@ -65,6 +65,7 @@ NTSTATUS RDrvVirtualMemoryOperation(
     ULONG       protectionFlags = Params->In.ProtectionFlags;
     SIZE_T      regionSize = Params->In.RegionSize;
     ULONG       freeType = Params->In.FreeType;
+
     __try {
         status = PsLookupProcessByProcessId((HANDLE)proccessId, &process);
         if(NT_SUCCESS(status)) {
@@ -139,6 +140,8 @@ NTSTATUS RDrvReadWriteVirtualMemory(
     PEPROCESS   toProcess;
     ULONG_PTR   toAddress;
     SIZE_T      bytesCopied;
+
+    if(!Params) return STATUS_INVALID_PARAMETER;
 
     if(Write == TRUE) {
         fromAddress = Params->Buffer;

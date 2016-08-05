@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Headers.hpp>
-#include "Pointer.hpp"
+#include <headers.hpp>
+#include "pointer.hpp"
 
-namespace Resurgence
+namespace resurgence
 {
-    namespace Misc
+    namespace misc
     {
         class SafeHandle
         {
