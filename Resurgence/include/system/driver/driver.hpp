@@ -11,6 +11,12 @@ namespace resurgence
 {
     namespace system
     {
+        enum driver_load_method
+        {
+            SCManager,
+            Turla
+        };
+
         class driver
         {
         public:
@@ -18,7 +24,7 @@ namespace resurgence
             ~driver();
 
             BOOL            IsLoaded();
-            ntstatus_code   Load();
+            ntstatus_code   Load(driver_load_method method);
             ntstatus_code   Open();
 
             ntstatus_code   QueryVersionInfo(PVERSION_INFO pVersion);
@@ -44,7 +50,8 @@ namespace resurgence
             ntstatus_code   SetProcessDEP(ULONG ProcessId, BOOLEAN Enable);
             ntstatus_code   InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress);
             ntstatus_code   MMapModule(ULONG ProcessId, LPVOID ModuleBase, ULONG ModuleSize, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress);
-        private:
+        
+        //private:
             std::wstring    _path;
             HANDLE          _handle;
         };

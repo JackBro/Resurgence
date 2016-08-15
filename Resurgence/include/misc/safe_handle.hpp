@@ -16,15 +16,15 @@ namespace resurgence
                 safe_handle(const safe_handle& rhs);
                 virtual ~safe_handle();
 
-                HANDLE  Get() const;
-                void    Set(HANDLE value);
-                void    Close();
-                bool    IsValid() const;
+                HANDLE  get() const;
+                void    set(HANDLE value);
+                void    close();
+                bool    is_valid() const;
 
                 safe_handle& operator=(const safe_handle& rhs);
 
             protected:
-                void Duplicate(safe_handle& other) const;
+                void duplicate(safe_handle& other) const;
 
                 HANDLE _value;
                 HANDLE _invalid;

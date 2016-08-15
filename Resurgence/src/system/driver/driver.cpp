@@ -17,7 +17,6 @@ namespace resurgence
         driver::driver(const std::wstring& path)
             : _handle(INVALID_HANDLE_VALUE)
         {
-            _path.reserve(MAX_PATH);
             _path = misc::winnt::get_full_path(path);
         }
         driver::~driver()
@@ -28,20 +27,24 @@ namespace resurgence
         }
         BOOL driver::IsLoaded()
         {
+            Open();
             return _handle != INVALID_HANDLE_VALUE;
         }
-        ntstatus_code driver::Load()
+        ntstatus_code driver::Load(driver_load_method method)
         {
-            ntstatus_code    status = STATUS_SUCCESS;
+            ntstatus_code status = STATUS_SUCCESS;
 
             if(IsLoaded()) return STATUS_SUCCESS;
 
             if(!PathFileExistsW(_path.data()))  return STATUS_FILE_INVALID;
 
-            status = TDLload_driver(_path.data());
-            
-            if(NT_SUCCESS(status))
-                return Open();
+            if(method == Turla) {
+                status = TDLload_driver(_path.data());
+                if(NT_SUCCESS(status))
+                    return Open();
+            } else {
+                status = misc::winnt::load_driver(RDRV_SYMLINK, _path, &_handle);
+            }
             return status;
         }
 

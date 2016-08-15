@@ -5,11 +5,12 @@
 #include <algorithm>
 #include "resource.h"
 #include <resurgence.hpp>
-#include <d3d9.h>
+#include <Shlwapi.h>
 
-PVOID mainModule(HANDLE pid)
+
+PVOID mainModule(DWORD pid)
 {
-    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, (DWORD)(ULONG_PTR)pid);
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
     MODULEENTRY32 me;
     me.dwSize = sizeof(MODULEENTRY32);
     if(Module32First(snap, &me)) {
@@ -20,27 +21,24 @@ PVOID mainModule(HANDLE pid)
     return 0;
 }
 
+
 int main(int argc, char** argv) {
     using namespace std;
     using namespace resurgence;
     
-    //if(argc < 2) return 1;
-
-    system::driver driver(L".\\ResurgenceDrvWin10.sys");
+    if(!system::process::grant_privilege(SE_DEBUG_PRIVILEGE))
+        cout << "[!] Failed to set debug privilege" << endl;
     
-    if(NT_SUCCESS(driver.Load())) {
-        VERSION_INFO version;
-        if(NT_SUCCESS(driver.QueryVersionInfo(&version)))
-            printf("%d %d %d %d %d\n", version.MajorVersion, version.MinorVersion, version.ServicePackMajor, version.ServicePackMinor, version.BuildNumber);
-        else {
-            wcerr << "failed" << endl;
-            wcerr << misc::winnt::get_status_message(get_last_ntstatus()) << endl;
-        }
-        driver.InjectModule(4920, L"C:\\test_x64.dll", FALSE, FALSE, NULL);
-    } else {
-        wcerr << "Load failed" << endl;
-        wcerr << misc::winnt::get_status_message(get_last_ntstatus()) << endl;
+    auto processes = system::process::get_processes();
+    
+    for(auto& process : processes) {
+        wcout << (PVOID)process.get_peb_address() << " | " << process.get_name() << endl;
+        //for(auto& module : process.modules()->get_all_modules()) {
+        //    wcout << "    " << module.get_path() << endl;
+        //}
+        //wcout << endl;
     }
+
     ::system("pause");
     return 0;
 }

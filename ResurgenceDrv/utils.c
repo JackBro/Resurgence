@@ -328,7 +328,7 @@ NTSTATUS RDrvGetProcAddress(
 )
 {
     if(!ModuleBase)	    return STATUS_INVALID_PARAMETER_1;
-    if(!ProcName)	    return STATUS_INVALID_PARAMETER_2;
+    if(!ProcName)	      return STATUS_INVALID_PARAMETER_2;
     if(!ProcAddress)    return STATUS_INVALID_PARAMETER_3;
 
     PIMAGE_DOS_HEADER dosHdr = (PIMAGE_DOS_HEADER)ModuleBase;
@@ -354,14 +354,18 @@ NTSTATUS RDrvGetProcAddress(
         return STATUS_INVALID_IMAGE_FORMAT;
     }
 
-    PULONG	addressOfFunctions  = (PULONG)(exportDir->AddressOfFunctions + (PUCHAR)ModuleBase);
-    PULONG	addressOfNames      = (PULONG)(exportDir->AddressOfNames + (PUCHAR)ModuleBase);
-    PUSHORT	addressOfOrdinals   = (PUSHORT)(exportDir->AddressOfNameOrdinals + (PUCHAR)ModuleBase);
-    ULONG	numberOfNames       = exportDir->NumberOfNames;
+    PULONG	 addressOfFunctions  = (PULONG)((PUCHAR)ModuleBase + exportDir->AddressOfFunctions);
+    PULONG	 addressOfNames      = (PULONG)((PUCHAR)ModuleBase + exportDir->AddressOfNames);
+    PUSHORT	addressOfOrdinals   = (PUSHORT)((PUCHAR)ModuleBase + exportDir->AddressOfNameOrdinals);
+    ULONG	  numberOfNames       = exportDir->NumberOfNames;
 
     for(ULONG i = 0; i < numberOfNames; i++) {
         PCSTR pszName = (PCSTR)((PUCHAR)ModuleBase + addressOfNames[i]);
         SHORT ordinal = addressOfOrdinals[i];
+
+        //
+        //Compare it to the name we are looking for
+        // 
         if(!strcmp(pszName, ProcName)) {
             *ProcAddress = (ULONG_PTR)(addressOfFunctions[ordinal] + (PUCHAR)ModuleBase);
             return STATUS_SUCCESS;
@@ -567,7 +571,7 @@ BOOLEAN IsProcessWow64Process(
 }
 
 PSYSTEM_SERVICE_DESCRIPTOR_TABLE GetSSDTBase(
-    void
+    __in VOID
 )
 {
     PVOID       pFound;

@@ -1,4 +1,6 @@
 #include "routines.h"
+#include "utils.h"
+#include "internal.h"
 
 #pragma alloc_text(PAGE, RDrvQueryOSVersion)
 
@@ -29,4 +31,3 @@ NTSTATUS RDrvQueryOSVersion(
     }
     return status;
 }
-

@@ -148,6 +148,7 @@
     <Link>
       <FixedBaseAddress>false</FixedBaseAddress>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+      <GenerateDebugInformation>yes</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Win10|x64'">
@@ -167,7 +168,7 @@
     </Link>
     <Link>
       <FixedBaseAddress>false</FixedBaseAddress>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>Debug</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <MapExports>true</MapExports>
       <LargeAddressAware>true</LargeAddressAware>
@@ -194,7 +195,7 @@
     </Link>
     <Link>
       <FixedBaseAddress>false</FixedBaseAddress>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>yes</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <MapExports>true</MapExports>
       <LargeAddressAware>true</LargeAddressAware>
@@ -221,7 +222,7 @@
     </Link>
     <Link>
       <FixedBaseAddress>false</FixedBaseAddress>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>yes</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <MapExports>true</MapExports>
       <LargeAddressAware>true</LargeAddressAware>
@@ -248,7 +249,7 @@
     </Link>
     <Link>
       <FixedBaseAddress>false</FixedBaseAddress>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>yes</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <MapExports>true</MapExports>
       <LargeAddressAware>true</LargeAddressAware>
@@ -275,7 +276,7 @@
     </Link>
     <Link>
       <FixedBaseAddress>false</FixedBaseAddress>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>yes</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
       <MapExports>true</MapExports>
       <LargeAddressAware>true</LargeAddressAware>

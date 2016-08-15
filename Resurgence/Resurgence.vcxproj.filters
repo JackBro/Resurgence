@@ -51,11 +51,17 @@
     <ClInclude Include="include\system\driver\driver_shellcode.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\system\process.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\system\process_memory.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\system\process_modules.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\misc\safe_handle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\misc\winnt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,6 +78,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\system\driver\driver_shellcode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\process_memory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\process_modules.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\misc\safe_handle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

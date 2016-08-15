@@ -3,7 +3,8 @@
 #include "routines.h"
 
 PDRIVER_CONTEXT g_pDriverContext = NULL;
-PIMAGE_MAP_DATA g_pImageData;
+PIMAGE_MAP_DATA g_pImageData = NULL;
+BOOLEAN         g_bLoadedByTDL;
 
 NTSTATUS DriverEntry(
     __in PDRIVER_OBJECT  DriverObject,
@@ -43,23 +44,41 @@ NTSTATUS DriverEntry(
     __in PUNICODE_STRING RegistryPath
 )
 {
-    NTSTATUS status = STATUS_SUCCESS;
+    NTSTATUS        status = STATUS_SUCCESS;
+    UNICODE_STRING  drvName;
+
     DPRINT("DriverEntry called!");
 
     UNREFERENCED_PARAMETER(DriverObject);
     UNREFERENCED_PARAMETER(RegistryPath);
 
-    if(DriverObject != NULL && ((PIMAGE_MAP_DATA)DriverObject)->Magic == 0xFF00FF00AABBCCDD) {
-        DPRINT("Creating DriverObject!");
+    if(DriverObject != NULL){
+
         //
-        //Extract the image data that is sent as the first parameter to DriverEntry by the TDL shellcode
+        // Magic matches. It was mapped by the TDL shellcode
         //
-        g_pImageData = (PIMAGE_MAP_DATA)DriverObject;
-        UNICODE_STRING  drvName;
-        RtlInitUnicodeString(&drvName, L"\\Driver\\" RDRV_DRIVER_NAME);
-        status = IoCreateDriver(&drvName, &InitializeDriver);
-        if(!NT_SUCCESS(status)) {
-            DPRINT("IoCreateDriver failed with status %lX", status);
+        if(((PIMAGE_MAP_DATA)DriverObject)->Magic == 0xFF00FF00AABBCCDD) { 
+            DPRINT("Creating DriverObject!");
+            //
+            //Extract the image data that is sent as the first parameter to DriverEntry by the TDL shellcode
+            //
+            g_pImageData = (PIMAGE_MAP_DATA)DriverObject;
+            g_bLoadedByTDL = TRUE;
+            RtlInitUnicodeString(&drvName, L"\\Driver\\" RDRV_DRIVER_NAME);
+            status = IoCreateDriver(&drvName, &InitializeDriver);
+            if(!NT_SUCCESS(status)) {
+                DPRINT("IoCreateDriver failed with status %lX", status);
+            }
+        } 
+        //
+        // Magic is different. It wasnt mapped by TDL. Do regular initialization
+        //
+        else {
+            g_bLoadedByTDL = FALSE;
+            status = InitializeDriver(DriverObject, RegistryPath);
+            if(!NT_SUCCESS(status)) {
+                DPRINT("InitializeDriver failed with status %lX", status);
+            }
         }
     }
     return status;
@@ -108,8 +127,13 @@ NTSTATUS InitializeDriver(
     DriverObject->MajorFunction[IRP_MJ_CLOSE] = &RDrvDispatch;
     DriverObject->DriverUnload = NULL;
 
-    RtlCopyMemory(&g_pDriverContext->ImageData, g_pImageData, sizeof(IMAGE_MAP_DATA));
-    ExFreePoolWithTag((PVOID)g_pImageData, 'SldT');
+    if(g_bLoadedByTDL) {
+        RtlCopyMemory(&g_pDriverContext->ImageData, g_pImageData, sizeof(IMAGE_MAP_DATA));
+        ExFreePoolWithTag((PVOID)g_pImageData, 'SldT');
+    } else {
+        g_pDriverContext->ImageData.ImageBase = (ULONG_PTR)DriverObject->DriverStart;
+        g_pDriverContext->ImageData.SizeOfImage = DriverObject->DriverSize;
+    }
 
     status = DriverLoadDynamicData();
 
@@ -162,6 +186,8 @@ NTSTATUS DriverContextInit(
 
     g_pDriverContext->RtlInsertInvertedFunctionTable = (tRtlInsertInvertedFunctionTable)pResult;
     DPRINT("RtlInsertInvertedFunctionTable: 0x%p", g_pDriverContext->RtlInsertInvertedFunctionTable);
+
+    //g_pDriverContext->RtlInsertInvertedFunctionTable(g_pDriverContext->ImageData.ImageBase, g_pDriverContext->ImageData.SizeOfImage);
 
     g_pDriverContext->Initialized = TRUE;
 

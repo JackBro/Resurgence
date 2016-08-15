@@ -31,6 +31,9 @@
     <ClInclude Include="include\system\driver\driver_shellcode.hpp" />
     <ClInclude Include="include\system\driver\TDL\TDL.h" />
     <ClInclude Include="include\system\driver\TDL\vbox.h" />
+    <ClInclude Include="include\system\process.hpp" />
+    <ClInclude Include="include\system\process_memory.hpp" />
+    <ClInclude Include="include\system\process_modules.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp" />
@@ -40,6 +43,9 @@
     <ClCompile Include="src\resurgence.cpp" />
     <ClCompile Include="src\system\driver\driver.cpp" />
     <ClCompile Include="src\system\driver\driver_shellcode.cpp" />
+    <ClCompile Include="src\system\process.cpp" />
+    <ClCompile Include="src\system\process_memory.cpp" />
+    <ClCompile Include="src\system\process_modules.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6872536E-3320-48D7-91A2-363B8CA39055}</ProjectGuid>
@@ -124,7 +130,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Lib>
@@ -136,7 +142,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Lib>
@@ -151,8 +157,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -171,8 +179,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
       <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

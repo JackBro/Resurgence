@@ -20,18 +20,18 @@ namespace resurgence
                 : _value(rhs._invalid),
                 _invalid(rhs._invalid)
             {
-                rhs.Duplicate(*this);
+                rhs.duplicate(*this);
             }
             safe_handle::~safe_handle()
             {
-                if(IsValid())
-                    Close();
+                if(is_valid())
+                    close();
             }
             safe_handle& safe_handle::operator=(const safe_handle& rhs)
             {
-                rhs.Duplicate(*this); return *this;
+                rhs.duplicate(*this); return *this;
             }
-            void safe_handle::Duplicate(safe_handle& other) const
+            void safe_handle::duplicate(safe_handle& other) const
             {
                 DuplicateHandle(
                     GetCurrentProcess(), _value,
@@ -40,20 +40,20 @@ namespace resurgence
                     FALSE,
                     DUPLICATE_SAME_ACCESS);
             }
-            HANDLE safe_handle::Get() const
+            HANDLE safe_handle::get() const
             {
                 return _value;
             }
-            void safe_handle::Set(HANDLE value)
+            void safe_handle::set(HANDLE value)
             {
-                if(IsValid()) Close();
+                if(is_valid()) close();
                 _value = value;
             }
-            void safe_handle::Close()
+            void safe_handle::close()
             {
                 CloseHandle(_value);
             }
-            bool safe_handle::IsValid() const
+            bool safe_handle::is_valid() const
             {
                 return _value != _invalid;
             }
