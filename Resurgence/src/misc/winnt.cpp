@@ -243,6 +243,17 @@ namespace resurgence
 
             auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(process, ProcessBasicInformation);
 
+            if(!basic_info)
+                return STATUS_UNSUCCESSFUL;
+
+            //
+            // PEB will be invalid when trying to access a x64 process from WOW64
+            // 
+            if(basic_info->PebBaseAddress == 0) {
+                free_local_buffer(&basic_info);
+                return STATUS_ACCESS_DENIED;
+            }
+
             ntstatus_code status = read_memory(
                 process,
                 PTR_ADD(basic_info->PebBaseAddress, FIELD_OFFSET(PEB, Ldr)),

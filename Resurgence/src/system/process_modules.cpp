@@ -78,8 +78,8 @@ namespace resurgence
             auto id = _process->get_pid();
             auto handle = _process->get_handle();
 
-            if(id != SYSTEM_IDLE_PROCESS_ID) {
-                if(id == SYSTEM_PROCESS_ID) {
+            if(!_process->is_system_idle_process()) {
+                if(_process->is_system_process()) {
                     winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
                         modules.emplace_back(info);
                         return STATUS_NOT_FOUND;
