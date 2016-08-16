@@ -62,7 +62,7 @@ namespace resurgence
         {
             using namespace misc;
 
-            _info.is_current_process 
+            _info.current_process
                 = GetCurrentProcessId() == _info.pid;
 
             if(is_system_idle_process()) {
@@ -174,7 +174,7 @@ namespace resurgence
         }
         bool process::is_current_process() const
         {
-            return _info.is_current_process;
+            return _info.current_process;
         }
         bool process::is_system_idle_process() const
         {
@@ -186,7 +186,7 @@ namespace resurgence
         }
         ntstatus_code process::open(uint32_t access)
         {
-            if(_info.is_current_process)
+            if(is_current_process())
                 return STATUS_SUCCESS;
 
             if(_handle.is_valid()) {

@@ -28,14 +28,14 @@ namespace resurgence
             {
                 RtlZeroMemory(this, sizeof(process_info));
             }
-            uint32_t   pid;
-            uint32_t   parent_pid;
+            uint32_t        pid;
+            uint32_t        parent_pid;
             std::wstring    name;
             std::wstring    path;
             platform        target_platform;
-            uintptr_t  peb_address;
-            uint32_t   wow64peb_address;
-            bool            is_current_process;
+            uintptr_t       peb_address;
+            uint32_t        wow64peb_address;
+            bool            current_process;
         };
 
         class process
