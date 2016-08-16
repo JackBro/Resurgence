@@ -32,6 +32,7 @@
     <ClInclude Include="include\system\driver\driver_shellcode.hpp" />
     <ClInclude Include="include\system\driver\TDL\TDL.h" />
     <ClInclude Include="include\system\driver\TDL\vbox.h" />
+    <ClInclude Include="include\system\portable_executable.hpp" />
     <ClInclude Include="include\system\process.hpp" />
     <ClInclude Include="include\system\process_memory.hpp" />
     <ClInclude Include="include\system\process_modules.hpp" />

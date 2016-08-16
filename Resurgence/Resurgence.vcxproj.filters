@@ -63,6 +63,9 @@
     <ClInclude Include="include\misc\error.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\system\portable_executable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\misc\winnt.cpp">

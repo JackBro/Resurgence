@@ -60,6 +60,14 @@ namespace resurgence
             _path = misc::winnt::get_dos_path(path);
         }
 
+        //const portable_executable&  process_module::get_pe() const
+        //{
+        //    if(!_pe.is_valid())
+        //        _pe = portable_executable::load_from_file(_path);
+        //
+        //    return _pe;
+        //}
+        //
         process_modules::process_modules(process* proc)
             : _process(proc)
         {

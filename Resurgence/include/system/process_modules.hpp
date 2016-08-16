@@ -1,6 +1,7 @@
 #pragma once
 
 #include <headers.hpp>
+#include "portable_executable.hpp"
 
 namespace resurgence
 {
@@ -16,16 +17,20 @@ namespace resurgence
             process_module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry);
             process_module(PRTL_PROCESS_MODULE_INFORMATION entry);
 
-            const uint8_t*      get_base() const { return _base; }
-            size_t              get_size() const { return _size; }
-            const std::wstring& get_name() const { return _name; }
-            const std::wstring& get_path() const { return _path; }
-            bool                is_valid() const { return _base != nullptr; }
+            const uint8_t*              get_base() const { return _base; }
+            size_t                      get_size() const { return _size; }
+            const std::wstring&         get_name() const { return _name; }
+            const std::wstring&         get_path() const { return _path; }
+            bool                        is_valid() const { return _base != nullptr; }
 
-            uint8_t*        _base;
-            size_t          _size;
-            std::wstring    _name;
-            std::wstring    _path;
+            //const portable_executable&  get_pe() const;
+
+        private:
+            uint8_t*            _base;
+            size_t              _size;
+            std::wstring        _name;
+            std::wstring        _path;
+            portable_executable _pe;
         };
 
         class process_modules
