@@ -1,10 +1,10 @@
 #include <system/portable_executable.hpp>
+#include <misc/winnt.hpp>
 
 namespace resurgence
 {
     namespace system
     {
-
         portable_executable portable_executable::load_from_file(const std::wstring& file)
         {
             throw;

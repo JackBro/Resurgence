@@ -46,6 +46,7 @@
     <ClCompile Include="src\resurgence.cpp" />
     <ClCompile Include="src\system\driver\driver.cpp" />
     <ClCompile Include="src\system\driver\driver_shellcode.cpp" />
+    <ClCompile Include="src\system\portable_executable.cpp" />
     <ClCompile Include="src\system\process.cpp" />
     <ClCompile Include="src\system\process_memory.cpp" />
     <ClCompile Include="src\system\process_modules.cpp" />

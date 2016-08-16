@@ -94,7 +94,7 @@ namespace resurgence
                     auto fileName   = (PUNICODE_STRING)winnt::query_process_information(handle, ProcessImageFileName);
                     
                     _info.target_platform   = winnt::process_is_wow64(handle) ? platform_x86 : platform_x64;
-                    _info.parent_pid        = force_cast<uint32_t>(basic_info->InheritedFromUniqueProcessId);
+                    _info.parent_pid        = static_cast<uint32_t>(basic_info->InheritedFromUniqueProcessId);
                     _info.peb_address       = reinterpret_cast<uintptr_t>(basic_info->PebBaseAddress);
                     _info.path              = winnt::get_dos_path(std::wstring(fileName->Buffer, fileName->Length / sizeof(wchar_t)));
                     _info.name              = PathFindFileNameW(fileName->Buffer);
