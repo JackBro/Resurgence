@@ -60,14 +60,14 @@ namespace resurgence
             _path = misc::winnt::get_dos_path(path);
         }
 
-        //const portable_executable&  process_module::get_pe() const
-        //{
-        //    if(!_pe.is_valid())
-        //        _pe = portable_executable::load_from_file(_path);
-        //
-        //    return _pe;
-        //}
-        //
+        const portable_executable&  process_module::get_pe()
+        {
+            if(!_pe.is_valid())
+                _pe = portable_executable::load_from_file(_path);
+        
+            return _pe;
+        }
+        
         process_modules::process_modules(process* proc)
             : _process(proc)
         {
@@ -165,9 +165,34 @@ namespace resurgence
             }
         #endif
         }
-        process_module process_modules::get_module_by_handle(HANDLE handle)
+        process_module process_modules::get_module_by_address(const std::uint8_t* address)
         {
-            throw;
+            process_module mod;
+        #ifdef _WIN64
+            if(_process->get_platform() == platform_x86) {
+                misc::winnt::enumerate_process_modules32(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                    if(address >= mod.get_base() &&
+                        address <= mod.get_base() + mod.get_size()) {
+                        mod = process_module(_process, entry);
+                        return STATUS_SUCCESS;
+                    }
+                    return STATUS_NOT_FOUND;
+                });
+                return mod;
+            } else {
+        #endif
+                misc::winnt::enumerate_process_modules(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                    if(address >= mod.get_base() &&
+                        address <= mod.get_base() + mod.get_size()) {
+                        mod = process_module(_process, entry);
+                        return STATUS_SUCCESS;
+                    }
+                    return STATUS_NOT_FOUND;
+                });
+                return mod;
+        #ifdef _WIN64
+            }
+        #endif
         }
         process_module process_modules::get_module_by_load_order(int i)
         {

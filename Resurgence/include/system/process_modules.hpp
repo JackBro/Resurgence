@@ -23,7 +23,7 @@ namespace resurgence
             const std::wstring&         get_path() const { return _path; }
             bool                        is_valid() const { return _base != nullptr; }
 
-            //const portable_executable&  get_pe() const;
+            const portable_executable&  get_pe();
 
         private:
             uint8_t*            _base;
@@ -40,7 +40,7 @@ namespace resurgence
 
             std::vector<process_module> get_all_modules();
             process_module              get_module_by_name(const std::wstring& name);
-            process_module              get_module_by_handle(HANDLE handle);
+            process_module              get_module_by_address(const std::uint8_t* address);
             process_module              get_module_by_load_order(int i);
 
         private:
