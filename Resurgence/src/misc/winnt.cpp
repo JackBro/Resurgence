@@ -722,7 +722,7 @@ namespace resurgence
         ntstatus_code winnt::write_memory(HANDLE process, void* address, void* buffer, size_t size)
         {
             if(process == GetCurrentProcess()) {
-                memcpy(address, buffer, size);
+                memcpy(const_cast<void*>(address), buffer, size);
                 return STATUS_SUCCESS;
             } else {
                 return NtWriteVirtualMemory(process, address, buffer, size, nullptr);

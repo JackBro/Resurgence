@@ -72,12 +72,21 @@ namespace resurgence
         std::vector<process_module> process_modules::get_all_modules()
         {
             using namespace misc;
-            assert(_process != nullptr);
 
             std::vector<process_module> modules;
-
-            auto id = _process->get_pid();
+            auto id     = _process->get_pid();
             auto handle = _process->get_handle();
+
+        #ifndef _WIN64
+            //
+            // Cannot retrieve x64 modules from x86
+            // 
+            if(_process->get_platform() == platform_x64) {
+                set_last_ntstatus(STATUS_ACCESS_DENIED);
+                return modules;
+            }
+        #endif
+
 
             if(!_process->is_system_idle_process()) {
                 if(_process->is_system_process()) {
@@ -105,7 +114,11 @@ namespace resurgence
                         }
                     }
                 #endif
-
+                } else {
+                    //
+                    // Handle was invalid, this is probably caused by the process being protected
+                    // 
+                    set_last_ntstatus(STATUS_ACCESS_DENIED);
                 }
             }
             return modules;

@@ -20,6 +20,7 @@ namespace resurgence
             size_t              get_size() const { return _size; }
             const std::wstring& get_name() const { return _name; }
             const std::wstring& get_path() const { return _path; }
+            bool                is_valid() const { return _base != nullptr; }
 
             uint8_t*        _base;
             size_t          _size;

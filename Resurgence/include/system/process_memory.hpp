@@ -13,10 +13,10 @@ namespace resurgence
         public:
             process_memory(process* proc);
 
-            void                                read_bytes(uint8_t* address, uint8_t* buffer, size_t size);
-            void                                write_bytes(uint8_t* address, uint8_t* buffer, size_t size);
-            template<typename _Ty> _Ty          read(uint8_t* address);
-            template<typename _Ty> void         write(uint8_t* address, const _Ty& buffer, size_t size = sizeof(_Ty));
+            ntstatus_code                       read_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
+            ntstatus_code                       write_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
+            template<typename _Ty> _Ty          read(const uint8_t* address);
+            template<typename _Ty> void         write(const uint8_t* address, const _Ty& buffer, size_t size = sizeof(_Ty));
             template<typename _Ty> std::string  read_string(_Ty address, size_t length);
             template<typename _Ty> std::wstring read_unicode_string(_Ty address, size_t length);
 
@@ -27,13 +27,13 @@ namespace resurgence
             process* _process;
         };
 
-        template<typename _Ty> _Ty process_memory::read(uint8_t* address)
+        template<typename _Ty> _Ty process_memory::read(const uint8_t* address)
         {
             _Ty buffer;
             read_bytes(address, (uint8_t*)&buffer, sizeof(_Ty));
             return buffer;
         }
-        template<typename _Ty> void process_memory::write(uint8_t* address, const _Ty& buffer, size_t size /*= sizeof(_Ty)*/)
+        template<typename _Ty> void process_memory::write(const uint8_t* address, const _Ty& buffer, size_t size /*= sizeof(_Ty)*/)
         {
             write_bytes(address, (uint8_t*)&buffer, size);
         }
