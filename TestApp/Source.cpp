@@ -8,19 +8,6 @@
 #include <Shlwapi.h>
 #include <iomanip>
 
-PVOID mainModule(DWORD pid)
-{
-    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
-    MODULEENTRY32 me;
-    me.dwSize = sizeof(MODULEENTRY32);
-    if(Module32First(snap, &me)) {
-        CloseHandle(snap);
-        return me.modBaseAddr;
-    }
-    CloseHandle(snap);
-    return 0;
-}
-
 
 int main(int argc, char** argv) {
     using namespace std;
@@ -28,7 +15,7 @@ int main(int argc, char** argv) {
     
     if(!system::process::grant_privilege(SE_DEBUG_PRIVILEGE))
         cout << "[!] Failed to set debug privilege" << endl;
-   
+    
     try {
         auto processes = system::process::get_processes();
     

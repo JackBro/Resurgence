@@ -42,3 +42,9 @@ __forceinline ntstatus_code set_last_ntstatus(ntstatus_code status)
 {
     return NtCurrentTeb()->LastStatusValue = status;
 }
+
+template<typename _Ty, typename _Ty2>
+__forceinline _Ty force_cast(_Ty2 value)
+{
+    return *(_Ty*)(&value);
+}

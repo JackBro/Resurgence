@@ -86,8 +86,7 @@ namespace resurgence
                 return modules;
             }
         #endif
-
-
+            
             if(!_process->is_system_idle_process()) {
                 if(_process->is_system_process()) {
                     winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
