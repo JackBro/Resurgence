@@ -33,11 +33,13 @@ int main(int argc, char** argv) {
         auto processes = system::process::get_processes();
     
         for(auto& process : processes) {
-            wcout << (PVOID)process.get_peb_address() << " | " << process.get_path() << endl;
-            //for(auto& module : process.modules()->get_all_modules()) {
-            //    wcout << "    " << module.get_path() << endl;
-            //}
-            //wcout << endl;
+            if(process.is_current_process()) {
+                wcout << (PVOID)process.get_peb_address() << " | " << process.get_name() << endl;
+                for(auto& module : process.modules()->get_all_modules()) {
+                    wcout << "    " << module.get_path() << endl;
+                }
+                wcout << endl;
+            }
         }
     } catch(const misc::exception& ex) {
         wcout << ex.get_message() << endl;

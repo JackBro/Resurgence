@@ -63,6 +63,8 @@ namespace resurgence
         {
             using namespace misc;
 
+            _info.is_current_process 
+                = GetCurrentProcessId() == _info.pid;
 
             if(_info.pid == SYSTEM_IDLE_PROCESS_ID) {
                 _info.target_platform = platform_x64;
