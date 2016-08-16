@@ -30,14 +30,13 @@ int main(int argc, char** argv) {
         cout << "[!] Failed to set debug privilege" << endl;
    
     try {
-        auto processes = system::process::get_processes();
+        auto processes = system::process::get_process_by_name(L"notepad++.exe");
     
         for(auto& process : processes) {
-            wcout << process.get_pid() << " | " << (PVOID)process.get_peb_address() << " | " << process.get_name() << endl;
-            //for(auto& module : process.modules()->get_all_modules()) {
-            //    wcout << "    " << module.get_path() << endl;
-            //}
-            //wcout << endl;
+            auto module = process.modules()->get_module_by_name(L"notepad++.exe");
+            if(module.get_base() != nullptr) {
+                wcout << module.get_base() << endl;
+            }
         }
     } catch(const misc::exception& ex) {
         wcout << ex.get_message() << endl;

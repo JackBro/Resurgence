@@ -20,6 +20,7 @@ namespace resurgence
 
         module::module()
         {
+            RtlZeroMemory(this, sizeof(*this));
         }
         module::module(process* proc, PLDR_DATA_TABLE_ENTRY entry)
         {
@@ -51,10 +52,10 @@ namespace resurgence
         module::module(PRTL_PROCESS_MODULE_INFORMATION entry)
         {
             wchar_t path[MAX_PATH] = {NULL};
+            MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (const char*)entry->FullPathName, 256, path, MAX_PATH);
 
             _base = (uint8_t*)entry->ImageBase;
             _size = (size_t)entry->ImageSize;
-            MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (const char*)entry->FullPathName, 256, path, MAX_PATH);
             _name = (path + entry->OffsetToFileName);
             _path = misc::winnt::get_dos_path(path);
         }
@@ -89,6 +90,7 @@ namespace resurgence
                         modules.emplace_back(_process, entry);
                         return STATUS_NOT_FOUND;
                     });
+
                 #ifdef _WIN64
                     if(_process->get_platform() == platform_x86) {
                         std::vector<module> modules32;
@@ -103,13 +105,45 @@ namespace resurgence
                         }
                     }
                 #endif
+
                 }
             }
             return modules;
         }
         module process_modules::get_module_by_name(const std::wstring& name)
         {
-            throw;
+            module mod;
+        #ifdef _WIN64
+            if(_process->get_platform() == platform_x86) {
+                misc::winnt::enumerate_process_modules32(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                    auto buffer
+                        = _process->memory()->read_unicode_string(
+                            entry->BaseDllName.Buffer,
+                            entry->BaseDllName.Length / sizeof(wchar_t));
+                    if(buffer == name) {
+                        mod = module(_process, entry);
+                        return STATUS_SUCCESS;
+                    }
+                    return STATUS_NOT_FOUND;
+                });
+                return mod;
+            } else {
+        #endif
+                misc::winnt::enumerate_process_modules(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                    auto buffer
+                        = _process->memory()->read_unicode_string(
+                            entry->BaseDllName.Buffer,
+                            entry->BaseDllName.Length / sizeof(wchar_t));
+                    if(buffer == name) {
+                        mod = module(_process, entry);
+                        return STATUS_SUCCESS;
+                    }
+                    return STATUS_NOT_FOUND;
+                });
+                return mod;
+        #ifdef _WIN64
+            }
+        #endif
         }
         module process_modules::get_module_by_handle(HANDLE handle)
         {
