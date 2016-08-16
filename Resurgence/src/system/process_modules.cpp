@@ -196,7 +196,32 @@ namespace resurgence
         }
         process_module process_modules::get_module_by_load_order(int i)
         {
-            throw;
+            process_module mod;
+            int current = 0;
+
+        #ifdef _WIN64
+            if(_process->get_platform() == platform_x86) {
+                misc::winnt::enumerate_process_modules32(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                    if(current++ == i) {
+                        mod = process_module(_process, entry);
+                        return STATUS_SUCCESS;
+                    }
+                    return STATUS_NOT_FOUND;
+                });
+                return mod;
+            } else {
+            #endif
+                misc::winnt::enumerate_process_modules(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                    if(current++ == i) {
+                        mod = process_module(_process, entry);
+                        return STATUS_SUCCESS;
+                    }
+                    return STATUS_NOT_FOUND;
+                });
+                return mod;
+            #ifdef _WIN64
+            }
+        #endif
         }
     }
 }
