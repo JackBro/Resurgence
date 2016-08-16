@@ -1,5 +1,6 @@
 #pragma once
 
+#include <headers.hpp>
 #include <string>
 #include <locale>
 #include <codecvt>
@@ -19,6 +20,7 @@ namespace resurgence
                 : _message(L"")
             {
             }
+
             exception(std::wstring msg)
                 : _message(std::move(msg))
             {
@@ -28,8 +30,10 @@ namespace resurgence
                 std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
                 _message = converter.from_bytes(msg);
             }
-        
-            const std::wstring& GetMessage() const
+            virtual ~exception()
+            {
+            }
+            virtual const std::wstring& get_message() const
             {
                 return _message;
             }
@@ -60,21 +64,29 @@ namespace resurgence
             : public exception
         {
         public:
-            win32_exception()
-                : exception(L"A Win32 routine failed.")
+            win32_exception(ntstatus_code status)
+                : exception(L"A Win32 routine failed."), _status(status)
             {
 
             }
-            win32_exception(std::wstring routine)
-                : exception(std::wstring(L"A Win32 routine failed. ") + routine)
+            win32_exception(std::wstring msg, ntstatus_code status)
+                : exception(msg), _status(status)
             {
 
             }
-            win32_exception(std::string routine)
-                : exception(std::string("A Win32 routine failed. ") + routine)
+            win32_exception(std::string msg, ntstatus_code status)
+                : exception(msg), _status(status)
             {
 
             }
+
+            ntstatus_code get_status() const
+            {
+                return _status;
+            }
+
+        protected:
+            ntstatus_code _status;
         };
     }
 }

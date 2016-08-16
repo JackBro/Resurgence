@@ -24,23 +24,23 @@ namespace resurgence
         module::module(process* proc, PLDR_DATA_TABLE_ENTRY entry)
         {
             if(proc->is_current_process()) {
-                _base = (std::uint8_t*)entry->DllBase;
-                _size = (std::size_t)entry->SizeOfImage;
+                _base = (uint8_t*)entry->DllBase;
+                _size = (size_t)entry->SizeOfImage;
                 _name = entry->BaseDllName.Buffer;
                 _path = entry->FullDllName.Buffer;
             } else {
-                _base = (std::uint8_t*)entry->DllBase;
-                _size = (std::size_t)entry->SizeOfImage;
-                _name = proc->memory()->read_unicode_string(entry->BaseDllName.Buffer, entry->BaseDllName.Length / sizeof(WCHAR));
-                _path = proc->memory()->read_unicode_string(entry->FullDllName.Buffer, entry->FullDllName.Length / sizeof(WCHAR));
+                _base = (uint8_t*)entry->DllBase;
+                _size = (size_t)entry->SizeOfImage;
+                _name = proc->memory()->read_unicode_string(entry->BaseDllName.Buffer, entry->BaseDllName.Length / sizeof(wchar_t));
+                _path = proc->memory()->read_unicode_string(entry->FullDllName.Buffer, entry->FullDllName.Length / sizeof(wchar_t));
             }
         }
         module::module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry)
         {
-            _base = (std::uint8_t*)entry->DllBase;
-            _size = (std::size_t)entry->SizeOfImage;
-            _name = proc->memory()->read_unicode_string(entry->BaseDllName.Buffer, entry->BaseDllName.Length / sizeof(WCHAR));
-            _path = proc->memory()->read_unicode_string(entry->FullDllName.Buffer, entry->FullDllName.Length / sizeof(WCHAR));
+            _base = (uint8_t*)entry->DllBase;
+            _size = (size_t)entry->SizeOfImage;
+            _name = proc->memory()->read_unicode_string(entry->BaseDllName.Buffer, entry->BaseDllName.Length / sizeof(wchar_t));
+            _path = proc->memory()->read_unicode_string(entry->FullDllName.Buffer, entry->FullDllName.Length / sizeof(wchar_t));
 
             auto system32 = std::wstring(USER_SHARED_DATA->NtSystemRoot) + L"\\System32";
             auto syswow64 = std::wstring(USER_SHARED_DATA->NtSystemRoot) + L"\\SysWOW64";
@@ -50,10 +50,10 @@ namespace resurgence
         }
         module::module(PRTL_PROCESS_MODULE_INFORMATION entry)
         {
-            WCHAR path[MAX_PATH] = {NULL};
+            wchar_t path[MAX_PATH] = {NULL};
 
-            _base = (std::uint8_t*)entry->ImageBase;
-            _size = (std::size_t)entry->ImageSize;
+            _base = (uint8_t*)entry->ImageBase;
+            _size = (size_t)entry->ImageSize;
             MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (const char*)entry->FullPathName, 256, path, MAX_PATH);
             _name = (path + entry->OffsetToFileName);
             _path = misc::winnt::get_dos_path(path);

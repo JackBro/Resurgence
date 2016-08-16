@@ -16,13 +16,13 @@ namespace resurgence
             module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry);
             module(PRTL_PROCESS_MODULE_INFORMATION entry);
 
-            const std::uint8_t* get_base() const { return _base; }
-            std::size_t         get_size() const { return _size; }
+            const uint8_t* get_base() const { return _base; }
+            size_t         get_size() const { return _size; }
             const std::wstring& get_name() const { return _name; }
             const std::wstring& get_path() const { return _path; }
 
-            std::uint8_t*   _base;
-            std::size_t     _size;
+            uint8_t*   _base;
+            size_t     _size;
             std::wstring    _name;
             std::wstring    _path;
         };

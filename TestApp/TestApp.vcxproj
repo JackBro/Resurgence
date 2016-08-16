@@ -159,6 +159,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Resurgence\Resurgence.vcxproj">
       <Project>{6872536e-3320-48d7-91a2-363b8ca39055}</Project>
+      <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

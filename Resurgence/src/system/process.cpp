@@ -16,17 +16,27 @@ namespace resurgence
         {
             RtlZeroMemory(&_info, sizeof(_info));
         }
-        process::process(std::uint32_t pid)
+        process::process(uint32_t pid)
             : _handle(nullptr),
             _memory(this),
             _modules(this)
         {
+            ntstatus_code status = STATUS_SUCCESS;
+
             RtlZeroMemory(&_info, sizeof(_info));
 
             _info.pid = pid;
-
-            if(pid != GetCurrentProcessId()) {
-                open(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ);
+            
+            if( pid != SYSTEM_IDLE_PROCESS_ID && 
+                pid != GetCurrentProcessId()) {
+                status = open(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ);
+                if(!NT_SUCCESS(status)) {
+                    status = open(PROCESS_QUERY_LIMITED_INFORMATION);
+                    if(!NT_SUCCESS(status)) {
+                        throw misc::win32_exception("Failed to open the process", status);
+                    }
+                }
+                
             } else {
                 _handle = misc::safe_process_handle(GetCurrentProcess());
             }
@@ -55,75 +65,46 @@ namespace resurgence
 
 
             if(_info.pid == SYSTEM_IDLE_PROCESS_ID) {
-                _info.platform = platform_x64;
+                _info.target_platform = platform_x64;
                 _info.parent_pid = 0;
                 _info.peb_address = 0;
                 _info.wow64peb_address = 0;
                 _info.name = L"System Idle Process";
                 _info.path = L"N/A";
             } else if(_info.pid == SYSTEM_PROCESS_ID) {
-                _info.platform = platform_x64;
+                _info.target_platform = platform_x64;
                 _info.parent_pid = 0;
                 _info.peb_address = 0;
                 _info.wow64peb_address = 0;
                 _info.name = L"System Process";
                 winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
-                    WCHAR processPath[MAX_PATH];
+                    wchar_t processPath[MAX_PATH];
                     ZeroMemory(processPath, sizeof(processPath));
                     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (LPCCH)info->FullPathName, 256, processPath, MAX_PATH);
                     _info.path = winnt::get_dos_path(processPath);
                     return STATUS_SUCCESS;
                 });
             } else {
-
-                //
-                // Invalid handle. Its probably some system process.
-                //
-                if(!_handle.is_valid()) {
-                    auto handle = winnt::open_process(get_pid(), PROCESS_QUERY_LIMITED_INFORMATION);
-                    if(handle) {
-                        auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(handle, ProcessBasicInformation);
-                        auto fileName = (PUNICODE_STRING)winnt::query_process_information(handle, ProcessImageFileName);
-
-                        _info.platform      = misc::winnt::process_is_wow64(handle) ? platform_x86 : platform_x64;
-                        _info.parent_pid    = (std::uint32_t)basic_info->InheritedFromUniqueProcessId;
-                        _info.peb_address   = (std::uintptr_t)basic_info->PebBaseAddress;
-                        _info.path          = std::wstring(fileName->Buffer);
-                        _info.name          = PathFindFileNameW(fileName->Buffer);
-
-                    #ifdef _WIN64
-                        if(_info.platform == platform_x86) {
-                            _info.wow64peb_address = (std::uint32_t)(std::uintptr_t)((std::uint8_t*)basic_info->PebBaseAddress + PAGE_SIZE);
-                        } else {
-                            _info.wow64peb_address = 0;
-                        }
-                    #else 
-                        _info.wow64peb_address = _info.peb_address;
-                    #endif
-                        NtClose(handle);
-
-                        free_local_buffer(&basic_info);
-                        free_local_buffer(&fileName);
-                    }
-                } else {
+                if(_handle.is_valid()) {
                     auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(_handle.get(), ProcessBasicInformation);
                     auto fileName   = (PUNICODE_STRING)winnt::query_process_information(_handle.get(), ProcessImageFileName);
-
-                    _info.platform      = misc::winnt::process_is_wow64(_handle.get()) ? platform_x86 : platform_x64;
-                    _info.parent_pid    = (std::uint32_t)basic_info->InheritedFromUniqueProcessId;
-                    _info.peb_address   = (std::uintptr_t)basic_info->PebBaseAddress;
-                    _info.path          = std::wstring(fileName->Buffer);
-                    _info.name          = PathFindFileNameW(fileName->Buffer);
+                    
+                    _info.target_platform   = winnt::process_is_wow64(_handle.get()) ? platform_x86 : platform_x64;
+                    _info.parent_pid        = static_cast<uint32_t>(basic_info->InheritedFromUniqueProcessId);
+                    _info.peb_address       = reinterpret_cast<uintptr_t>(basic_info->PebBaseAddress);
+                    _info.path              = winnt::get_dos_path(std::wstring(fileName->Buffer, fileName->Length / sizeof(wchar_t)));
+                    _info.name              = PathFindFileNameW(fileName->Buffer);
 
                 #ifdef _WIN64
-                    if(_info.platform == platform_x86) {
-                        _info.wow64peb_address = (std::uint32_t)(std::uintptr_t)((std::uint8_t*)basic_info->PebBaseAddress + PAGE_SIZE);
+                    if(_info.target_platform == platform_x86) {
+                        _info.wow64peb_address = reinterpret_cast<uint32_t>(PTR_ADD(basic_info->PebBaseAddress, PAGE_SIZE));
                     } else {
                         _info.wow64peb_address = 0;
                     }
                 #else 
                     _info.wow64peb_address = _info.peb_address;
                 #endif
+
                     free_local_buffer(&basic_info);
                     free_local_buffer(&fileName);
                 }
@@ -134,7 +115,7 @@ namespace resurgence
             std::vector<process> processes;
 
             misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> ntstatus_code {
-                processes.push_back(process((std::uint32_t)info->UniqueProcessId));
+                processes.push_back(process((uint32_t)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
 
@@ -146,18 +127,18 @@ namespace resurgence
 
             misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> ntstatus_code {
                 if(info->ImageName.Length > 0 && !wcscmp(std::data(name), info->ImageName.Buffer))
-                    processes.emplace_back(static_cast<std::uint32_t>((ULONG_PTR)info->UniqueProcessId));
+                    processes.emplace_back(static_cast<uint32_t>((ULONG_PTR)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
 
             return processes;
         }
-        bool process::grant_privilege(std::uint32_t privilege)
+        bool process::grant_privilege(uint32_t privilege)
         {
             BOOLEAN enabled;
             return NT_SUCCESS(RtlAdjustPrivilege(privilege, TRUE, FALSE, &enabled));
         }
-        bool process::revoke_privilege(std::uint32_t privilege)
+        bool process::revoke_privilege(uint32_t privilege)
         {
             BOOLEAN enabled;
             return NT_SUCCESS(RtlAdjustPrivilege(privilege, FALSE, FALSE, &enabled));
@@ -170,11 +151,11 @@ namespace resurgence
         {
             return _info.path;
         }
-        std::uintptr_t process::get_peb_address() const
+        uintptr_t process::get_peb_address() const
         {
             return _info.peb_address;
         }
-        std::uint32_t process::get_wow64_peb_address() const
+        uint32_t process::get_wow64_peb_address() const
         {
             return _info.wow64peb_address;
         }
@@ -184,7 +165,7 @@ namespace resurgence
         }
         platform process::get_platform() const
         {
-            return _info.platform;
+            return _info.target_platform;
         }
         const misc::safe_process_handle& process::get_handle() const
         {
@@ -194,10 +175,10 @@ namespace resurgence
         {
             return _info.is_current_process;
         }
-        bool process::open(std::uint32_t access)
+        ntstatus_code process::open(uint32_t access)
         {
             if(_info.is_current_process)
-                return true;
+                return STATUS_SUCCESS;
 
             if(_handle.is_valid()) {
                 auto handle_info = (POBJECT_BASIC_INFORMATION)misc::winnt::query_object_information(_handle.get(), ObjectBasicInformation);
@@ -211,13 +192,17 @@ namespace resurgence
                     
                 free_local_buffer(&handle_info);
 
-                if(b) return true;
+                if(b) return STATUS_SUCCESS;
             }
             
-            HANDLE hProcess = misc::winnt::open_process(get_pid(), access);
-            _handle = misc::safe_process_handle(hProcess);
+            auto handle = HANDLE{nullptr};
+            auto status = misc::winnt::open_process(&handle, get_pid(), access);
 
-            return _handle.is_valid();
+            if(NT_SUCCESS(status)) {
+                _handle = misc::safe_process_handle(handle);
+            }
+
+            return status;
         }
     }
 }

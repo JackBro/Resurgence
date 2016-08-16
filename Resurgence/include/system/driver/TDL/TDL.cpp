@@ -9,10 +9,10 @@
 HINSTANCE  g_hInstance;
 HANDLE     g_ConOut = NULL;
 BOOL       g_ConsoleOutput = FALSE;
-WCHAR      BE = 0xFEFF;
+wchar_t      BE = 0xFEFF;
 
-WCHAR szVBoxDriver[MAX_PATH];
-WCHAR szVBoxBackup[MAX_PATH];
+wchar_t szVBoxDriver[MAX_PATH];
+wchar_t szVBoxBackup[MAX_PATH];
 
 #define VBoxDrvSvc      TEXT("VBoxDrv")
 #define supImageName    "furutaka"

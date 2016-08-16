@@ -28,12 +28,12 @@ namespace resurgence
             //-----------------------------------------------
             // system routines
             //-----------------------------------------------
-            static std::size_t      query_required_size(SYSTEM_INFORMATION_CLASS information);
-            static std::size_t      query_required_size(PROCESS_INFORMATION_CLASSEX information);
-            static std::size_t      query_required_size(OBJECT_INFORMATION_CLASS information);
-            static std::uint8_t*    query_system_information(SYSTEM_INFORMATION_CLASS information);
-            static std::uint8_t*    query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information);
-            static std::uint8_t*    query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information);
+            static size_t           query_required_size(SYSTEM_INFORMATION_CLASS information);
+            static size_t           query_required_size(PROCESS_INFORMATION_CLASSEX information);
+            static size_t           query_required_size(OBJECT_INFORMATION_CLASS information);
+            static uint8_t*         query_system_information(SYSTEM_INFORMATION_CLASS information);
+            static uint8_t*         query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information);
+            static uint8_t*         query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information);
             static ntstatus_code    enumerate_system_modules(system_module_enumeration_callback callback);
             static ntstatus_code    enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback);
             static ntstatus_code    enumerate_processes(process_enumeration_callback callback);
@@ -45,10 +45,12 @@ namespace resurgence
             //-----------------------------------------------
             // File routines
             //-----------------------------------------------
-            static ntstatus_code    write_file(const std::wstring& path, std::uint8_t* buffer, std::size_t length);
+            static ntstatus_code    write_file(const std::wstring& path, uint8_t* buffer, size_t length);
             static ntstatus_code    copy_file(const std::wstring& oldPath, const std::wstring& newPath);
             static std::wstring     get_full_path(const std::wstring& path);
             static std::wstring     get_dos_path(const std::wstring& path);
+            static ntstatus_code    query_mounted_drives(std::vector<std::wstring>& letters);
+            static ntstatus_code    get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink);
 
             //-----------------------------------------------
             // Driver related routines
@@ -64,20 +66,20 @@ namespace resurgence
             //-----------------------------------------------
             // Memory routines
             //-----------------------------------------------
-            static ntstatus_code allocate_memory(HANDLE process, void* start, std::size_t* size, std::uint32_t allocation, std::uint32_t protection);
-            static ntstatus_code protect_memory(HANDLE process, void* start, std::size_t* size, std::uint32_t protection, std::uint32_t& oldProtection);
-            static ntstatus_code free_memory(HANDLE process, void* start, std::size_t size, std::uint32_t free);
-            static ntstatus_code read_memory(HANDLE process, void* address, void* buffer, std::size_t size);
-            static ntstatus_code write_memory(HANDLE process, void* address, void* buffer, std::size_t size);
+            static ntstatus_code    allocate_memory(HANDLE process, void* start, size_t* size, uint32_t allocation, uint32_t protection);
+            static ntstatus_code    protect_memory(HANDLE process, void* start, size_t* size, uint32_t protection, uint32_t& oldProtection);
+            static ntstatus_code    free_memory(HANDLE process, void* start, size_t size, uint32_t free);
+            static ntstatus_code    read_memory(HANDLE process, void* address, void* buffer, size_t size);
+            static ntstatus_code    write_memory(HANDLE process, void* address, void* buffer, size_t size);
             
             //-----------------------------------------------
             // Process routines
             //-----------------------------------------------
-            static HANDLE   open_process(std::uint32_t pid, std::uint32_t access);
-            static bool     process_is_wow64(HANDLE process);
+            static ntstatus_code    open_process(PHANDLE handle, uint32_t pid, uint32_t access);
+            static bool             process_is_wow64(HANDLE process);
         };
     }
 }
 
 #define allocate_local_buffer(buffer, size) resurgence::misc::winnt::allocate_memory(GetCurrentProcess(), buffer, size, MEM_COMMIT, PAGE_READWRITE)
-#define free_local_buffer(buffer)     resurgence::misc::winnt::free_memory(GetCurrentProcess(), buffer, 0, MEM_RELEASE)
+#define free_local_buffer(buffer)           resurgence::misc::winnt::free_memory(GetCurrentProcess(), buffer, 0, MEM_RELEASE)

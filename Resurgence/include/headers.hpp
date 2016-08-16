@@ -9,16 +9,17 @@
 typedef long ntstatus_code;
 
 #include <cassert>
+#include <cstdint>
+#include <type_traits>
 #include <Windows.h>
 #include <winioctl.h>
 #include <ntstatus.h>
 #include <strsafe.h>
 #include <NtApi.hpp>
-#include <cstdint>
 #include <misc/Logging.hpp>
 
 #ifndef PTR_ADD
-#define PTR_ADD(ptr, off) ((std::uint8_t*)ptr + off)
+#define PTR_ADD(ptr, off) ((uint8_t*)ptr + off)
 #endif
 
 #if !defined PAGE_SIZE

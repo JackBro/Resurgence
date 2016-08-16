@@ -840,8 +840,8 @@ namespace consts {
     static const char* kConfigurationComment                   =      "##";
     static const char* kConfigurationLevel                     =      "*";
     static const char* kConfigurationLoggerId                  =      "--";
-    static const std::size_t kSourceFilenameMaxLength          =      100;
-    static const std::size_t kSourceLineMaxLength              =      10;
+    static const size_t kSourceFilenameMaxLength          =      100;
+    static const size_t kSourceLineMaxLength              =      10;
     static const Level kPerformanceTrackerDefaultLevel         =      Level::Info;
     const struct {
         double value;
@@ -876,9 +876,9 @@ namespace consts {
     static const int kCrashSignalsCount                          =      sizeof(kCrashSignals) / sizeof(kCrashSignals[0]);
 }  // namespace consts
 }  // namespace base
-typedef std::function<void(const char*, std::size_t)> PreRollOutCallback;
+typedef std::function<void(const char*, size_t)> PreRollOutCallback;
 namespace base {
-static inline void defaultPreRollOutCallback(const char*, std::size_t) {}
+static inline void defaultPreRollOutCallback(const char*, size_t) {}
 /// @brief Enum to represent timestamp unit
 enum class TimestampUnit : base::type::EnumType {
     Microsecond = 0, Millisecond = 1, Second = 2, Minute = 3, Hour = 4, Day = 5
@@ -1148,13 +1148,13 @@ public:
     }
 
     /// @brief Gets size of file provided in stream
-    static std::size_t getSizeOfFile(base::type::fstream_t* fs) {
+    static size_t getSizeOfFile(base::type::fstream_t* fs) {
         if (fs == nullptr) {
             return 0;
         }
         std::streampos currPos = fs->tellg();
         fs->seekg(0, fs->end);
-        std::size_t size = static_cast<std::size_t>(fs->tellg());
+        size_t size = static_cast<size_t>(fs->tellg());
         fs->seekg(currPos);
         return size;
     }
@@ -1224,7 +1224,7 @@ public:
         if ((fullPath == "") || (fullPath.find(seperator) == std::string::npos)) {
             return fullPath;
         }
-        std::size_t lastSlashAt = fullPath.find_last_of(seperator);
+        size_t lastSlashAt = fullPath.find_last_of(seperator);
         if (lastSlashAt == 0) {
             return std::string(seperator);
         }
@@ -1232,8 +1232,8 @@ public:
     }
     /// @brief builds stripped filename and puts it in buff
     static void buildStrippedFilename(const char* filename, char buff[], 
-            std::size_t limit = base::consts::kSourceFilenameMaxLength) {
-        std::size_t sizeOfFilename = strlen(filename);
+            size_t limit = base::consts::kSourceFilenameMaxLength) {
+        size_t sizeOfFilename = strlen(filename);
         if (sizeOfFilename >= limit) {
             filename += (sizeOfFilename - limit);
             if (filename[0] != '.' && filename[1] != '.') {  // prepend if not already
@@ -1245,12 +1245,12 @@ public:
     }
     /// @brief builds base filename and puts it in buff
     static void buildBaseFilename(const std::string& fullPath, char buff[], 
-            std::size_t limit = base::consts::kSourceFilenameMaxLength,
+            size_t limit = base::consts::kSourceFilenameMaxLength,
             const char* seperator = base::consts::kFilePathSeperator) {
         const char *filename = fullPath.c_str();
-        std::size_t lastSlashAt = fullPath.find_last_of(seperator);
+        size_t lastSlashAt = fullPath.find_last_of(seperator);
         filename += lastSlashAt ? lastSlashAt+1 : 0;
-        std::size_t sizeOfFilename = strlen(filename);
+        size_t sizeOfFilename = strlen(filename);
         if (sizeOfFilename >= limit) {
             filename += (sizeOfFilename - limit);
             if (filename[0] != '.' && filename[1] != '.') {  // prepend if not already
@@ -1349,7 +1349,7 @@ public:
             const std::string& replaceWith) {
         if (replaceWhat == replaceWith)
             return str;
-        std::size_t foundAt = std::string::npos;
+        size_t foundAt = std::string::npos;
         while ((foundAt = str.find(replaceWhat, foundAt + 1)) != std::string::npos) {
             str.replace(foundAt, replaceWhat.length(), replaceWith);
         }
@@ -1358,7 +1358,7 @@ public:
 
     static void replaceFirstWithEscape(base::type::string_t& str, const base::type::string_t& replaceWhat, // NOLINT
             const base::type::string_t& replaceWith) {
-        std::size_t foundAt = base::type::string_t::npos;
+        size_t foundAt = base::type::string_t::npos;
         while ((foundAt = str.find(replaceWhat, foundAt + 1)) != base::type::string_t::npos) {
             if (foundAt > 0 && str[foundAt - 1] == base::consts::kFormatSpecifierChar) {
                 str.erase(foundAt > 0 ? foundAt - 1 : 0, 1);
@@ -1413,7 +1413,7 @@ public:
         return false;
     }
 
-    static inline char* convertAndAddToBuff(std::size_t n, int len, char* buf, const char* bufLim, bool zeroPadded = true) {
+    static inline char* convertAndAddToBuff(size_t n, int len, char* buf, const char* bufLim, bool zeroPadded = true) {
         char localBuff[10] = "";
         char* p = localBuff + sizeof(localBuff) - 2;
         if (n > 0) {
@@ -1434,7 +1434,7 @@ public:
         return buf;
     }
 
-    static inline char* clearBuff(char buff[], std::size_t lim) {
+    static inline char* clearBuff(char buff[], size_t lim) {
         STRCPY(buff, "", lim);
         ELPP_UNUSED(lim);  // For *nix we dont have anything using lim in above STRCPY macro
         return buff;
@@ -1443,12 +1443,12 @@ public:
     /// @brief Converst wchar* to char*
     ///        NOTE: Need to free return value after use!
     static char* wcharPtrToCharPtr(const wchar_t* line) {
-        std::size_t len_ = wcslen(line) + 1;
+        size_t len_ = wcslen(line) + 1;
         char* buff_ = static_cast<char*>(malloc(len_ + 1));
 #      if ELPP_OS_UNIX || (ELPP_OS_WINDOWS && !ELPP_CRT_DBG_WARNINGS)
         std::wcstombs(buff_, line, len_);
 #      elif ELPP_OS_WINDOWS
-        std::size_t convCount_ = 0;
+        size_t convCount_ = 0;
         mbstate_t mbState_;
         ::memset(static_cast<void*>(&mbState_), 0, sizeof(mbState_));
         wcsrtombs_s(&convCount_, buff_, len_, &line, len_, &mbState_);
@@ -1646,7 +1646,7 @@ public:
         buildTimeInfo(&currTime, &timeInfo);
         const int kBuffSize = 30;
         char buff_[kBuffSize] = "";
-        parseFormat(buff_, kBuffSize, format, &timeInfo, static_cast<std::size_t>(currTime.tv_usec / msWidth->m_offset), msWidth);
+        parseFormat(buff_, kBuffSize, format, &timeInfo, static_cast<size_t>(currTime.tv_usec / msWidth->m_offset), msWidth);
         return std::string(buff_);
     }
 
@@ -1699,8 +1699,8 @@ private:
 #   endif  // ELPP_COMPILER_MSVC
 #endif  // ELPP_OS_UNIX
     }
-    static char* parseFormat(char* buf, std::size_t bufSz, const char* format, const struct tm* tInfo,
-            std::size_t msec, const base::MillisecondsWidth* msWidth) {
+    static char* parseFormat(char* buf, size_t bufSz, const char* format, const struct tm* tInfo,
+            size_t msec, const base::MillisecondsWidth* msWidth) {
         const char* bufLim = buf + bufSz;
         for (; *format; ++format) {
             if (*format == base::consts::kFormatSpecifierChar) {
@@ -1828,7 +1828,7 @@ public:
         return m_params.empty() && m_paramsWithValue.empty();
     }
     /// @brief Returns total number of arguments. This exclude argv[0]
-    inline std::size_t size(void) const {
+    inline size_t size(void) const {
         return m_params.size() + m_paramsWithValue.size();
     }
     inline friend base::type::ostream_t& operator<<(base::type::ostream_t& os, const CommandLineArgs& c) {
@@ -1875,7 +1875,7 @@ public:
         if (size() != other.size()) {
             return false;
         }
-        for (std::size_t i = 0; i < m_list.size(); ++i) {
+        for (size_t i = 0; i < m_list.size(); ++i) {
             if (m_list.at(i) != other.m_list.at(i)) {
                 return false;
             }
@@ -1887,7 +1887,7 @@ public:
         if (size() != other.size()) {
             return true;
         }
-        for (std::size_t i = 0; i < m_list.size(); ++i) {
+        for (size_t i = 0; i < m_list.size(); ++i) {
             if (m_list.at(i) != other.m_list.at(i)) {
                 return true;
             }
@@ -1935,7 +1935,7 @@ public:
     }
 
     /// @return Size of repository
-    virtual inline std::size_t size(void) const ELPP_FINAL {
+    virtual inline size_t size(void) const ELPP_FINAL {
         return m_list.size();
     }
 
@@ -2204,7 +2204,7 @@ public:
         base::type::string_t formatCopy = userFormat;
         m_flags = 0x0;
         auto conditionalAddFlag = [&](const base::type::char_t* specifier, base::FormatFlags flag) {
-            std::size_t foundAt = base::type::string_t::npos;
+            size_t foundAt = base::type::string_t::npos;
             while ((foundAt = formatCopy.find(specifier, foundAt + 1)) != base::type::string_t::npos){
                 if (foundAt > 0 && formatCopy[foundAt - 1] == base::consts::kFormatSpecifierChar) {
                     if (hasFlag(flag)) {
@@ -2233,7 +2233,7 @@ public:
         conditionalAddFlag(base::consts::kMessageFormatSpecifier, base::FormatFlags::LogMessage);
         conditionalAddFlag(base::consts::kVerboseLevelFormatSpecifier, base::FormatFlags::VerboseLevel);
         // For date/time we need to extract user's date format first
-        std::size_t dateIndex = std::string::npos;
+        size_t dateIndex = std::string::npos;
         if ((dateIndex = formatCopy.find(base::consts::kDateTimeFormatSpecifier)) != std::string::npos) {
             while (dateIndex > 0 && formatCopy[dateIndex - 1] == base::consts::kFormatSpecifierChar) {
                 dateIndex = formatCopy.find(base::consts::kDateTimeFormatSpecifier, dateIndex + 1);
@@ -2279,7 +2279,7 @@ protected:
     /// @brief Updates date time format if available in currFormat.
     /// @param index Index where %datetime, %date or %time was found
     /// @param [in,out] currFormat current format that is being used to format
-    virtual void updateDateFormat(std::size_t index, base::type::string_t& currFormat) ELPP_FINAL {
+    virtual void updateDateFormat(size_t index, base::type::string_t& currFormat) ELPP_FINAL {
         if (hasFlag(base::FormatFlags::DateTime)) {
             index += ELPP_STRLEN(base::consts::kDateTimeFormatSpecifier);
         }
@@ -2746,9 +2746,9 @@ public:
     private:
         friend class el::Loggers;
         static void ignoreComments(std::string* line) {
-            std::size_t foundAt = 0;
-            std::size_t quotesStart = line->find("\"");
-            std::size_t quotesEnd = std::string::npos;
+            size_t foundAt = 0;
+            size_t quotesStart = line->find("\"");
+            size_t quotesEnd = std::string::npos;
             if (quotesStart != std::string::npos) {
                 quotesEnd = line->find("\"", quotesStart + 1);
                 while (quotesEnd != std::string::npos && line->at(quotesEnd - 1) == '\\') {
@@ -2772,7 +2772,7 @@ public:
         }
 
         static inline bool isConfig(const std::string& line) {
-            std::size_t assignment = line.find('=');
+            size_t assignment = line.find('=');
             return line != "" &&
                     ((line[0] >= 65 && line[0] <= 90) || (line[0] >= 97 && line[0] <= 122)) &&
                     (assignment != std::string::npos) &&
@@ -2801,15 +2801,15 @@ public:
                 return true;
             }
             if (isConfig(*line)) {
-                std::size_t assignment = line->find('=');
+                size_t assignment = line->find('=');
                 *currConfigStr = line->substr(0, assignment);
                 *currConfigStr = base::utils::Str::toUpper(*currConfigStr);
                 *currConfigStr = base::utils::Str::trim(*currConfigStr);
                 currConfig = ConfigurationTypeHelper::convertFromString(currConfigStr->c_str());
                 currValue = line->substr(assignment + 1);
                 currValue = base::utils::Str::trim(currValue);
-                std::size_t quotesStart = currValue.find("\"", 0);
-                std::size_t quotesEnd = std::string::npos;
+                size_t quotesStart = currValue.find("\"", 0);
+                size_t quotesEnd = std::string::npos;
                 if (quotesStart != std::string::npos) {
                     quotesEnd = currValue.find("\"", quotesStart + 1);
                     while (quotesEnd != std::string::npos && currValue.at(quotesEnd - 1) == '\\') {
@@ -2956,12 +2956,12 @@ public:
         return getConfigByRef<base::FileStreamPtr>(level, &m_fileStreamMap, "fileStream").get();
     }
 
-    inline std::size_t maxLogFileSize(Level level) {
-        return getConfigByVal<std::size_t>(level, &m_maxLogFileSizeMap, "maxLogFileSize");
+    inline size_t maxLogFileSize(Level level) {
+        return getConfigByVal<size_t>(level, &m_maxLogFileSizeMap, "maxLogFileSize");
     }
 
-    inline std::size_t logFlushThreshold(Level level) {
-        return getConfigByVal<std::size_t>(level, &m_logFlushThresholdMap, "logFlushThreshold");
+    inline size_t logFlushThreshold(Level level) {
+        return getConfigByVal<size_t>(level, &m_logFlushThresholdMap, "logFlushThreshold");
     }
 
 private:
@@ -2974,8 +2974,8 @@ private:
     std::map<Level, base::MillisecondsWidth> m_millisecondsWidthMap;
     std::map<Level, bool> m_performanceTrackingMap;
     std::map<Level, base::FileStreamPtr> m_fileStreamMap;
-    std::map<Level, std::size_t> m_maxLogFileSizeMap;
-    std::map<Level, std::size_t> m_logFlushThresholdMap;
+    std::map<Level, size_t> m_maxLogFileSizeMap;
+    std::map<Level, size_t> m_logFlushThresholdMap;
     base::LogStreamsReferenceMap* m_logStreamsReference;
 
     friend class el::Helpers;
@@ -3083,12 +3083,12 @@ private:
             } else if (conf->configurationType() == ConfigurationType::PerformanceTracking) {
                 setValue(Level::Global, getBool(conf->value()), &m_performanceTrackingMap);
             } else if (conf->configurationType() == ConfigurationType::MaxLogFileSize) {
-                setValue(conf->level(), static_cast<std::size_t>(getULong(conf->value())), &m_maxLogFileSizeMap);
+                setValue(conf->level(), static_cast<size_t>(getULong(conf->value())), &m_maxLogFileSizeMap);
 #if !defined(ELPP_NO_DEFAULT_LOG_FILE)
                 withFileSizeLimit.push_back(conf);
 #endif  // !defined(ELPP_NO_DEFAULT_LOG_FILE)
             } else if (conf->configurationType() == ConfigurationType::LogFlushThreshold) {
-                setValue(conf->level(), static_cast<std::size_t>(getULong(conf->value())), &m_logFlushThresholdMap);
+                setValue(conf->level(), static_cast<size_t>(getULong(conf->value())), &m_logFlushThresholdMap);
             }
         }
         // As mentioned early, we will now set filename configuration in separate loop to deal with non-existent files
@@ -3120,7 +3120,7 @@ private:
 
     std::string resolveFilename(const std::string& filename) {
         std::string resultingFilename = filename;
-        std::size_t dateIndex = std::string::npos;
+        size_t dateIndex = std::string::npos;
         std::string dateTimeFormatSpecifierStr = std::string(base::consts::kDateTimeFormatSpecifierForFilename);
         if ((dateIndex = resultingFilename.find(dateTimeFormatSpecifierStr.c_str())) != std::string::npos) {
             while (dateIndex > 0 && resultingFilename[dateIndex - 1] == base::consts::kFormatSpecifierChar) {
@@ -3199,8 +3199,8 @@ private:
         if (fs == nullptr) {
             return true;
         }
-        std::size_t maxLogFileSize = unsafeGetConfigByVal(level, &m_maxLogFileSizeMap, "maxLogFileSize");
-        std::size_t currFileSize = base::utils::File::getSizeOfFile(fs);
+        size_t maxLogFileSize = unsafeGetConfigByVal(level, &m_maxLogFileSizeMap, "maxLogFileSize");
+        size_t currFileSize = base::utils::File::getSizeOfFile(fs);
         if (maxLogFileSize != 0 && currFileSize >= maxLogFileSize) {
             std::string fname = unsafeGetConfigByRef(level, &m_filenameMap, "filename");
             ELPP_INTERNAL_INFO(1, "Truncating log file [" << fname << "] as a result of configurations for level ["
@@ -3256,7 +3256,7 @@ public:
     }
 
     /// @brief Validates hit counts and resets it if necessary
-    inline void validateHitCounts(std::size_t n) {
+    inline void validateHitCounts(size_t n) {
         if (m_hitCounts >= base::consts::kMaxLogPerCounter) {
             m_hitCounts = (n >= 1 ? base::consts::kMaxLogPerCounter % n : 0);
         }
@@ -3271,7 +3271,7 @@ public:
         return m_lineNumber;
     }
 
-    inline std::size_t hitCounts(void) const {
+    inline size_t hitCounts(void) const {
         return m_hitCounts;
     }
 
@@ -3299,14 +3299,14 @@ public:
 private:
     const char* m_filename;
     unsigned long int m_lineNumber;
-    std::size_t m_hitCounts;
+    size_t m_hitCounts;
 };
 /// @brief Repository for hit counters used across the application
 class RegisteredHitCounters : public base::utils::RegistryWithPred<base::HitCounter, base::HitCounter::Predicate> {
 public:
     /// @brief Validates counter for every N, i.e, registers new if does not exist otherwise updates original one
     /// @return True if validation resulted in triggering hit. Meaning logs should be written everytime true is returned
-    bool validateEveryN(const char* filename, unsigned long int lineNumber, std::size_t n) {
+    bool validateEveryN(const char* filename, unsigned long int lineNumber, size_t n) {
         base::threading::ScopedLock scopedLock(lock());
         base::HitCounter* counter = get(filename, lineNumber);
         if (counter == nullptr) {
@@ -3319,7 +3319,7 @@ public:
 
     /// @brief Validates counter for hits >= N, i.e, registers new if does not exist otherwise updates original one
     /// @return True if validation resulted in triggering hit. Meaning logs should be written everytime true is returned
-    bool validateAfterN(const char* filename, unsigned long int lineNumber, std::size_t n) {
+    bool validateAfterN(const char* filename, unsigned long int lineNumber, size_t n) {
         base::threading::ScopedLock scopedLock(lock());
         base::HitCounter* counter = get(filename, lineNumber);
         if (counter == nullptr) {
@@ -3336,7 +3336,7 @@ public:
 
     /// @brief Validates counter for hits are <= n, i.e, registers new if does not exist otherwise updates original one
     /// @return True if validation resulted in triggering hit. Meaning logs should be written everytime true is returned
-    bool validateNTimes(const char* filename, unsigned long int lineNumber, std::size_t n) {
+    bool validateNTimes(const char* filename, unsigned long int lineNumber, size_t n) {
         base::threading::ScopedLock scopedLock(lock());
         base::HitCounter* counter = get(filename, lineNumber);
         if (counter == nullptr) {
@@ -4012,15 +4012,15 @@ public:
         base::utils::safeDelete(m_vRegistry);
     }
 
-    inline bool validateEveryNCounter(const char* filename, unsigned long int lineNumber, std::size_t occasion) {
+    inline bool validateEveryNCounter(const char* filename, unsigned long int lineNumber, size_t occasion) {
         return hitCounters()->validateEveryN(filename, lineNumber, occasion);
     }
 
-    inline bool validateAfterNCounter(const char* filename, unsigned long int lineNumber, std::size_t n) { // NOLINT
+    inline bool validateAfterNCounter(const char* filename, unsigned long int lineNumber, size_t n) { // NOLINT
         return hitCounters()->validateAfterN(filename, lineNumber, n);
     }
 
-    inline bool validateNTimesCounter(const char* filename, unsigned long int lineNumber, std::size_t n) { // NOLINT
+    inline bool validateNTimesCounter(const char* filename, unsigned long int lineNumber, size_t n) { // NOLINT
         return hitCounters()->validateNTimes(filename, lineNumber, n);
     }
 
@@ -4556,7 +4556,7 @@ template<typename T, typename Container = std::vector<T>, typename Comparator = 
 class IterablePriorityQueue : public IterableContainer<T, Container>, public std::priority_queue<T, Container, Comparator> {
 public:
     IterablePriorityQueue(std::priority_queue<T, Container, Comparator> queue_) {
-        std::size_t count_ = 0;
+        size_t count_ = 0;
         while (++count_ < base::consts::kMaxLogPerContainer && !queue_.empty()) {
             this->push(queue_.top());
             queue_.pop();
@@ -4572,7 +4572,7 @@ template<typename T, typename Container = std::deque<T>>
 class IterableQueue : public IterableContainer<T, Container>, public std::queue<T, Container> {
 public:
     IterableQueue(std::queue<T, Container> queue_) {
-        std::size_t count_ = 0;
+        size_t count_ = 0;
         while (++count_ < base::consts::kMaxLogPerContainer && !queue_.empty()) {
             this->push(queue_.front());
             queue_.pop();
@@ -4588,7 +4588,7 @@ template<typename T, typename Container = std::deque<T>>
 class IterableStack : public IterableContainer<T, Container>, public std::stack<T, Container> {
 public:
     IterableStack(std::stack<T, Container> stack_) {
-        std::size_t count_ = 0;
+        size_t count_ = 0;
         while (++count_ < base::consts::kMaxLogPerContainer && !stack_.empty()) {
             this->push(stack_.top());
             stack_.pop();
@@ -4723,7 +4723,7 @@ public:
         m_logger->stream() << ELPP_LITERAL(")");
         return *this;
     }
-    template <std::size_t Size>
+    template <size_t Size>
     inline MessageBuilder& operator<<(const std::bitset<Size>& bitset_) {
         m_logger->stream() << ELPP_LITERAL("[");
         operator << (bitset_.to_string());
@@ -4731,7 +4731,7 @@ public:
         return *this;
     }
 #   if defined(ELPP_LOG_STD_ARRAY)
-    template <class T, std::size_t Size>
+    template <class T, size_t Size>
     inline MessageBuilder& operator<<(const std::array<T, Size>& array) {
         return writeIterator(array.begin(), array.end(), array.size());
     }
@@ -4877,9 +4877,9 @@ public:
             ELPP_LITERAL("\n    ") : ELPP_LITERAL(", ");\
         ContainerType::const_iterator elem = container.begin();\
         ContainerType::const_iterator endElem = container.end();\
-        std::size_t size_ = container.SizeMethod; \
+        size_t size_ = container.SizeMethod; \
         ss << ELPP_LITERAL("[");\
-        for (std::size_t i = 0; elem != endElem && i < el::base::consts::kMaxLogPerContainer; ++i, ++elem) { \
+        for (size_t i = 0; elem != endElem && i < el::base::consts::kMaxLogPerContainer; ++i, ++elem) { \
             ss << ElementInstance;\
             ss << ((i < size_ - 1) ? sep : ELPP_LITERAL(""));\
         }\
@@ -4914,9 +4914,9 @@ private:
     const base::type::char_t* m_containerLogSeperator;
 
     template<class Iterator>
-    inline MessageBuilder& writeIterator(Iterator begin_, Iterator end_, std::size_t size_) {
+    inline MessageBuilder& writeIterator(Iterator begin_, Iterator end_, size_t size_) {
         m_logger->stream() << ELPP_LITERAL("[");
-        for (std::size_t i = 0; begin_ != end_ && i < base::consts::kMaxLogPerContainer; ++i, ++begin_) {
+        for (size_t i = 0; begin_ != end_ && i < base::consts::kMaxLogPerContainer; ++i, ++begin_) {
             operator << (*begin_);
             m_logger->stream() << ((i < size_ - 1) ? m_containerLogSeperator : ELPP_LITERAL(""));
         }
@@ -5048,7 +5048,7 @@ protected:
         if (ELPP->hasFlag(LoggingFlag::MultiLoggerSupport)) {
             bool firstDispatched = false;
             base::type::string_t logMessage;
-            std::size_t i = 0;
+            size_t i = 0;
             do {
                 if (m_proceed) {
                     if (firstDispatched) {
@@ -5485,22 +5485,22 @@ namespace base {
 namespace debug {
 class StackTrace : base::NoCopy {
 public:
-    static const std::size_t kMaxStack = 64;
-    static const std::size_t kStackStart = 2;  // We want to skip c'tor and StackTrace::generateNew()
+    static const size_t kMaxStack = 64;
+    static const size_t kStackStart = 2;  // We want to skip c'tor and StackTrace::generateNew()
     class StackTraceEntry {
     public:
-        StackTraceEntry(std::size_t index, const char* loc, const char* demang, const char* hex, const char* addr) {
+        StackTraceEntry(size_t index, const char* loc, const char* demang, const char* hex, const char* addr) {
             m_index = index;
             m_location = std::string(loc);
             m_demangled = std::string(demang);
             m_hex = std::string(hex);
             m_addr = std::string(addr);
         }
-        StackTraceEntry(std::size_t index, char* loc) {
+        StackTraceEntry(size_t index, char* loc) {
             m_index = index;
             m_location = std::string(loc);
         }
-        std::size_t m_index;
+        size_t m_index;
         std::string m_location;
         std::string m_demangled;
         std::string m_hex;
@@ -5541,10 +5541,10 @@ private:
 #if ELPP_STACKTRACE
         m_stack.clear();
         void* stack[kMaxStack];
-        std::size_t size = backtrace(stack, kMaxStack);
+        size_t size = backtrace(stack, kMaxStack);
         char** strings = backtrace_symbols(stack, size);
         if (size > kStackStart) {  // Skip StackTrace c'tor and generateNew
-            for (std::size_t i = kStackStart; i < size; ++i) {
+            for (size_t i = kStackStart; i < size; ++i) {
                 char* mangName = nullptr;
                 char* hex = nullptr;
                 char* addr = nullptr;
