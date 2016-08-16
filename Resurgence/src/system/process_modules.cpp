@@ -89,6 +89,7 @@ namespace resurgence
                         modules.emplace_back(_process, entry);
                         return STATUS_NOT_FOUND;
                     });
+                #ifdef _WIN64
                     if(_process->get_platform() == platform_x86) {
                         std::vector<module> modules32;
                         winnt::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
@@ -101,6 +102,7 @@ namespace resurgence
                             modules.insert(std::end(modules), begin, end);
                         }
                     }
+                #endif
                 }
             }
             return modules;
