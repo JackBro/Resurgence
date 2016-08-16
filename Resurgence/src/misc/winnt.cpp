@@ -680,11 +680,16 @@ namespace resurgence
         }
         ntstatus_code winnt::open_process(PHANDLE handle, uint32_t pid, uint32_t access)
         {
-            *handle = OpenProcess(access, FALSE, pid);
-            if(*handle != nullptr)
-                return STATUS_SUCCESS;
+            OBJECT_ATTRIBUTES objAttr;
 
-            return get_last_ntstatus();
+            InitializeObjectAttributes(&objAttr, NULL, NULL, NULL, NULL);
+            CLIENT_ID cid;
+            cid.UniqueProcess   = reinterpret_cast<HANDLE>(pid);
+            cid.UniqueThread    = 0;
+
+            auto status = NtOpenProcess(handle, access, &objAttr, &cid);
+
+            return status;
         }
         bool winnt::process_is_wow64(HANDLE process)
         {
