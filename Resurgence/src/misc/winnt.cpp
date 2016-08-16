@@ -440,7 +440,7 @@ namespace resurgence
                     std::wstring sym;
                     get_symbolic_link_from_drive(drive, sym);
                     if(startsWith(dosPath, sym, false)) {
-                        auto p = dosPath.replace(0, sym.size(), drive);
+                        dosPath.replace(0, sym.size(), drive);
                         break;
                     }
                 }
