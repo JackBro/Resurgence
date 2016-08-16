@@ -27,8 +27,7 @@ namespace resurgence
 
             _info.pid = pid;
             
-            if( pid != SYSTEM_IDLE_PROCESS_ID && 
-                pid != GetCurrentProcessId()) {
+            if( !is_system_idle_process() && !is_current_process()) {
                 status = open(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ);
                 if(!NT_SUCCESS(status)) {
                     status = open(PROCESS_QUERY_LIMITED_INFORMATION);
@@ -66,14 +65,14 @@ namespace resurgence
             _info.is_current_process 
                 = GetCurrentProcessId() == _info.pid;
 
-            if(_info.pid == SYSTEM_IDLE_PROCESS_ID) {
+            if(is_system_idle_process()) {
                 _info.target_platform = platform_x64;
                 _info.parent_pid = 0;
                 _info.peb_address = 0;
                 _info.wow64peb_address = 0;
                 _info.name = L"System Idle Process";
                 _info.path = L"N/A";
-            } else if(_info.pid == SYSTEM_PROCESS_ID) {
+            } else if(is_system_process()) {
                 _info.target_platform = platform_x64;
                 _info.parent_pid = 0;
                 _info.peb_address = 0;
@@ -176,6 +175,14 @@ namespace resurgence
         bool process::is_current_process() const
         {
             return _info.is_current_process;
+        }
+        bool process::is_system_idle_process() const
+        {
+            return get_pid() == SYSTEM_IDLE_PROCESS;
+        }
+        bool process::is_system_process() const
+        {
+            return get_pid() == SYSTEM_PROCESS;
         }
         ntstatus_code process::open(uint32_t access)
         {

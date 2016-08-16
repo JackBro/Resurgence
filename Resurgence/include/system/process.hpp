@@ -7,8 +7,8 @@
 #include "process_memory.hpp"
 #include "process_modules.hpp"
 
-#define SYSTEM_IDLE_PROCESS_ID  (0)
-#define SYSTEM_PROCESS_ID       (4)
+#define SYSTEM_IDLE_PROCESS  (0)
+#define SYSTEM_PROCESS       (4)
 
 namespace resurgence
 {
@@ -59,6 +59,8 @@ namespace resurgence
             platform                            get_platform() const;
             const misc::safe_process_handle&    get_handle() const;
             bool                                is_current_process() const;
+            bool                                is_system_idle_process() const;
+            bool                                is_system_process() const;
 
             ntstatus_code                       open(uint32_t access);
 
