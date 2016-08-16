@@ -194,10 +194,10 @@ namespace resurgence
             }
         #endif
         }
-        process_module process_modules::get_module_by_load_order(int i)
+        process_module process_modules::get_module_by_load_order(uint32_t i)
         {
             process_module mod;
-            int current = 0;
+            uint32_t current = 0;
 
         #ifdef _WIN64
             if(_process->get_platform() == platform_x86) {

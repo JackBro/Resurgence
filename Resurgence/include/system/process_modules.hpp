@@ -41,7 +41,7 @@ namespace resurgence
             std::vector<process_module> get_all_modules();
             process_module              get_module_by_name(const std::wstring& name);
             process_module              get_module_by_address(const std::uint8_t* address);
-            process_module              get_module_by_load_order(int i);
+            process_module              get_module_by_load_order(uint32_t i);
 
         private:
             friend class process;
