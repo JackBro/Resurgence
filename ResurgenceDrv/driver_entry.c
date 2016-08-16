@@ -66,7 +66,7 @@ NTSTATUS DriverEntry(
             g_bLoadedByTDL = TRUE;
             RtlInitUnicodeString(&drvName, L"\\Driver\\" RDRV_DRIVER_NAME);
             status = IoCreateDriver(&drvName, &InitializeDriver);
-            if(!succeeded(status)) {
+            if(!NT_SUCCESS(status)) {
                 DPRINT("IoCreateDriver failed with status %lX", status);
             }
         } 
@@ -76,7 +76,7 @@ NTSTATUS DriverEntry(
         else {
             g_bLoadedByTDL = FALSE;
             status = InitializeDriver(DriverObject, RegistryPath);
-            if(!succeeded(status)) {
+            if(!NT_SUCCESS(status)) {
                 DPRINT("InitializeDriver failed with status %lX", status);
             }
         }
@@ -107,7 +107,7 @@ NTSTATUS InitializeDriver(
         FILE_DEVICE_SECURE_OPEN,
         FALSE, &pDevObj);
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("IoCreateDevice failed with status %lX", status);
         return status;
     }
@@ -117,7 +117,7 @@ NTSTATUS InitializeDriver(
 
     status = IoCreateSymbolicLink(&usDosDeviceName, &usDeviceName);
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("IoCreateSymbolicLink failed with status %lX", status);
         return status;
     }
@@ -137,14 +137,14 @@ NTSTATUS InitializeDriver(
 
     status = DriverLoadDynamicData();
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("DriverLoadDynamicData failed with status %lX!", status);
         return status;
     }
 
     status = DriverContextInit();
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("DriverContextInit failed with status %lX!", status);
         return status;
     }
@@ -162,7 +162,7 @@ NTSTATUS DriverContextInit(
 {
     ULONG_PTR KernelBase;
     NTSTATUS status = RDrvGetKernelInfo(&KernelBase, NULL);
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("RDrvGetKernelInfo failed with status %lX", status);
         return status;
     }
@@ -179,7 +179,7 @@ NTSTATUS DriverContextInit(
         sizeof(Mask_RtlInsertInvertedTable) - 1,
         &pResult);
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         DPRINT("Failed to retrieve RtlInsertInvertedFunctionTable address!");
         return status;
     }
@@ -201,7 +201,7 @@ NTSTATUS DriverLoadDynamicData(
     VERSION_INFO version;
     NTSTATUS status = RDrvQueryOSVersion(&version);
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         PERROR("RDrvQueryOSVersion", status);
         return status;
     }

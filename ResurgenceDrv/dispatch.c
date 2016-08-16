@@ -35,7 +35,7 @@ NTSTATUS RDrvDispatch(
                     if(outputBufferLength == RESURGENCE_QUERY_OSVERSION_SIZE) {
                         VERSION_INFO info;
                         Irp->IoStatus.Status = RDrvQueryOSVersion(&info);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             RtlCopyMemory(ioBuffer, &info, RESURGENCE_QUERY_OSVERSION_SIZE);
                             Irp->IoStatus.Information = RESURGENCE_QUERY_OSVERSION_SIZE;
                         }
@@ -49,7 +49,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_VM_OPERATION_SIZE &&
                         outputBufferLength == RESURGENCE_VM_OPERATION_SIZE) {
                         Irp->IoStatus.Status = RDrvVirtualMemoryOperation((PVM_OPERATION)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_VM_OPERATION_SIZE;
                         }
                     } else {
@@ -62,7 +62,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_VM_READ_SIZE &&
                         outputBufferLength == RESURGENCE_VM_READ_SIZE) {
                         Irp->IoStatus.Status = RDrvReadWriteVirtualMemory((PVM_READ_WRITE)ioBuffer, FALSE);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_VM_READ_SIZE;
                         }
                     } else {
@@ -75,7 +75,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_VM_WRITE_SIZE &&
                         outputBufferLength == RESURGENCE_VM_WRITE_SIZE) {
                         Irp->IoStatus.Status = RDrvReadWriteVirtualMemory((PVM_READ_WRITE)ioBuffer, TRUE);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_VM_WRITE_SIZE;
                         }
                     } else {
@@ -88,7 +88,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_VM_QUERY_SIZE &&
                         outputBufferLength == RESURGENCE_VM_QUERY_SIZE) {
                         Irp->IoStatus.Status = RDrvQueyVirtualMemory((PVM_QUERY_INFO)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_VM_QUERY_SIZE;
                         }
                     } else {
@@ -101,7 +101,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_GRANT_ACCESS_SIZE &&
                         outputBufferLength == RESURGENCE_GRANT_ACCESS_SIZE) {
                         Irp->IoStatus.Status = RDrvGrantHandleAccess((PGRANT_ACCESS)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_VM_QUERY_SIZE;
                         }
                     } else {
@@ -113,7 +113,7 @@ NTSTATUS RDrvDispatch(
                 {
                     if(inputBufferLength == RESURGENCE_PROTECT_PROCESS_SIZE) {
                         Irp->IoStatus.Status = RDrvProtectProcess((PPROTECT_PROCESS)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_PROTECT_PROCESS_SIZE;
                         }
                     } else {
@@ -126,7 +126,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_OPEN_PROCESS_SIZE &&
                         outputBufferLength == RESURGENCE_OPEN_PROCESS_SIZE) {
                         Irp->IoStatus.Status = RDrvOpenProcess((POPEN_PROCESS)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_OPEN_PROCESS_SIZE;
                         }
                     } else {
@@ -138,7 +138,7 @@ NTSTATUS RDrvDispatch(
                 {
                     if(inputBufferLength == RESURGENCE_SET_DEP_STATE_SIZE) {
                         Irp->IoStatus.Status = RDrvSetProcessDEP((PSET_DEP_STATE)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_PROTECT_PROCESS_SIZE;
                         }
                     } else {
@@ -151,7 +151,7 @@ NTSTATUS RDrvDispatch(
                     if(inputBufferLength == RESURGENCE_INJECT_MODULE_SIZE &&
                         outputBufferLength == RESURGENCE_INJECT_MODULE_SIZE) {
                         Irp->IoStatus.Status = RDrvInjectModule((PINJECT_MODULE)ioBuffer);
-                        if(succeeded(Irp->IoStatus.Status)) {
+                        if(NT_SUCCESS(Irp->IoStatus.Status)) {
                             Irp->IoStatus.Information = RESURGENCE_INJECT_MODULE_SIZE;
                         }
                     } else {

@@ -31,7 +31,7 @@ NTSTATUS RDrvLogToFile(
 
     status = RDrvOpenFile(L"\\SystemRoot\\Temp\\Resurgence.log", TRUE, TRUE, &hFile);
 
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         RtlZeroMemory(buffer, 512);
         va_list va;
         va_start(va, Format);
@@ -111,14 +111,14 @@ NTSTATUS RDrvGetKernelInfo(
 
     status = ZwQuerySystemInformation(SystemModuleInformation, systemModules, nRequiredSize, &nRequiredSize);
 
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         g_pDriverContext->KrnlBase = systemModules->Modules[0].ImageBase;
         g_pDriverContext->KrnlSize = systemModules->Modules[0].ImageSize;
     } else {
         DPRINT("ZwQuerySystemInformation failed with status %lx!", status);
     }
     
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         if(BaseAddress)
             *BaseAddress = (ULONG_PTR)g_pDriverContext->KrnlBase;
         if(Size)
@@ -397,19 +397,19 @@ NTSTATUS RDrvCreateUserThread(
         0, 0x1000, 0x100000, NULL
     );
 
-    if(!succeeded(status)) {
+    if(!NT_SUCCESS(status)) {
         PERROR("ZwCreateThreadEx", status);
     } else {
         if(wait) {
             LARGE_INTEGER timeout = {0};
             timeout.QuadPart = -5000ll * 1000 * 1000;
             status = ZwWaitForSingleObject(threadHandle, TRUE, &timeout);
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 THREAD_BASIC_INFORMATION info = {0};
                 ULONG bytes = 0;
 
                 status = ZwQueryInformationThread(threadHandle, ThreadBasicInformation, &info, sizeof(info), &bytes);
-                if(succeeded(status)) {
+                if(NT_SUCCESS(status)) {
                     if(pThreadExitCode)
                         *pThreadExitCode = info.ExitStatus;
                 } else {
@@ -449,7 +449,7 @@ NTSTATUS RDrvStripHeaders(
     ULONG oldProt = 0;
 
     NTSTATUS status = ZwProtectVirtualMemory(ZwCurrentProcess(), &BaseAddress, &sizeOfHeaders, PAGE_EXECUTE_READWRITE, &oldProt);
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         RtlZeroMemory(BaseAddress, sizeOfHeaders);
         ZwProtectVirtualMemory(ZwCurrentProcess(), &BaseAddress, &sizeOfHeaders, PAGE_NOACCESS, &oldProt);
     }
@@ -586,7 +586,7 @@ PSYSTEM_SERVICE_DESCRIPTOR_TABLE GetSSDTBase(
         return g_pDriverContext->SSDT;
 
     status = RDrvFindKernelPattern(pattern, mask, sizeof(mask) - 1, &pFound);
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         g_pDriverContext->SSDT = (PSYSTEM_SERVICE_DESCRIPTOR_TABLE)((PUCHAR)pFound + *(PULONG)((PUCHAR)pFound + 3) + 7);
         return g_pDriverContext->SSDT;
     }
@@ -628,9 +628,9 @@ NTSTATUS RDrvLoadImageFromFile(
     RtlStringCbCatW(NtPath, sizeof(NtPath), ModulePath);
 
     status = RDrvOpenFile(NtPath, FALSE, FALSE, &fileHandle);
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         status = ZwQueryInformationFile(fileHandle, &ioStatus, &fileInfo, sizeof(fileInfo), FileStandardInformation);
-        if(succeeded(status)) {
+        if(NT_SUCCESS(status)) {
             DPRINT("HighPart: %lX", fileInfo.EndOfFile.HighPart);
             DPRINT("LowPart : %lX", fileInfo.EndOfFile.LowPart);
             DPRINT("QuadPart: %lX", fileInfo.EndOfFile.QuadPart);

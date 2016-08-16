@@ -36,7 +36,7 @@ NTSTATUS RDrvBuildWow64InjectStub(
     PINJECTION_BUFFER buff = NULL;
 
     status = ZwAllocateVirtualMemory(ZwCurrentProcess(), (PVOID*)&buff, 0, &regionSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         RtlZeroMemory(buff, regionSize);
         RtlCopyMemory(buff, pCodeBuffer, sizeof(pCodeBuffer));
 
@@ -86,7 +86,7 @@ NTSTATUS RDrvBuildNativeInjectStub(
     PINJECTION_BUFFER buff = NULL;
 
     status = ZwAllocateVirtualMemory(ZwCurrentProcess(), (PVOID*)&buff, 0, &regionSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-    if(succeeded(status)) {
+    if(NT_SUCCESS(status)) {
         RtlZeroMemory(buff, regionSize);
         RtlCopyMemory(buff, pCodeBuffer, sizeof(pCodeBuffer));
 
@@ -147,12 +147,12 @@ NTSTATUS RDrvInjectLdrLoadDll(
         if(ModuleBase)
             *ModuleBase = 0;
 
-        if(succeeded(status)) {
+        if(NT_SUCCESS(status)) {
             ULONG_PTR exitCode;
             status = RDrvCreateUserThread((PVOID)pBuffer, NULL, TRUE, &exitCode);
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 status = (NTSTATUS)exitCode;
-                if(succeeded(status)) {
+                if(NT_SUCCESS(status)) {
                     if(ModuleBase)
                         *ModuleBase = (ULONG_PTR)pBuffer->ModuleHandle;
                 } else {

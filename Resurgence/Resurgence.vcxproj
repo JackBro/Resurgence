@@ -134,6 +134,7 @@
       <SDLCheck>false</SDLCheck>
       <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <CallingConvention>StdCall</CallingConvention>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
@@ -146,6 +147,7 @@
       <SDLCheck>false</SDLCheck>
       <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <CallingConvention>StdCall</CallingConvention>
     </ClCompile>
     <Lib>
       <AdditionalDependencies>ntdll.lib</AdditionalDependencies>
@@ -158,11 +160,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <RemoveUnreferencedCodeData>false</RemoveUnreferencedCodeData>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
       <DisableSpecificWarnings>4996; 4302; 4311; 4312</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <CallingConvention>StdCall</CallingConvention>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -185,6 +188,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <CallingConvention>StdCall</CallingConvention>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
