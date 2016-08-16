@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace resurgence
 {
     class error_code

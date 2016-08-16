@@ -2,6 +2,7 @@
 
 #include <headers.hpp>
 #include <functional>
+#include <vector>
 
 typedef struct _OBJECT_DIRECTORY_INFORMATION* POBJECT_DIRECTORY_INFORMATION;
 

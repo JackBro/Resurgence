@@ -19,11 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\easylogging++.h" />
     <ClInclude Include="include\headers.hpp" />
     <ClInclude Include="include\misc\error.hpp" />
     <ClInclude Include="include\misc\exceptions.hpp" />
-    <ClInclude Include="include\misc\logging.hpp" />
     <ClInclude Include="include\misc\safe_handle.hpp" />
     <ClInclude Include="include\misc\winnt.hpp" />
     <ClInclude Include="include\NtAPI.hpp" />
@@ -43,7 +41,6 @@
     <ClCompile Include="src\misc\logging.cpp" />
     <ClCompile Include="src\misc\safe_handle.cpp" />
     <ClCompile Include="src\misc\winnt.cpp" />
-    <ClCompile Include="src\resurgence.cpp" />
     <ClCompile Include="src\system\driver\driver.cpp" />
     <ClCompile Include="src\system\driver\driver_shellcode.cpp" />
     <ClCompile Include="src\system\portable_executable.cpp" />

