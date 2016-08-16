@@ -18,11 +18,11 @@ namespace resurgence
             }
         };
 
-        module::module()
+        process_module::process_module()
         {
             RtlZeroMemory(this, sizeof(*this));
         }
-        module::module(process* proc, PLDR_DATA_TABLE_ENTRY entry)
+        process_module::process_module(process* proc, PLDR_DATA_TABLE_ENTRY entry)
         {
             if(proc->is_current_process()) {
                 _base = (uint8_t*)entry->DllBase;
@@ -36,7 +36,7 @@ namespace resurgence
                 _path = proc->memory()->read_unicode_string(entry->FullDllName.Buffer, entry->FullDllName.Length / sizeof(wchar_t));
             }
         }
-        module::module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry)
+        process_module::process_module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry)
         {
             _base = (uint8_t*)entry->DllBase;
             _size = (size_t)entry->SizeOfImage;
@@ -49,7 +49,7 @@ namespace resurgence
                 _path = _path.replace(0, system32.size(), syswow64);
             }
         }
-        module::module(PRTL_PROCESS_MODULE_INFORMATION entry)
+        process_module::process_module(PRTL_PROCESS_MODULE_INFORMATION entry)
         {
             wchar_t path[MAX_PATH] = {NULL};
             MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (const char*)entry->FullPathName, 256, path, MAX_PATH);
@@ -69,12 +69,12 @@ namespace resurgence
         {
 
         }
-        std::vector<module> process_modules::get_all_modules()
+        std::vector<process_module> process_modules::get_all_modules()
         {
             using namespace misc;
             assert(_process != nullptr);
 
-            std::vector<module> modules;
+            std::vector<process_module> modules;
 
             auto id = _process->get_pid();
             auto handle = _process->get_handle();
@@ -93,7 +93,7 @@ namespace resurgence
 
                 #ifdef _WIN64
                     if(_process->get_platform() == platform_x86) {
-                        std::vector<module> modules32;
+                        std::vector<process_module> modules32;
                         winnt::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
                             modules32.emplace_back(_process, entry);
                             return STATUS_NOT_FOUND;
@@ -110,9 +110,9 @@ namespace resurgence
             }
             return modules;
         }
-        module process_modules::get_module_by_name(const std::wstring& name)
+        process_module process_modules::get_module_by_name(const std::wstring& name)
         {
-            module mod;
+            process_module mod;
         #ifdef _WIN64
             if(_process->get_platform() == platform_x86) {
                 misc::winnt::enumerate_process_modules32(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
@@ -121,7 +121,7 @@ namespace resurgence
                             entry->BaseDllName.Buffer,
                             entry->BaseDllName.Length / sizeof(wchar_t));
                     if(buffer == name) {
-                        mod = module(_process, entry);
+                        mod = process_module(_process, entry);
                         return STATUS_SUCCESS;
                     }
                     return STATUS_NOT_FOUND;
@@ -135,7 +135,7 @@ namespace resurgence
                             entry->BaseDllName.Buffer,
                             entry->BaseDllName.Length / sizeof(wchar_t));
                     if(buffer == name) {
-                        mod = module(_process, entry);
+                        mod = process_module(_process, entry);
                         return STATUS_SUCCESS;
                     }
                     return STATUS_NOT_FOUND;
@@ -145,11 +145,11 @@ namespace resurgence
             }
         #endif
         }
-        module process_modules::get_module_by_handle(HANDLE handle)
+        process_module process_modules::get_module_by_handle(HANDLE handle)
         {
             throw;
         }
-        module process_modules::get_module_by_load_order(int i)
+        process_module process_modules::get_module_by_load_order(int i)
         {
             throw;
         }

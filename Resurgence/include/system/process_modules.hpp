@@ -8,21 +8,21 @@ namespace resurgence
     {
         class process;
 
-        class module
+        class process_module
         {
         public:
-            module();
-            module(process* proc, PLDR_DATA_TABLE_ENTRY entry);
-            module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry);
-            module(PRTL_PROCESS_MODULE_INFORMATION entry);
+            process_module();
+            process_module(process* proc, PLDR_DATA_TABLE_ENTRY entry);
+            process_module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry);
+            process_module(PRTL_PROCESS_MODULE_INFORMATION entry);
 
-            const uint8_t* get_base() const { return _base; }
-            size_t         get_size() const { return _size; }
+            const uint8_t*      get_base() const { return _base; }
+            size_t              get_size() const { return _size; }
             const std::wstring& get_name() const { return _name; }
             const std::wstring& get_path() const { return _path; }
 
-            uint8_t*   _base;
-            size_t     _size;
+            uint8_t*        _base;
+            size_t          _size;
             std::wstring    _name;
             std::wstring    _path;
         };
@@ -32,10 +32,10 @@ namespace resurgence
         public:
             process_modules(process* proc);
 
-            std::vector<module> get_all_modules();
-            module              get_module_by_name(const std::wstring& name);
-            module              get_module_by_handle(HANDLE handle);
-            module              get_module_by_load_order(int i);
+            std::vector<process_module> get_all_modules();
+            process_module              get_module_by_name(const std::wstring& name);
+            process_module              get_module_by_handle(HANDLE handle);
+            process_module              get_module_by_load_order(int i);
 
         private:
             friend class process;
