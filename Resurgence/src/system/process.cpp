@@ -27,19 +27,20 @@ namespace resurgence
 
             _info.pid = pid;
             
-            if(!is_system_idle_process() && !is_current_process()) {
-                status = open(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ);
-                if(!NT_SUCCESS(status)) {
-                    status = open(PROCESS_QUERY_LIMITED_INFORMATION);
+            if(!is_system_idle_process()) {
+                if(!is_current_process()) {
+                    status = open(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ);
                     if(!NT_SUCCESS(status)) {
-                        throw misc::win32_exception("Failed to open the process", status);
+                        status = open(PROCESS_QUERY_LIMITED_INFORMATION);
+                        if(!NT_SUCCESS(status)) {
+                            throw misc::win32_exception("Failed to open the process", status);
+                        }
                     }
-                }
-                
-            } else {
-                _handle = misc::safe_process_handle(GetCurrentProcess());
-            }
 
+                } else {
+                    _handle = misc::safe_process_handle(GetCurrentProcess());
+                }
+            }
             get_process_info();
 
         }
