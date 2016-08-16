@@ -19,7 +19,7 @@ NTSTATUS RDrvQueyVirtualMemory(
 
     __try {
         status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
             if(process != PsGetCurrentProcess()) {
                 KeStackAttachProcess(process, &apcState);
                 attached = TRUE;
@@ -29,7 +29,7 @@ NTSTATUS RDrvQueyVirtualMemory(
                 (PVOID)Params->In.BaseAddress,
                 MemoryBasicInformation, &memoryInfo,
                 sizeof(memoryInfo), &cbNeeded);
-            if(NT_SUCCESS(status)) {
+            if(succeeded(status)) {
                 RtlCopyMemory((PVOID)&Params->Out, (PVOID)&memoryInfo, sizeof(memoryInfo));
             } else {
                 PERROR("ZwQueryVirtualMemory", status);
@@ -68,7 +68,7 @@ NTSTATUS RDrvVirtualMemoryOperation(
 
     __try {
         status = PsLookupProcessByProcessId((HANDLE)proccessId, &process);
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
             if(process != PsGetCurrentProcess()) {
                 KeStackAttachProcess(process, &apcState);
                 attached = TRUE;
@@ -78,7 +78,7 @@ NTSTATUS RDrvVirtualMemoryOperation(
                 case VM_OPERATION_ALLOC:
                 {
                     status = ZwAllocateVirtualMemory(ZwCurrentProcess(), (PVOID*)&baseAddress, 0, &regionSize, allocationFlags, protectionFlags);
-                    if(NT_SUCCESS(status)) {
+                    if(succeeded(status)) {
                         Params->Out.BaseAddress = baseAddress;
                         Params->Out.RegionSize = regionSize;
                     } else {
@@ -89,7 +89,7 @@ NTSTATUS RDrvVirtualMemoryOperation(
                 case VM_OPERATION_FREE:
                 {
                     status = ZwFreeVirtualMemory(ZwCurrentProcess(), (PVOID*)&baseAddress, &regionSize, freeType);
-                    if(NT_SUCCESS(status)) {
+                    if(succeeded(status)) {
                         Params->Out.BaseAddress = baseAddress;
                         Params->Out.RegionSize = regionSize;
                     } else {
@@ -101,7 +101,7 @@ NTSTATUS RDrvVirtualMemoryOperation(
                 {
                     ULONG oldProt;
                     status = ZwProtectVirtualMemory(ZwCurrentProcess(), (PVOID*)&baseAddress, &regionSize, protectionFlags, &oldProt);
-                    if(NT_SUCCESS(status)) {
+                    if(succeeded(status)) {
                         Params->Out.BaseAddress = baseAddress;
                         Params->Out.RegionSize = regionSize;
                         Params->Out.OldProtection = oldProt;
@@ -155,14 +155,14 @@ NTSTATUS RDrvReadWriteVirtualMemory(
         toProcess = PsGetCurrentProcess();
     }
     __try {
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
             status = MmCopyVirtualMemory(
                 fromProcess, (PVOID)fromAddress,
                 toProcess, (PVOID)toAddress,
                 Params->BufferSize,
                 KernelMode,
                 &bytesCopied);
-            if(!NT_SUCCESS(status))
+            if(!succeeded(status))
                 PERROR("MmCopyVirtualMemory", status);
         } else {
             PERROR("PsLookupProcessByProcessId", status);

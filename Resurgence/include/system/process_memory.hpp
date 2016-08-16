@@ -13,8 +13,8 @@ namespace resurgence
         public:
             process_memory(process* proc);
 
-            ntstatus_code                       read_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
-            ntstatus_code                       write_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
+            error_code                       read_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
+            error_code                       write_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
             template<typename _Ty> _Ty          read(const uint8_t* address);
             template<typename _Ty> void         write(const uint8_t* address, const _Ty& buffer, size_t size = sizeof(_Ty));
             template<typename _Ty> std::string  read_string(_Ty address, size_t length);

@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
                     wcout
                         << module.get_base()
                         << ": ";
-                    if(NT_SUCCESS(process.memory()->read_bytes(module.get_base(), bytes, 4))) {
+                    if(succeeded(process.memory()->read_bytes(module.get_base(), bytes, 4))) {
                         for(auto& byte : bytes) {
                             wcout
                                 << hex

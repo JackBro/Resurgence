@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="include\easylogging++.h" />
     <ClInclude Include="include\headers.hpp" />
+    <ClInclude Include="include\misc\error.hpp" />
     <ClInclude Include="include\misc\exceptions.hpp" />
     <ClInclude Include="include\misc\logging.hpp" />
     <ClInclude Include="include\misc\safe_handle.hpp" />
@@ -37,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp" />
+    <ClCompile Include="src\misc\error.cpp" />
     <ClCompile Include="src\misc\logging.cpp" />
     <ClCompile Include="src\misc\safe_handle.cpp" />
     <ClCompile Include="src\misc\winnt.cpp" />

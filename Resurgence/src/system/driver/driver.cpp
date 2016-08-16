@@ -30,9 +30,9 @@ namespace resurgence
             Open();
             return _handle != INVALID_HANDLE_VALUE;
         }
-        ntstatus_code driver::Load(driver_load_method method)
+        error_code driver::Load(driver_load_method method)
         {
-            ntstatus_code status = STATUS_SUCCESS;
+            error_code status = STATUS_SUCCESS;
 
             if(IsLoaded()) return STATUS_SUCCESS;
 
@@ -40,7 +40,7 @@ namespace resurgence
 
             if(method == Turla) {
                 status = TDLload_driver(_path.data());
-                if(NT_SUCCESS(status))
+                if(succeeded(status))
                     return Open();
             } else {
                 status = misc::winnt::load_driver(RDRV_SYMLINK, _path, &_handle);
@@ -48,20 +48,20 @@ namespace resurgence
             return status;
         }
 
-        ntstatus_code driver::Open()
+        error_code driver::Open()
         {
-            ntstatus_code status = STATUS_NO_SUCH_DEVICE;
+            error_code status = STATUS_NO_SUCH_DEVICE;
             int tries = 0;
 
             while(tries++ < 10) {
                 status = misc::winnt::get_driver_device(RDRV_SYMLINK, &_handle);
-                if(NT_SUCCESS(status))
+                if(succeeded(status))
                     break;
                 Sleep(1000);
             }
             return status;
         }
-        ntstatus_code driver::QueryVersionInfo(PVERSION_INFO pVersion)
+        error_code driver::QueryVersionInfo(PVERSION_INFO pVersion)
         {
             if(!pVersion) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
             DWORD ioBytes;
@@ -69,7 +69,7 @@ namespace resurgence
                 return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags)
+        error_code driver::AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags)
         {
             VM_OPERATION params;
             RtlZeroMemory(&params, sizeof(params));
@@ -93,7 +93,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection)
+        error_code driver::ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection)
         {
             VM_OPERATION params;
             RtlZeroMemory(&params, sizeof(params));
@@ -116,7 +116,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType)
+        error_code driver::FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType)
         {
             VM_OPERATION params;
             RtlZeroMemory(&params, sizeof(params));
@@ -136,7 +136,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo)
+        error_code driver::QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo)
         {
             if(!MemInfo) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
 
@@ -155,7 +155,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
+        error_code driver::ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
         {
             VM_READ_WRITE params;
             params.ProcessId = ProcessId;
@@ -171,7 +171,7 @@ namespace resurgence
                 return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
+        error_code driver::WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
         {
             VM_READ_WRITE params;
             params.ProcessId        = ProcessId;
@@ -187,7 +187,7 @@ namespace resurgence
                 return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle)
+        error_code driver::OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle)
         {
             if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
 
@@ -207,7 +207,7 @@ namespace resurgence
             *Handle = (HANDLE)params.Out.Handle;
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
+        error_code driver::OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
         {
             if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
 
@@ -227,7 +227,7 @@ namespace resurgence
             *Handle = (HANDLE)params.Out.Handle;
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
+        error_code driver::OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
         {
             if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
 
@@ -246,7 +246,7 @@ namespace resurgence
             *Handle = (HANDLE)params.Out.Handle;
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess)
+        error_code driver::GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess)
         {
             GRANT_ACCESS params;
             params.In.ProcessId = ProcessId;
@@ -264,7 +264,7 @@ namespace resurgence
                 *OldAccess = params.Out.OldAccessMask;
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel)
+        error_code driver::SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel)
         {
             PROTECT_PROCESS params;
             params.In.ProcessId = ProcessId;
@@ -279,7 +279,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::SetProcessDEP(ULONG ProcessId, BOOLEAN Enable)
+        error_code driver::SetProcessDEP(ULONG ProcessId, BOOLEAN Enable)
         {
             SET_DEP_STATE params;
             params.In.ProcessId = ProcessId;
@@ -295,7 +295,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        error_code driver::InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
         {
 
             INJECT_MODULE params;
@@ -320,7 +320,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        ntstatus_code driver::MMapModule(ULONG ProcessId, LPVOID ModuleBase, ULONG ModuleSize, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        error_code driver::MMapModule(ULONG ProcessId, LPVOID ModuleBase, ULONG ModuleSize, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
         {
 
             INJECT_MODULE params;

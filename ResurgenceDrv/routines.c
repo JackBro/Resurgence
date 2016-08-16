@@ -15,7 +15,7 @@ NTSTATUS RDrvQueryOSVersion(
 
     versionInfo.dwOSVersionInfoSize = sizeof(versionInfo);
     status = RtlGetVersion((PRTL_OSVERSIONINFOW)&versionInfo);
-    if(NT_SUCCESS(status)) {
+    if(succeeded(status)) {
         Version->BuildNumber = versionInfo.dwBuildNumber;
         Version->MajorVersion = versionInfo.dwMajorVersion;
         Version->MinorVersion = versionInfo.dwMinorVersion;

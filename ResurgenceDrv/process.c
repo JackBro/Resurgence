@@ -18,7 +18,7 @@ NTSTATUS RDrvProtectProcess(
     __try {
         status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
         
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
         #ifdef _WIN10_
             PPS_PROTECTION psProtection = (PPS_PROTECTION)((PUCHAR)process + g_pDriverContext->DynData.Offsets.Protection);
             if(psProtection != NULL) {
@@ -82,15 +82,15 @@ NTSTATUS RDrvOpenProcess(
             clientId.UniqueProcess = 0;
             clientId.UniqueThread = (HANDLE)Params->In.ThreadId;
             status = PsLookupProcessThreadByCid(&clientId, &process, &thread);
-            if(NT_SUCCESS(status)) {
+            if(succeeded(status)) {
                 ObDereferenceObject(thread);
             }
         } else {
             status = STATUS_INVALID_CID;
         }
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
             status = ObOpenObjectByPointer(process, 0, NULL, Params->In.AccessMask, *PsProcessType, KernelMode, &handle);
-            if(NT_SUCCESS(status) && handle != NULL) {
+            if(succeeded(status) && handle != NULL) {
                 Params->Out.Handle = (ULONG_PTR)handle;
             } else {
                 PERROR("ObOpenObjectByPointer", status);
@@ -120,7 +120,7 @@ NTSTATUS RDrvSetProcessDEP(
     __try {
         status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
 
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
         #ifdef _WIN10_
             PKEXECUTE_OPTIONS executeOptions = (PKEXECUTE_OPTIONS)((PUCHAR)process + g_pDriverContext->DynData.Offsets.ExecuteOptions);
             if(Params->In.Enabled == FALSE) {
@@ -173,7 +173,7 @@ NTSTATUS RDrvInjectModule(
 
     __try {
         status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
 
             if(Params->In.InjectionType == InjectLdrLoadDll) {
                 status = RDrvInjectLdrLoadDll(process, Params->In.ModulePath, &base);
@@ -187,14 +187,14 @@ NTSTATUS RDrvInjectModule(
                 //}
                 //status = RDrvInjectManualMap(process, systemBuffer, imageSize, Params->In.ModulePath, Params->In.CallEntryPoint, Params->In.CustomParameter, &base);
             }
-            if(NT_SUCCESS(status)) {
+            if(succeeded(status)) {
                 KeStackAttachProcess(process, &apcState);
                 if(Params->In.ErasePE == TRUE) {
-                    if(!NT_SUCCESS(status = RDrvStripHeaders((PVOID)base)))
+                    if(!succeeded(status = RDrvStripHeaders((PVOID)base)))
                         PERROR("RDrvStripHeaders", status);
                 }
                 if(Params->In.HideModule == TRUE) {
-                    if(!NT_SUCCESS(status = RDrvHideFromLoadedList(process, (PVOID)base)))
+                    if(!succeeded(status = RDrvHideFromLoadedList(process, (PVOID)base)))
                         PERROR("RDrvHideFromLoadedList", status);
                 }
                 KeUnstackDetachProcess(&apcState);

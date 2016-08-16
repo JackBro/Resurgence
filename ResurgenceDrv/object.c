@@ -15,7 +15,7 @@ NTSTATUS RDrvGrantHandleAccess(
     __try {
         status = PsLookupProcessByProcessId((HANDLE)Params->In.ProcessId, &process);
 
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
             PHANDLE_TABLE objTable = *(PHANDLE_TABLE*)((PUCHAR)process + g_pDriverContext->DynData.Offsets.ObjectTable);
             EXHANDLE exHandle; exHandle.Value = Params->In.Handle;
             PHANDLE_TABLE_ENTRY handleEntry = ExpLookupHandleTableEntry(objTable, exHandle);

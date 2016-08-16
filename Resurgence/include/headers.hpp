@@ -6,7 +6,7 @@
 #pragma warning(disable: 6102) // Using %s from failed function call at line %u
 #pragma warning(disable: 6320) // exception-filter expression is the constant EXCEPTION_EXECUTE_HANDLER
 
-typedef long ntstatus_code;
+typedef long NTSTATUS;
 
 #include <cassert>
 #include <cstdint>
@@ -17,6 +17,7 @@ typedef long ntstatus_code;
 #include <strsafe.h>
 #include <NtApi.hpp>
 #include <misc/Logging.hpp>
+#include <misc/error.hpp>
 
 #ifndef PTR_ADD
 #define PTR_ADD(ptr, off) ((uint8_t*)ptr + off)
@@ -34,11 +35,11 @@ typedef long ntstatus_code;
 #define DEFAULT_DRIVER_WIN10    TEXT(".\\ResurgenceDrvWin10.sys")
 #endif
 
-__forceinline ntstatus_code get_last_ntstatus()
+__forceinline NTSTATUS get_last_ntstatus()
 {
     return NtCurrentTeb()->LastStatusValue;
 }
-__forceinline ntstatus_code set_last_ntstatus(ntstatus_code status)
+__forceinline NTSTATUS set_last_ntstatus(NTSTATUS status)
 {
     return NtCurrentTeb()->LastStatusValue = status;
 }

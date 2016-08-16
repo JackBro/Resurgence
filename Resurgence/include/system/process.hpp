@@ -62,7 +62,7 @@ namespace resurgence
             bool                                is_system_idle_process() const;
             bool                                is_system_process() const;
 
-            ntstatus_code                       open(uint32_t access);
+            error_code                       open(uint32_t access);
 
             process_memory*                     memory() { return &_memory; }
             process_modules*                    modules() { return &_modules; }

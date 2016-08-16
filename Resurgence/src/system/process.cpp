@@ -21,7 +21,7 @@ namespace resurgence
             _memory(this),
             _modules(this)
         {
-            ntstatus_code status = STATUS_SUCCESS;
+            error_code status = STATUS_SUCCESS;
 
             RtlZeroMemory(&_info, sizeof(_info));
 
@@ -120,7 +120,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> ntstatus_code {
+            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> error_code {
                 processes.push_back(process((uint32_t)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
@@ -131,7 +131,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> ntstatus_code {
+            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> error_code {
                 if(info->ImageName.Length > 0 && !wcscmp(std::data(name), info->ImageName.Buffer))
                     processes.emplace_back(static_cast<uint32_t>((ULONG_PTR)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
@@ -142,12 +142,12 @@ namespace resurgence
         bool process::grant_privilege(uint32_t privilege)
         {
             BOOLEAN enabled;
-            return NT_SUCCESS(RtlAdjustPrivilege(privilege, TRUE, FALSE, &enabled));
+            return succeeded(RtlAdjustPrivilege(privilege, TRUE, FALSE, &enabled));
         }
         bool process::revoke_privilege(uint32_t privilege)
         {
             BOOLEAN enabled;
-            return NT_SUCCESS(RtlAdjustPrivilege(privilege, FALSE, FALSE, &enabled));
+            return succeeded(RtlAdjustPrivilege(privilege, FALSE, FALSE, &enabled));
         }
         const std::wstring& process::get_name() const
         {
@@ -189,7 +189,7 @@ namespace resurgence
         {
             return get_pid() == SYSTEM_PROCESS;
         }
-        ntstatus_code process::open(uint32_t access)
+        error_code process::open(uint32_t access)
         {
             if(is_current_process())
                 return STATUS_SUCCESS;
@@ -212,7 +212,7 @@ namespace resurgence
             auto handle = HANDLE{nullptr};
             auto status = misc::winnt::open_process(&handle, get_pid(), access);
 
-            if(NT_SUCCESS(status)) {
+            if(succeeded(status)) {
                 _handle = misc::safe_process_handle(handle);
             }
 

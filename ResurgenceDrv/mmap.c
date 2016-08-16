@@ -27,7 +27,7 @@ NTSTATUS RDrvInjectManualMap(
     //
     //if(ImageBuffer == NULL) return STATUS_INVALID_PARAMETER;
     //
-    //if(NT_SUCCESS(status)) {
+    //if(succeeded(status)) {
     //
     //} else {
     //    DPRINT("Failed to load the image to the system buffer. Status: %lX", status);

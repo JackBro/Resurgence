@@ -14,9 +14,9 @@ NTSTATUS RDrvOpenThread(
 
     __try {
         status = PsLookupThreadByThreadId((HANDLE)Params->In.ThreadId, &thread);
-        if(NT_SUCCESS(status)) {
+        if(succeeded(status)) {
             status = ObOpenObjectByPointer(thread, 0, NULL, Params->In.AccessMask, *PsThreadType, KernelMode, &handle);
-            if(NT_SUCCESS(status) && handle != NULL) {
+            if(succeeded(status) && handle != NULL) {
                 Params->Out.Handle = (ULONG_PTR)handle;
             } else {
                 PERROR("ObOpenObjectByPointer", status);
