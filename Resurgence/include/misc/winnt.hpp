@@ -67,9 +67,9 @@ namespace resurgence
             //-----------------------------------------------
             // Memory routines
             //-----------------------------------------------
-            static error_code    allocate_memory(HANDLE process, void* start, size_t* size, uint32_t allocation, uint32_t protection);
-            static error_code    protect_memory(HANDLE process, void* start, size_t* size, uint32_t protection, uint32_t& oldProtection);
-            static error_code    free_memory(HANDLE process, void* start, size_t size, uint32_t free);
+            static error_code    allocate_memory(HANDLE process, PVOID*  start, size_t* size, uint32_t allocation, uint32_t protection);
+            static error_code    protect_memory(HANDLE process, PVOID*  start, size_t* size, uint32_t protection, uint32_t* oldProtection);
+            static error_code    free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free);
             static error_code    read_memory(HANDLE process, void* address, void* buffer, size_t size);
             static error_code    write_memory(HANDLE process, void* address, void* buffer, size_t size);
             
@@ -82,5 +82,5 @@ namespace resurgence
     }
 }
 
-#define allocate_local_buffer(buffer, size) resurgence::misc::winnt::allocate_memory(GetCurrentProcess(), buffer, size, MEM_COMMIT, PAGE_READWRITE)
-#define free_local_buffer(buffer)           resurgence::misc::winnt::free_memory(GetCurrentProcess(), buffer, 0, MEM_RELEASE)
+#define allocate_local_buffer(buffer, size) resurgence::misc::winnt::allocate_memory(GetCurrentProcess(), (void**)buffer, size, MEM_COMMIT, PAGE_READWRITE)
+#define free_local_buffer(buffer)           resurgence::misc::winnt::free_memory(GetCurrentProcess(), (void**)buffer, 0, MEM_RELEASE)

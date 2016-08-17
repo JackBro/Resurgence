@@ -707,17 +707,18 @@ namespace resurgence
             free_local_buffer(&buffer);
             return iswow64;
         }
-        error_code winnt::allocate_memory(HANDLE process, void* start, size_t* size, uint32_t allocation, uint32_t protection)
+        error_code winnt::allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection)
         {
-            return NtAllocateVirtualMemory(process, (PVOID*)start, 0, (PSIZE_T)size, allocation, protection);
+            return NtAllocateVirtualMemory(process, start, 0, (PSIZE_T)size, allocation, protection);
         }
-        error_code winnt::protect_memory(HANDLE process, void* start, size_t* size, uint32_t protection, uint32_t& oldProtection)
+        error_code winnt::protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection)
         {
-            return NtProtectVirtualMemory(process, (PVOID*)start, (PSIZE_T)size, protection, (PULONG)&oldProtection);
+            auto status = NtProtectVirtualMemory(process, start, (PSIZE_T)size, protection, (PULONG)oldProtection);
+            return status;
         }
-        error_code winnt::free_memory(HANDLE process, void* start, size_t size, uint32_t free)
+        error_code winnt::free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free)
         {
-            return NtFreeVirtualMemory(process, (PVOID*)start, (PSIZE_T)&size, free);
+            return NtFreeVirtualMemory(process, start, (PSIZE_T)&size, free);
         }
         error_code winnt::read_memory(HANDLE process, void* address, void* buffer, size_t size)
         {
@@ -734,7 +735,8 @@ namespace resurgence
                 memcpy(const_cast<void*>(address), buffer, size);
                 return STATUS_SUCCESS;
             } else {
-                return NtWriteVirtualMemory(process, address, buffer, size, nullptr);
+                auto status = NtWriteVirtualMemory(process, address, buffer, size, nullptr);
+                return status;
             }
         }
     }
