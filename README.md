@@ -16,7 +16,7 @@ using namespace resurgence;
 auto processes = system::process::get_processes();
 
 for(auto& process : processes) {
-    wcout << process.get_name() << ": " << (process.get_platform() == platform_x86) ? "x86" : "x64" << endl;
+    wcout << process.get_name() << ": " << ((process.get_platform() == system::platform_x86) ? "x86" : "x64") << endl;
 }
 ```
 
@@ -28,7 +28,7 @@ auto processes = system::process::get_process_by_name(L"notepad++.exe");
 
 //There can be multiple processes with the same name
 for(auto& process : processes) {
-    wcout << process.get_name() << ": " << (process.get_platform() == platform_x86) ? "x86" : "x64" << endl;
+    wcout << process.get_name() << ": " << ((process.get_platform() == system::platform_x86) ? "x86" : "x64") << endl;
 }
 ```
 
