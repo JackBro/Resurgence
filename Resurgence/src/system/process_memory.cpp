@@ -1,7 +1,8 @@
 #include <system/process_memory.hpp>
-#include <system/process.hpp>
+
 #include <misc/exceptions.hpp>
 #include <misc/winnt.hpp>
+#include <system/process.hpp>
 
 namespace resurgence
 {
@@ -22,7 +23,7 @@ namespace resurgence
             misc::winnt::allocate_memory(_process->get_handle().get(), (PVOID*)&address, &size, allocation, protection);
             return address;
         }
-        error_code process_memory::protect(const uint8_t* address, size_t size, uint32_t protection, uint32_t* oldProtection /*= nullptr*/)
+        NTSTATUS process_memory::protect(const uint8_t* address, size_t size, uint32_t protection, uint32_t* oldProtection /*= nullptr*/)
         {
             uint32_t old;
             auto ret = misc::winnt::protect_memory(_process->get_handle().get(), (PVOID*)&address, &size, protection, &old);
@@ -30,15 +31,15 @@ namespace resurgence
                 *oldProtection = old;
             return ret;
         }
-        error_code process_memory::free(const uint8_t* address, size_t size, uint32_t freeType)
+        NTSTATUS process_memory::free(const uint8_t* address, size_t size, uint32_t freeType)
         {
             return misc::winnt::free_memory(_process->get_handle().get(), (PVOID*)&address, size, freeType);
         }
-        error_code process_memory::read_bytes(const uint8_t* address, uint8_t* buffer, size_t size)
+        NTSTATUS process_memory::read_bytes(const uint8_t* address, uint8_t* buffer, size_t size)
         {
             return misc::winnt::read_memory(_process->get_handle().get(), (void*)address, buffer, size);
         }
-        error_code process_memory::write_bytes(const uint8_t* address, uint8_t* buffer, size_t size)
+        NTSTATUS process_memory::write_bytes(const uint8_t* address, uint8_t* buffer, size_t size)
         {
             return misc::winnt::write_memory(_process->get_handle().get(), (void*)address, buffer, size);
         }

@@ -64,29 +64,29 @@ namespace resurgence
             : public exception
         {
         public:
-            win32_exception(error_code status)
-                : exception(L"A Win32 routine failed."), _status(status)
+            win32_exception(NTSTATUS status)
+                : exception(L"A Win32 routine !NT_SUCCESS."), _status(status)
             {
 
             }
-            win32_exception(std::wstring msg, error_code status)
+            win32_exception(std::wstring msg, NTSTATUS status)
                 : exception(msg), _status(status)
             {
 
             }
-            win32_exception(std::string msg, error_code status)
+            win32_exception(std::string msg, NTSTATUS status)
                 : exception(msg), _status(status)
             {
 
             }
 
-            error_code get_status() const
+            NTSTATUS get_status() const
             {
                 return _status;
             }
 
         protected:
-            error_code _status;
+            NTSTATUS _status;
         };
     }
 }

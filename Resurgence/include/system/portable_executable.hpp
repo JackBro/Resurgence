@@ -1,6 +1,7 @@
 #pragma once
 
 #include <headers.hpp>
+#include <string>
 
 namespace resurgence
 {

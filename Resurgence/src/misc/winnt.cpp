@@ -12,7 +12,7 @@ namespace resurgence
 {
     namespace misc
     {
-        std::wstring winnt::get_status_message(error_code status)
+        std::wstring winnt::get_status_message(NTSTATUS status)
         {
             HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
 
@@ -30,7 +30,7 @@ namespace resurgence
         {
             ULONG cb;
 
-            error_code status = NtQuerySystemInformation(information, nullptr, 0, (PULONG)&cb);
+            NTSTATUS status = NtQuerySystemInformation(information, nullptr, 0, (PULONG)&cb);
             if(status != STATUS_INFO_LENGTH_MISMATCH)
                 return 0;
 
@@ -85,16 +85,16 @@ namespace resurgence
         uint8_t* winnt::query_system_information(SYSTEM_INFORMATION_CLASS information)
         {
             uint8_t*        buffer = nullptr;
-            error_code      status = STATUS_SUCCESS;
+            NTSTATUS        status = STATUS_SUCCESS;
             size_t          cb = query_required_size(information);
 
             status = allocate_local_buffer(&buffer, &cb);
 
-            if(!succeeded(status)) return nullptr;
+            if(!NT_SUCCESS(status)) return nullptr;
 
             do {
                 status = NtQuerySystemInformation(information, buffer, (ULONG)cb, (PULONG)&cb);
-                if(succeeded(status)) {
+                if(NT_SUCCESS(status)) {
                     return buffer;
                 } else {
                     if(status == STATUS_INFO_LENGTH_MISMATCH) {
@@ -110,16 +110,16 @@ namespace resurgence
         uint8_t* winnt::query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information)
         {
             uint8_t*    buffer      = nullptr;
-            error_code  status      = STATUS_SUCCESS;
+            NTSTATUS    status      = STATUS_SUCCESS;
             size_t      cb          = query_required_size(information);
             size_t      sizeNeeded  = cb;
 
             status = allocate_local_buffer(&buffer, &sizeNeeded);
 
-            if(!succeeded(status)) return nullptr;
+            if(!NT_SUCCESS(status)) return nullptr;
 
             status = NtQueryInformationProcess(handle, information, buffer, (ULONG)cb, (PULONG)&sizeNeeded);
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 return buffer;
             } else {
                 if(buffer != nullptr)
@@ -130,48 +130,48 @@ namespace resurgence
         uint8_t* winnt::query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information)
         {
             uint8_t*    buffer      = nullptr;
-            error_code  status      = STATUS_SUCCESS;
+            NTSTATUS    status      = STATUS_SUCCESS;
             size_t      cb          = query_required_size(information);
             size_t      sizeNeeded  = cb;
 
             status = allocate_local_buffer(&buffer, &sizeNeeded);
 
-            if(!succeeded(status)) return nullptr;
+            if(!NT_SUCCESS(status)) return nullptr;
 
             status = NtQueryObject(handle, information, buffer, (ULONG)cb, nullptr);
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 return buffer;
             } else {
                 return nullptr;
             }
         }
-        error_code winnt::enumerate_system_modules(system_module_enumeration_callback callback)
+        NTSTATUS winnt::enumerate_system_modules(system_module_enumeration_callback callback)
         {
             if(!callback) return STATUS_INVALID_PARAMETER_1;
 
             uint8_t*    buffer = nullptr;
-            error_code  status = STATUS_SUCCESS;
+            NTSTATUS    status = STATUS_SUCCESS;
 
             buffer = query_system_information(SystemModuleInformation);
             if(buffer) {
                 auto pSysModules = (PRTL_PROCESS_MODULES)buffer;
                 for(ULONG i = 0; i < pSysModules->NumberOfModules; i++) {
                     status = callback(&pSysModules->Modules[i]);
-                    if(succeeded(status))
+                    if(NT_SUCCESS(status))
                         break;
                 }
                 free_local_buffer(&buffer);
             }
             return status;
         }
-        error_code winnt::enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback)
+        NTSTATUS winnt::enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback)
         {
             if(root.empty()) return STATUS_INVALID_PARAMETER_1;
             if(!callback)    return STATUS_INVALID_PARAMETER_2;
 
             OBJECT_ATTRIBUTES   objAttr;
             UNICODE_STRING      usDirectoryName;
-            error_code          status;
+            NTSTATUS            status;
             HANDLE              hDirectory;
             ULONG               uEnumCtx = 0;
             size_t              uBufferSize = 0x100;
@@ -183,7 +183,7 @@ namespace resurgence
 
             status = NtOpenDirectoryObject(&hDirectory, DIRECTORY_QUERY, &objAttr);
 
-            if(!succeeded(status) || !hDirectory) {
+            if(!NT_SUCCESS(status) || !hDirectory) {
                 return status;
             }
 
@@ -191,7 +191,7 @@ namespace resurgence
 
             do {
                 status = NtQueryDirectoryObject(hDirectory, pObjBuffer, (ULONG)uBufferSize, TRUE, FALSE, &uEnumCtx, (PULONG)&uBufferSize);
-                if(!succeeded(status)) {
+                if(!NT_SUCCESS(status)) {
                     if(status == STATUS_BUFFER_TOO_SMALL || status == STATUS_INFO_LENGTH_MISMATCH) {
                         if(pObjBuffer != nullptr)
                             RtlFreeHeap(NtCurrentPeb()->ProcessHeap, 0, pObjBuffer);
@@ -205,7 +205,7 @@ namespace resurgence
                 if(!pObjBuffer) break;
 
                 status = callback(pObjBuffer);
-                if(succeeded(status))
+                if(NT_SUCCESS(status))
                     break;
             } while(true);
 
@@ -215,19 +215,19 @@ namespace resurgence
             NtClose(hDirectory);
             return status;
         }
-        error_code winnt::enumerate_processes(process_enumeration_callback callback)
+        NTSTATUS winnt::enumerate_processes(process_enumeration_callback callback)
         {
             if(!callback) return STATUS_INVALID_PARAMETER_1;
 
             uint8_t*   buffer = nullptr;
-            error_code   status = STATUS_SUCCESS;
+            NTSTATUS   status = STATUS_SUCCESS;
 
             buffer = query_system_information(SystemProcessInformation);
             if(buffer) {
                 auto pProcessEntry = (PSYSTEM_PROCESSES_INFORMATION)buffer;
                 while(pProcessEntry->NextEntryDelta) {
                     status = callback((PSYSTEM_PROCESSES_INFORMATION)pProcessEntry);
-                    if(succeeded(status))
+                    if(NT_SUCCESS(status))
                         break;
                     pProcessEntry = (PSYSTEM_PROCESSES_INFORMATION)((PUCHAR)pProcessEntry + pProcessEntry->NextEntryDelta);
                 }
@@ -235,7 +235,7 @@ namespace resurgence
             }
             return status;
         }
-        error_code winnt::enumerate_process_modules(HANDLE process, module_enumeration_callback callback)
+        NTSTATUS winnt::enumerate_process_modules(HANDLE process, module_enumeration_callback callback)
         {
             PPEB_LDR_DATA           ldr;
             PEB_LDR_DATA            ldrData;
@@ -256,20 +256,20 @@ namespace resurgence
                 return STATUS_ACCESS_DENIED;
             }
 
-            error_code status = read_memory(
+            NTSTATUS status = read_memory(
                 process,
                 PTR_ADD(basic_info->PebBaseAddress, FIELD_OFFSET(PEB, Ldr)),
                 &ldr,
                 sizeof(ldr)
             );
 
-            if(!succeeded(status)) {
+            if(!NT_SUCCESS(status)) {
                 free_local_buffer(&basic_info);
                 return status;
             }
 
             status = read_memory(process, ldr, &ldrData, sizeof(ldrData));
-            if(!succeeded(status)) {
+            if(!NT_SUCCESS(status)) {
                 free_local_buffer(&basic_info);
                 return status;
             }
@@ -289,7 +289,7 @@ namespace resurgence
                     sizeof(LDR_DATA_TABLE_ENTRY)
                 );
 
-                if(!succeeded(status)) {
+                if(!NT_SUCCESS(status)) {
                     free_local_buffer(&basic_info);
                     return status;
                 }
@@ -297,7 +297,7 @@ namespace resurgence
                 if(currentEntry.DllBase != 0) {
                     status = callback(&currentEntry);
 
-                    if(succeeded(status)) {
+                    if(NT_SUCCESS(status)) {
                         free_local_buffer(&basic_info);
                         return status;
                     }
@@ -307,7 +307,7 @@ namespace resurgence
             free_local_buffer(&basic_info);
             return STATUS_SUCCESS;
         }
-        error_code winnt::enumerate_process_modules32(HANDLE process, module_enumeration_callback32 callback)
+        NTSTATUS winnt::enumerate_process_modules32(HANDLE process, module_enumeration_callback32 callback)
         {
             auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(process, ProcessBasicInformation);
 
@@ -318,20 +318,20 @@ namespace resurgence
             LDR_DATA_TABLE_ENTRY32  currentEntry;
             ULONG                   wow64Peb = (ULONG)((PUCHAR)basic_info->PebBaseAddress + PAGE_SIZE);
 
-            error_code status = read_memory(
+            NTSTATUS status = read_memory(
                 process,
                 PTR_ADD((ULONG_PTR)wow64Peb, FIELD_OFFSET(PEB32, Ldr)),
                 &ldr,
                 sizeof(ldr)
             );
 
-            if(!succeeded(status)) {
+            if(!NT_SUCCESS(status)) {
                 free_local_buffer(&basic_info);
                 return status;
             }
 
             status = read_memory(process, (PVOID)ldr, &ldrData, sizeof(ldrData));
-            if(!succeeded(status)) {
+            if(!NT_SUCCESS(status)) {
                 free_local_buffer(&basic_info);
                 return status;
             }
@@ -351,7 +351,7 @@ namespace resurgence
                     sizeof(LDR_DATA_TABLE_ENTRY32)
                 );
 
-                if(!succeeded(status)) {
+                if(!NT_SUCCESS(status)) {
                     free_local_buffer(&basic_info);
                     return status;
                 }
@@ -359,7 +359,7 @@ namespace resurgence
                 if(currentEntry.DllBase != 0) {
                     status = callback(&currentEntry);
 
-                    if(succeeded(status)) {
+                    if(NT_SUCCESS(status)) {
                         free_local_buffer(&basic_info);
                         return status;
                     }
@@ -370,12 +370,14 @@ namespace resurgence
             free_local_buffer(&basic_info);
             return STATUS_SUCCESS;
         }
-        error_code winnt::object_exists(const std::wstring& root, const std::wstring& object, bool* found /*= nullptr*/)
+        NTSTATUS winnt::object_exists(const std::wstring& root, const std::wstring& object, bool* found /*= nullptr*/)
         {
-            UNICODE_STRING uName;
+            UNICODE_STRING  uName;
+            bool            _found = false;
+
             RtlInitUnicodeString(&uName, std::data(object));
-            bool _found = false;
-            error_code status = enumerate_system_objects(root, [&](POBJECT_DIRECTORY_INFORMATION entry) -> error_code {
+
+            NTSTATUS status = enumerate_system_objects(root, [&](POBJECT_DIRECTORY_INFORMATION entry) -> NTSTATUS {
                 if(RtlEqualUnicodeString(&uName, &entry->Name, TRUE)) {
                     _found = true;
                     return STATUS_SUCCESS;
@@ -386,11 +388,11 @@ namespace resurgence
                 *found = _found;
             return status;
         }
-        error_code winnt::get_system_module_info(const std::string& module, PRTL_PROCESS_MODULE_INFORMATION moduleInfo)
+        NTSTATUS winnt::get_system_module_info(const std::string& module, PRTL_PROCESS_MODULE_INFORMATION moduleInfo)
         {
             if(!moduleInfo) return STATUS_INVALID_PARAMETER;
 
-            error_code status = enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) -> error_code {
+            NTSTATUS status = enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) -> NTSTATUS {
                 if(!strcmp(std::data(module), (char*)(info->FullPathName + info->OffsetToFileName))) {
                     RtlCopyMemory(moduleInfo, info, sizeof(RTL_PROCESS_MODULE_INFORMATION));
                     return STATUS_SUCCESS;
@@ -399,7 +401,7 @@ namespace resurgence
             });
             return status;
         }
-        error_code winnt::write_file(const std::wstring& path, uint8_t* buffer, size_t length)
+        NTSTATUS winnt::write_file(const std::wstring& path, uint8_t* buffer, size_t length)
         {
             auto handle = safe_generic_handle(CreateFile(std::data(path), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, 0, nullptr));
 
@@ -409,7 +411,7 @@ namespace resurgence
             decltype(length) nBytesWritten = 0;
             return WriteFile(handle.get(), buffer, (DWORD)length, (PDWORD)&nBytesWritten, nullptr) && nBytesWritten != length;
         }
-        error_code winnt::copy_file(const std::wstring& oldPath, const std::wstring& newPath)
+        NTSTATUS winnt::copy_file(const std::wstring& oldPath, const std::wstring& newPath)
         {
             if(!::CopyFileW(std::data(oldPath), std::data(newPath), FALSE))
                 return get_last_ntstatus();
@@ -460,7 +462,7 @@ namespace resurgence
             }
             return dosPath;
         }
-        error_code winnt::query_mounted_drives(std::vector<std::wstring>& letters)
+        NTSTATUS winnt::query_mounted_drives(std::vector<std::wstring>& letters)
         {
             // Required size:
             // 26 letters * 2 * sizeof(WCHAR) = 104
@@ -481,12 +483,12 @@ namespace resurgence
                 return get_last_ntstatus();
             }
         }
-        error_code winnt::get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink)
+        NTSTATUS winnt::get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink)
         {
-            HANDLE linkHandle;
-            OBJECT_ATTRIBUTES oa;
-            UNICODE_STRING deviceName;
-            UNICODE_STRING devicePrefix;
+            HANDLE              linkHandle;
+            OBJECT_ATTRIBUTES   oa;
+            UNICODE_STRING      deviceName;
+            UNICODE_STRING      devicePrefix;
 
             wchar_t deviceNameBuffer[] = L"\\??\\ :";
 
@@ -509,9 +511,9 @@ namespace resurgence
             devicePrefix.Buffer = (PWSTR)RtlAllocateHeap(NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, MAX_PATH * sizeof(WCHAR));
 
             auto status = NtOpenSymbolicLinkObject(&linkHandle, SYMBOLIC_LINK_QUERY, &oa);
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 status = NtQuerySymbolicLinkObject(linkHandle, &devicePrefix, NULL);
-                if(succeeded(status)) {
+                if(NT_SUCCESS(status)) {
                     deviceLink = std::wstring(devicePrefix.Buffer, devicePrefix.Length / sizeof(wchar_t));
                 }
                 NtClose(linkHandle);
@@ -519,7 +521,7 @@ namespace resurgence
             RtlFreeHeap(NtCurrentPeb()->ProcessHeap, 0, devicePrefix.Buffer);
             return status;
         }
-        error_code winnt::create_service(SC_HANDLE manager, const std::wstring& driverName, const std::wstring& driverPath)
+        NTSTATUS winnt::create_service(SC_HANDLE manager, const std::wstring& driverName, const std::wstring& driverPath)
         {
             SC_HANDLE schService;
 
@@ -544,7 +546,7 @@ namespace resurgence
             CloseServiceHandle(schService);
             return STATUS_SUCCESS;
         }
-        error_code winnt::start_driver(SC_HANDLE manager, const std::wstring& driverName)
+        NTSTATUS winnt::start_driver(SC_HANDLE manager, const std::wstring& driverName)
         {
             SC_HANDLE  schService;
 
@@ -561,7 +563,7 @@ namespace resurgence
 
             return success ? STATUS_SUCCESS : get_last_ntstatus();
         }
-        error_code winnt::stop_driver(SC_HANDLE manager, const std::wstring& driverName)
+        NTSTATUS winnt::stop_driver(SC_HANDLE manager, const std::wstring& driverName)
         {
             INT             iRetryCount;
             SC_HANDLE       schService;
@@ -590,7 +592,7 @@ namespace resurgence
                 return get_last_ntstatus();
             return STATUS_SUCCESS;
         }
-        error_code winnt::get_driver_device(const std::wstring& driver, PHANDLE deviceHandle)
+        NTSTATUS winnt::get_driver_device(const std::wstring& driver, PHANDLE deviceHandle)
         {
             wchar_t szDeviceName[MAX_PATH];
             HANDLE  hDevice;
@@ -615,7 +617,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code winnt::delete_service(SC_HANDLE manager, const std::wstring& driverName)
+        NTSTATUS winnt::delete_service(SC_HANDLE manager, const std::wstring& driverName)
         {
             SC_HANDLE  schService;
             schService = OpenService(manager,
@@ -632,7 +634,7 @@ namespace resurgence
 
             return success ? STATUS_SUCCESS : get_last_ntstatus();
         }
-        error_code winnt::load_driver(const std::wstring& driverName, const std::wstring& driverPath, PHANDLE deviceHandle)
+        NTSTATUS winnt::load_driver(const std::wstring& driverName, const std::wstring& driverPath, PHANDLE deviceHandle)
         {
             SC_HANDLE	  schSCManager;
             NTSTATUS    status;
@@ -649,20 +651,20 @@ namespace resurgence
             if(schSCManager) {
                 delete_service(schSCManager, driverName);
                 status = create_service(schSCManager, driverName, driverPath);
-                if(!succeeded(status))
+                if(!NT_SUCCESS(status))
 
                 {
                     CloseServiceHandle(schSCManager);
                     return status;
                 }
                 status = start_driver(schSCManager, driverName);
-                if(!succeeded(status)) {
+                if(!NT_SUCCESS(status)) {
                     CloseServiceHandle(schSCManager);
                     return status;
                 }
 
                 status = get_driver_device(driverName, deviceHandle);
-                if(!succeeded(status)) {
+                if(!NT_SUCCESS(status)) {
                     CloseServiceHandle(schSCManager);
                     return status;
                 }
@@ -670,10 +672,10 @@ namespace resurgence
             CloseServiceHandle(schSCManager);
             return status;
         }
-        error_code winnt::unload_driver(const std::wstring& driverName)
+        NTSTATUS winnt::unload_driver(const std::wstring& driverName)
         {
             SC_HANDLE	  schSCManager;
-            error_code  status;
+            NTSTATUS  status;
 
             if(driverName.empty()) return STATUS_INVALID_PARAMETER;
 
@@ -683,13 +685,13 @@ namespace resurgence
             );
             if(schSCManager) {
                 status = stop_driver(schSCManager, driverName);
-                if(succeeded(status))
+                if(NT_SUCCESS(status))
                     status = delete_service(schSCManager, driverName);
                 CloseServiceHandle(schSCManager);
             }
             return status;
         }
-        error_code winnt::open_process(PHANDLE handle, uint32_t pid, uint32_t access)
+        NTSTATUS winnt::open_process(PHANDLE handle, uint32_t pid, uint32_t access)
         {
             OBJECT_ATTRIBUTES objAttr;
 
@@ -707,20 +709,20 @@ namespace resurgence
             free_local_buffer(&buffer);
             return iswow64;
         }
-        error_code winnt::allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection)
+        NTSTATUS winnt::allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection)
         {
             return NtAllocateVirtualMemory(process, start, 0, (PSIZE_T)size, allocation, protection);
         }
-        error_code winnt::protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection)
+        NTSTATUS winnt::protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection)
         {
             auto status = NtProtectVirtualMemory(process, start, (PSIZE_T)size, protection, (PULONG)oldProtection);
             return status;
         }
-        error_code winnt::free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free)
+        NTSTATUS winnt::free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free)
         {
             return NtFreeVirtualMemory(process, start, (PSIZE_T)&size, free);
         }
-        error_code winnt::read_memory(HANDLE process, void* address, void* buffer, size_t size)
+        NTSTATUS winnt::read_memory(HANDLE process, void* address, void* buffer, size_t size)
         {
             if(process == GetCurrentProcess()) {
                 memcpy((PVOID)buffer, (PVOID)address, size);
@@ -729,7 +731,7 @@ namespace resurgence
                 return NtReadVirtualMemory(process, address, buffer, size, nullptr);
             }
         }
-        error_code winnt::write_memory(HANDLE process, void* address, void* buffer, size_t size)
+        NTSTATUS winnt::write_memory(HANDLE process, void* address, void* buffer, size_t size)
         {
             if(process == GetCurrentProcess()) {
                 memcpy(const_cast<void*>(address), buffer, size);

@@ -1,13 +1,6 @@
 #include <iostream>
-#include <string>
 #include <Windows.h>
-#include <TlHelp32.h>
-#include <algorithm>
-#include "resource.h"
 #include <resurgence.hpp>
-#include <Shlwapi.h>
-#include <iomanip>
-
 
 int main(int argc, char** argv) {
     using namespace std;

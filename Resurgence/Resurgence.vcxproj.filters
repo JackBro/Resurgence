@@ -54,9 +54,6 @@
     <ClInclude Include="include\system\process_modules.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\misc\error.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\system\portable_executable.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -84,9 +81,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\misc\safe_handle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\misc\error.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\system\portable_executable.cpp">

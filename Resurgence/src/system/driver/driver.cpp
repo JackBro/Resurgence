@@ -30,9 +30,9 @@ namespace resurgence
             open();
             return _handle != INVALID_HANDLE_VALUE;
         }
-        error_code driver::load(driver_load_method method)
+        NTSTATUS driver::load(driver_load_method method)
         {
-            error_code status = STATUS_SUCCESS;
+            NTSTATUS status = STATUS_SUCCESS;
 
             if(is_loaded()) return STATUS_SUCCESS;
 
@@ -40,28 +40,28 @@ namespace resurgence
 
             if(method == Turla) {
                 status = TDLload_driver(_path.data());
-                if(succeeded(status))
+                if(NT_SUCCESS(status))
                     return open();
             } else {
                 status = misc::winnt::load_driver(RDRV_SYMLINK, _path, &_handle);
             }
             return status;
         }
-        error_code driver::open()
+        NTSTATUS driver::open()
         {
-            error_code status = STATUS_NO_SUCH_DEVICE;
+            NTSTATUS status = STATUS_NO_SUCH_DEVICE;
             int tries = 0;
 
             while(tries++ < 10) {
                 status = misc::winnt::get_driver_device(RDRV_SYMLINK, &_handle);
-                if(succeeded(status))
+                if(NT_SUCCESS(status))
                     break;
                 Sleep(1000);
             }
             return status;
         }
 
-        error_code driver::query_version_info(PVERSION_INFO version)
+        NTSTATUS driver::query_version_info(PVERSION_INFO version)
         {
             DWORD ioBytes;
 
@@ -73,7 +73,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::allocate_virtual_memory(uint32_t pid, uint8_t** baseAddress, size_t* regionSize, uint32_t allocation, uint32_t protection)
+        NTSTATUS driver::allocate_virtual_memory(uint32_t pid, uint8_t** baseAddress, size_t* regionSize, uint32_t allocation, uint32_t protection)
         {
             DWORD           ioBytes;
             VM_OPERATION    params;
@@ -99,7 +99,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::protect_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t newProtection, uint32_t* oldProtection)
+        NTSTATUS driver::protect_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t newProtection, uint32_t* oldProtection)
         {
             DWORD ioBytes;
             VM_OPERATION params;
@@ -124,7 +124,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::free_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t freeType)
+        NTSTATUS driver::free_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t freeType)
         {
             DWORD ioBytes;
             VM_OPERATION params;
@@ -146,7 +146,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::query_virtual_memory(uint32_t pid, uint8_t* baseAddress, PMEMORY_BASIC_INFORMATION memoryInfo)
+        NTSTATUS driver::query_virtual_memory(uint32_t pid, uint8_t* baseAddress, PMEMORY_BASIC_INFORMATION memoryInfo)
         {
             if(!memoryInfo) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
 
@@ -167,7 +167,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::read_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
+        NTSTATUS driver::read_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
         {
             DWORD           ioBytes;
             VM_READ_WRITE   params;
@@ -186,7 +186,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::write_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
+        NTSTATUS driver::write_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
         {
             DWORD           ioBytes;
             VM_READ_WRITE   params;
@@ -206,7 +206,7 @@ namespace resurgence
             return STATUS_SUCCESS;
         }
         
-        error_code driver::open_process(uint32_t pid, uint32_t access, PHANDLE handle)
+        NTSTATUS driver::open_process(uint32_t pid, uint32_t access, PHANDLE handle)
         {
             DWORD ioBytes;
             OPEN_PROCESS params;
@@ -229,7 +229,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::open_process_with_thread(uint32_t tid, uint32_t access, PHANDLE handle)
+        NTSTATUS driver::open_process_with_thread(uint32_t tid, uint32_t access, PHANDLE handle)
         {
             DWORD ioBytes;
             OPEN_PROCESS params;
@@ -251,7 +251,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::open_thread(uint32_t tid, uint32_t access, PHANDLE handle)
+        NTSTATUS driver::open_thread(uint32_t tid, uint32_t access, PHANDLE handle)
         {
             DWORD ioBytes;
             OPEN_THREAD params;
@@ -272,7 +272,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::grant_handle_access(uint32_t pid, HANDLE handle, uint32_t access, uint32_t* oldAccess)
+        NTSTATUS driver::grant_handle_access(uint32_t pid, HANDLE handle, uint32_t access, uint32_t* oldAccess)
         {
             DWORD           ioBytes;
             GRANT_ACCESS    params;
@@ -293,7 +293,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::set_process_protection(uint32_t pid, uint32_t protectionLevel)
+        NTSTATUS driver::set_process_protection(uint32_t pid, uint32_t protectionLevel)
         {
             DWORD           ioBytes;
             PROTECT_PROCESS params;
@@ -310,7 +310,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::set_process_dep(uint32_t pid, bool enable)
+        NTSTATUS driver::set_process_dep(uint32_t pid, bool enable)
         {
             DWORD           ioBytes;
             SET_DEP_STATE   params;
@@ -327,7 +327,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::inject_module(uint32_t pid, const std::wstring& modulePath, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
+        NTSTATUS driver::inject_module(uint32_t pid, const std::wstring& modulePath, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
         {
             DWORD           ioBytes;
             INJECT_MODULE   params;
@@ -352,7 +352,7 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::mmap_module(uint32_t pid, const uint8_t* moduleBase, size_t moduleSize, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
+        NTSTATUS driver::mmap_module(uint32_t pid, const uint8_t* moduleBase, size_t moduleSize, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
         {
             DWORD ioBytes;
             INJECT_MODULE params;

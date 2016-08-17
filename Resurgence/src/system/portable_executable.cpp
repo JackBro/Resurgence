@@ -15,7 +15,7 @@ namespace resurgence
             std::wstring        qualifiedPath;
             OBJECT_ATTRIBUTES   objAttr;
             IO_STATUS_BLOCK     ioStatus;
-            error_code          status;
+            NTSTATUS          status;
             portable_executable pe;
 
             qualifiedPath = L"\\??\\";
@@ -33,7 +33,7 @@ namespace resurgence
                 FILE_SYNCHRONOUS_IO_NONALERT, 
                 NULL, 0);
             
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 fileMapping = CreateFileMapping(fileHandle, NULL, PAGE_READONLY, 0, 0, NULL);
                 if(fileMapping) {
                     fileBase = (uint8_t*)MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);

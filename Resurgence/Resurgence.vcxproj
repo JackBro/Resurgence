@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\headers.hpp" />
-    <ClInclude Include="include\misc\error.hpp" />
     <ClInclude Include="include\misc\exceptions.hpp" />
     <ClInclude Include="include\misc\safe_handle.hpp" />
     <ClInclude Include="include\misc\winnt.hpp" />
@@ -37,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp" />
-    <ClCompile Include="src\misc\error.cpp" />
     <ClCompile Include="src\misc\safe_handle.cpp" />
     <ClCompile Include="src\misc\winnt.cpp" />
     <ClCompile Include="src\system\driver\driver.cpp" />

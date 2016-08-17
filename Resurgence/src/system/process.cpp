@@ -21,7 +21,7 @@ namespace resurgence
             _memory(this),
             _modules(this)
         {
-            error_code status = STATUS_SUCCESS;
+            NTSTATUS status = STATUS_SUCCESS;
 
             RtlZeroMemory(&_info, sizeof(_info));
 
@@ -29,7 +29,7 @@ namespace resurgence
             
             if(!is_system_idle_process()) {
                 if(!is_current_process()) {
-                    open(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ);
+                    open(PROCESS_DEFAULT_ACCESS);
                 } else {
                     _handle = misc::safe_process_handle(GetCurrentProcess());
                 }
@@ -120,7 +120,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> error_code {
+            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> NTSTATUS {
                 processes.push_back(process((uint32_t)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
@@ -135,7 +135,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> error_code {
+            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> NTSTATUS {
                 if(info->ImageName.Length > 0 && !wcscmp(std::data(name), info->ImageName.Buffer))
                     processes.emplace_back(static_cast<uint32_t>((ULONG_PTR)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
@@ -146,12 +146,12 @@ namespace resurgence
         bool process::grant_privilege(uint32_t privilege)
         {
             BOOLEAN enabled;
-            return succeeded(RtlAdjustPrivilege(privilege, TRUE, FALSE, &enabled));
+            return NT_SUCCESS(RtlAdjustPrivilege(privilege, TRUE, FALSE, &enabled));
         }
         bool process::revoke_privilege(uint32_t privilege)
         {
             BOOLEAN enabled;
-            return succeeded(RtlAdjustPrivilege(privilege, FALSE, FALSE, &enabled));
+            return NT_SUCCESS(RtlAdjustPrivilege(privilege, FALSE, FALSE, &enabled));
         }
         const std::wstring& process::get_name() const
         {
@@ -193,7 +193,7 @@ namespace resurgence
         {
             return get_pid() == SYSTEM_PROCESS;
         }
-        error_code process::open(uint32_t access)
+        NTSTATUS process::open(uint32_t access)
         {
             if(is_current_process())
                 return STATUS_SUCCESS;
@@ -216,9 +216,9 @@ namespace resurgence
             }
             
             auto handle = HANDLE{nullptr};
-            auto status = misc::winnt::open_process(&handle, get_pid(), PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ | access);
+            auto status = misc::winnt::open_process(&handle, get_pid(), PROCESS_DEFAULT_ACCESS | access);
 
-            if(succeeded(status)) {
+            if(NT_SUCCESS(status)) {
                 _handle = misc::safe_process_handle(handle);
             }
 

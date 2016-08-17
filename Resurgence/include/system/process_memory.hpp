@@ -14,10 +14,10 @@ namespace resurgence
             process_memory(process* proc);
 
             uint8_t*                            allocate(size_t size, uint32_t allocation, uint32_t protection);
-            error_code                          protect(const uint8_t* address, size_t size, uint32_t protection, uint32_t* oldProtection = nullptr);
-            error_code                          free(const uint8_t* address, size_t size, uint32_t freeType);
-            error_code                          read_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
-            error_code                          write_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
+            NTSTATUS                            protect(const uint8_t* address, size_t size, uint32_t protection, uint32_t* oldProtection = nullptr);
+            NTSTATUS                            free(const uint8_t* address, size_t size, uint32_t freeType);
+            NTSTATUS                            read_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
+            NTSTATUS                            write_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
             template<typename _Ty> _Ty          read(const uint8_t* address);
             template<typename _Ty> void         write(const uint8_t* address, const _Ty& buffer, size_t size = sizeof(_Ty));
             template<typename _Ty> std::string  read_string(_Ty address, size_t length);

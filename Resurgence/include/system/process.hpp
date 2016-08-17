@@ -7,8 +7,11 @@
 #include "process_memory.hpp"
 #include "process_modules.hpp"
 
-#define SYSTEM_IDLE_PROCESS  (0)
-#define SYSTEM_PROCESS       (4)
+#define SYSTEM_IDLE_PROCESS     (0)
+#define SYSTEM_PROCESS          (4)
+#define PROCESS_DEFAULT_ACCESS  SYNCHRONIZE | PROCESS_VM_READ | PROCESS_QUERY_LIMITED_INFORMATION
+#define THREAD_DEFAULT_ACCESS   SYNCHRONIZE | THREAD_SET_CONTEXT | THREAD_GET_CONTEXT | \
+                                THREAD_QUERY_LIMITED_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_TERMINATE
 
 namespace resurgence
 {
@@ -63,7 +66,7 @@ namespace resurgence
             bool                                is_system_idle_process() const;
             bool                                is_system_process() const;
 
-            error_code                          open(uint32_t access);
+            NTSTATUS                            open(uint32_t access);
 
             process_memory*                     memory() { return &_memory; }
             process_modules*                    modules() { return &_modules; }
