@@ -10,10 +10,10 @@ int main(int argc, char** argv) {
         cout << "[!] Failed to set debug privilege" << endl;
     
     try {
-        auto processes = system::process::get_processes();
+        auto processes = system::process::get_current_process();
 
-        for(auto& process : processes) {
-            wcout << process.get_name() << ": " << ((process.get_platform() == system::platform_x86) ? "x86" : "x64") << endl;
+        for(auto& process : processes.modules()->get_all_modules()) {
+            wcout << process.get_name() << endl;
         }
 
     } catch(const misc::exception& ex) {

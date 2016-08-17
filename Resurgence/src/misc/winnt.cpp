@@ -88,9 +88,9 @@ namespace resurgence
             NTSTATUS        status = STATUS_SUCCESS;
             size_t          cb = query_required_size(information);
 
-            status = allocate_local_buffer(&buffer, &cb);
+            allocate_local_buffer(&buffer, cb);
 
-            if(!NT_SUCCESS(status)) return nullptr;
+            if(!buffer) return nullptr;
 
             do {
                 status = NtQuerySystemInformation(information, buffer, (ULONG)cb, (PULONG)&cb);
@@ -100,7 +100,7 @@ namespace resurgence
                     if(status == STATUS_INFO_LENGTH_MISMATCH) {
                         if(buffer != nullptr)
                             free_local_buffer(&buffer);
-                        status = allocate_local_buffer(&buffer, &cb);
+                        allocate_local_buffer(&buffer, cb);
                         continue;
                     }
                     return nullptr;
@@ -112,13 +112,12 @@ namespace resurgence
             uint8_t*    buffer      = nullptr;
             NTSTATUS    status      = STATUS_SUCCESS;
             size_t      cb          = query_required_size(information);
-            size_t      sizeNeeded  = cb;
 
-            status = allocate_local_buffer(&buffer, &sizeNeeded);
+            allocate_local_buffer(&buffer, cb);
 
-            if(!NT_SUCCESS(status)) return nullptr;
+            if(!buffer) return nullptr;
 
-            status = NtQueryInformationProcess(handle, information, buffer, (ULONG)cb, (PULONG)&sizeNeeded);
+            status = NtQueryInformationProcess(handle, information, buffer, (ULONG)cb, (PULONG)&cb);
             if(NT_SUCCESS(status)) {
                 return buffer;
             } else {
@@ -132,11 +131,10 @@ namespace resurgence
             uint8_t*    buffer      = nullptr;
             NTSTATUS    status      = STATUS_SUCCESS;
             size_t      cb          = query_required_size(information);
-            size_t      sizeNeeded  = cb;
 
-            status = allocate_local_buffer(&buffer, &sizeNeeded);
+            allocate_local_buffer(&buffer, cb);
 
-            if(!NT_SUCCESS(status)) return nullptr;
+            if(!buffer) return nullptr;
 
             status = NtQueryObject(handle, information, buffer, (ULONG)cb, nullptr);
             if(NT_SUCCESS(status)) {

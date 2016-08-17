@@ -1,10 +1,16 @@
 #include <system/portable_executable.hpp>
+#include <system/process.hpp>
 #include <misc/winnt.hpp>
 
 namespace resurgence
 {
     namespace system
     {
+        portable_executable::portable_executable()
+            : _dosHdr(nullptr), _ntHdr32(nullptr), _ntHdr64(nullptr)
+        {
+
+        }
         portable_executable portable_executable::load_from_file(const std::wstring& file)
         {
             HANDLE              fileHandle;
@@ -54,6 +60,15 @@ namespace resurgence
         portable_executable portable_executable::load_from_memory(process* proc, const std::uint8_t* base)
         {
             throw;
+            //PIMAGE_DOS_HEADER dosHdr;
+            //
+            ////
+            //// Use the current process if one isnt provided
+            ////
+            //if(proc == nullptr)                        
+            //    *proc = process::get_current_process();
+            //
+            //allocate_local_buffer(&dosHdr, )
         }
     }
 }

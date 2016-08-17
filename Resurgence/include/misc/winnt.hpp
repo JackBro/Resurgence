@@ -82,5 +82,10 @@ namespace resurgence
     }
 }
 
-#define allocate_local_buffer(buffer, size) resurgence::misc::winnt::allocate_memory(GetCurrentProcess(), (void**)buffer, size, MEM_COMMIT, PAGE_READWRITE)
-#define free_local_buffer(buffer)           resurgence::misc::winnt::free_memory(GetCurrentProcess(), (void**)buffer, 0, MEM_RELEASE)
+#define allocate_local_buffer(buffer, size)  \
+    do { \
+        size_t _size = size; \
+        resurgence::misc::winnt::allocate_memory(GetCurrentProcess(), (void**)buffer, &_size, MEM_COMMIT, PAGE_READWRITE); \
+    } while(0)
+
+#define free_local_buffer(buffer) resurgence::misc::winnt::free_memory(GetCurrentProcess(), (void**)buffer, 0, MEM_RELEASE)
