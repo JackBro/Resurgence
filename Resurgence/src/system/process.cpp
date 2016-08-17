@@ -201,20 +201,22 @@ namespace resurgence
             if(_handle.is_valid()) {
                 auto handle_info = (POBJECT_BASIC_INFORMATION)misc::winnt::query_object_information(_handle.get(), ObjectBasicInformation);
                 
-                //
-                // Already has the desired access
-                //
-                bool b = 
-                    handle_info->GrantedAccess == access || 
-                    handle_info->GrantedAccess == PROCESS_ALL_ACCESS;
-                    
-                free_local_buffer(&handle_info);
+                if(handle_info) {
+                    //
+                    // Already has the desired access
+                    //
+                    bool b =
+                        handle_info->GrantedAccess == access ||
+                        handle_info->GrantedAccess == PROCESS_ALL_ACCESS;
 
-                if(b) return STATUS_SUCCESS;
+                    free_local_buffer(&handle_info);
+
+                    if(b) return STATUS_SUCCESS;
+                }
             }
             
             auto handle = HANDLE{nullptr};
-            auto status = misc::winnt::open_process(&handle, get_pid(), access);
+            auto status = misc::winnt::open_process(&handle, get_pid(), PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ | access);
 
             if(succeeded(status)) {
                 _handle = misc::safe_process_handle(handle);

@@ -109,10 +109,10 @@ namespace resurgence
         }
         uint8_t* winnt::query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information)
         {
-            uint8_t*    buffer = nullptr;
-            error_code  status = STATUS_SUCCESS;
-            size_t      cb = query_required_size(information);
-            size_t      sizeNeeded = cb;
+            uint8_t*    buffer      = nullptr;
+            error_code  status      = STATUS_SUCCESS;
+            size_t      cb          = query_required_size(information);
+            size_t      sizeNeeded  = cb;
 
             status = allocate_local_buffer(&buffer, &sizeNeeded);
 
@@ -129,11 +129,12 @@ namespace resurgence
         }
         uint8_t* winnt::query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information)
         {
-            uint8_t*    buffer = nullptr;
-            error_code  status = STATUS_SUCCESS;
-            size_t      cb = query_required_size(information);
+            uint8_t*    buffer      = nullptr;
+            error_code  status      = STATUS_SUCCESS;
+            size_t      cb          = query_required_size(information);
+            size_t      sizeNeeded  = cb;
 
-            status = allocate_local_buffer(&buffer, &cb);
+            status = allocate_local_buffer(&buffer, &sizeNeeded);
 
             if(!succeeded(status)) return nullptr;
 

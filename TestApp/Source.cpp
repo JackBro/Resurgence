@@ -17,11 +17,25 @@ int main(int argc, char** argv) {
         cout << "[!] Failed to set debug privilege" << endl;
     
     try {
-        auto processes = system::process::get_current_process();
-    
-        for(auto& process : processes) {
-            wcout << process.get_name() << endl;
-        }
+        auto process = system::process::get_process_by_name(L"notepad++.exe").front();
+
+        if(failed(process.open(PROCESS_VM_READ | PROCESS_VM_WRITE)))
+            wcout << "Failed to open process" << endl;
+
+        auto mainModule = process.modules()->get_module_by_load_order(0);
+        auto mem        = process.memory();
+
+        //Read value
+        wcout << mem->read<uint8_t>(mainModule.get_base()) << endl;
+
+        //Change it
+        //mem->protect(mainModule.get_base(), PAGE_READWRITE);
+        mem->write<uint8_t>(mainModule.get_base(), 69);
+        //mem->protect(mainModule.get_base(), PAGE_READONLY);
+
+        //Read again
+        wcout << mem->read<uint8_t>(mainModule.get_base()) << endl;
+
     } catch(const misc::exception& ex) {
         wcout << ex.get_message() << endl;
         if(dynamic_cast<const misc::win32_exception*>(&ex)) {
