@@ -25,7 +25,7 @@ namespace resurgence
         {
         public:
             static std::wstring     get_status_message(error_code status);
-
+            
             //-----------------------------------------------
             // system routines
             //-----------------------------------------------

@@ -47,6 +47,7 @@ namespace resurgence
             process& operator=(const process& rhs);
 
             static std::vector<process>         get_processes();
+            static process                      get_current_process();
             static std::vector<process>         get_process_by_name(const std::wstring& name);
             static bool                         grant_privilege(uint32_t privilege);
             static bool                         revoke_privilege(uint32_t privilege);

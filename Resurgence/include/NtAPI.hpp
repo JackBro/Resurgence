@@ -3838,7 +3838,7 @@ NTSTATUS NTAPI RtlGetVersion(
     _Inout_	PRTL_OSVERSIONINFOW lpVersionInformation
 );
 
-ULONG NTAPI RtlNTSTATUSToDosError(
+ULONG NTAPI RtlNtStatusToDosError(
     _In_ NTSTATUS Status
 );
 

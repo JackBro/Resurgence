@@ -127,6 +127,10 @@ namespace resurgence
 
             return processes;
         }
+        process process::get_current_process()
+        {
+            return process(GetCurrentProcessId());
+        }
         std::vector<process> process::get_process_by_name(const std::wstring& name)
         {
             std::vector<process> processes;
