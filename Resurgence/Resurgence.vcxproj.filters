@@ -65,9 +65,6 @@
     <ClCompile Include="src\misc\winnt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\misc\logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

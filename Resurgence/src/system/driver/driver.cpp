@@ -21,34 +21,33 @@ namespace resurgence
         }
         driver::~driver()
         {
-            if(IsLoaded())
-                CloseHandle(_handle);
+            if(is_loaded())
+                NtClose(_handle);
             _handle = INVALID_HANDLE_VALUE;
         }
-        BOOL driver::IsLoaded()
+        BOOL driver::is_loaded()
         {
-            Open();
+            open();
             return _handle != INVALID_HANDLE_VALUE;
         }
-        error_code driver::Load(driver_load_method method)
+        error_code driver::load(driver_load_method method)
         {
             error_code status = STATUS_SUCCESS;
 
-            if(IsLoaded()) return STATUS_SUCCESS;
+            if(is_loaded()) return STATUS_SUCCESS;
 
             if(!PathFileExistsW(_path.data()))  return STATUS_FILE_INVALID;
 
             if(method == Turla) {
                 status = TDLload_driver(_path.data());
                 if(succeeded(status))
-                    return Open();
+                    return open();
             } else {
                 status = misc::winnt::load_driver(RDRV_SYMLINK, _path, &_handle);
             }
             return status;
         }
-
-        error_code driver::Open()
+        error_code driver::open()
         {
             error_code status = STATUS_NO_SUCH_DEVICE;
             int tries = 0;
@@ -61,26 +60,33 @@ namespace resurgence
             }
             return status;
         }
-        error_code driver::QueryVersionInfo(PVERSION_INFO pVersion)
+
+        error_code driver::query_version_info(PVERSION_INFO version)
         {
-            if(!pVersion) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
             DWORD ioBytes;
-            if(!DeviceIoControl(_handle, RESURGENCE_QUERY_OSVERSION, NULL, 0, pVersion, sizeof(VERSION_INFO), &ioBytes, NULL))
+
+            if(!version) 
+                return set_last_ntstatus(STATUS_INVALID_PARAMETER);
+
+            if(!DeviceIoControl(_handle, RESURGENCE_QUERY_OSVERSION, NULL, 0, version, sizeof(VERSION_INFO), &ioBytes, NULL))
                 return get_last_ntstatus();
+
             return STATUS_SUCCESS;
         }
-        error_code driver::AllocateVirtualMemory(ULONG ProcessId, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG AllocationFlags, ULONG ProtectionFlags)
+        error_code driver::allocate_virtual_memory(uint32_t pid, uint8_t** baseAddress, size_t* regionSize, uint32_t allocation, uint32_t protection)
         {
-            VM_OPERATION params;
-            RtlZeroMemory(&params, sizeof(params));
-            params.In.Operation = VM_OPERATION_ALLOC;
-            params.In.ProcessId = ProcessId;
-            params.In.BaseAddress = *(PULONG_PTR)BaseAddress;
-            params.In.RegionSize = *RegionSize;
-            params.In.AllocationFlags = AllocationFlags;
-            params.In.ProtectionFlags = ProtectionFlags;
+            DWORD           ioBytes;
+            VM_OPERATION    params;
 
-            DWORD ioBytes;
+            RtlZeroMemory(&params, sizeof(params));
+
+            params.In.Operation         = VM_OPERATION_ALLOC;
+            params.In.ProcessId         = pid;
+            params.In.BaseAddress       = (ULONG_PTR)*baseAddress;
+            params.In.RegionSize        = *regionSize;
+            params.In.AllocationFlags   = allocation;
+            params.In.ProtectionFlags   = protection;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_VM_OPERATION, 
                 &params, RESURGENCE_VM_OPERATION_SIZE,
@@ -88,22 +94,24 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            *BaseAddress = (PVOID)params.Out.BaseAddress;
-            *RegionSize = params.Out.RegionSize;
+            *baseAddress = (uint8_t*)params.Out.BaseAddress;
+            *regionSize  = params.Out.RegionSize;
 
             return STATUS_SUCCESS;
         }
-        error_code driver::ProtectVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG NewProtection, PULONG OldProtection)
+        error_code driver::protect_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t newProtection, uint32_t* oldProtection)
         {
-            VM_OPERATION params;
-            RtlZeroMemory(&params, sizeof(params));
-            params.In.Operation = VM_OPERATION_PROTECT;
-            params.In.ProcessId = ProcessId;
-            params.In.BaseAddress = (ULONG_PTR)BaseAddress;
-            params.In.RegionSize = RegionSize;
-            params.In.ProtectionFlags = NewProtection;
-
             DWORD ioBytes;
+            VM_OPERATION params;
+
+            RtlZeroMemory(&params, sizeof(params));
+
+            params.In.Operation         = VM_OPERATION_PROTECT;
+            params.In.ProcessId         = pid;
+            params.In.BaseAddress       = (ULONG_PTR)baseAddress;
+            params.In.RegionSize        = regionSize;
+            params.In.ProtectionFlags   = newProtection;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_VM_OPERATION,
                 &params, RESURGENCE_VM_OPERATION_SIZE,
@@ -111,22 +119,24 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            if(OldProtection)
-                *OldProtection = params.Out.OldProtection;
+            if(oldProtection)
+                *oldProtection = params.Out.OldProtection;
 
             return STATUS_SUCCESS;
         }
-        error_code driver::FreeVirtualMemory(ULONG ProcessId, PVOID BaseAddress, SIZE_T RegionSize, ULONG FreeType)
+        error_code driver::free_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t freeType)
         {
-            VM_OPERATION params;
-            RtlZeroMemory(&params, sizeof(params));
-            params.In.Operation = VM_OPERATION_FREE;
-            params.In.ProcessId = ProcessId;
-            params.In.BaseAddress = (ULONG_PTR)BaseAddress;
-            params.In.RegionSize = RegionSize;
-            params.In.FreeType = FreeType;
-
             DWORD ioBytes;
+            VM_OPERATION params;
+
+            RtlZeroMemory(&params, sizeof(params));
+
+            params.In.Operation     = VM_OPERATION_FREE;
+            params.In.ProcessId     = pid;
+            params.In.BaseAddress   = (ULONG_PTR)baseAddress;
+            params.In.RegionSize    = regionSize;
+            params.In.FreeType      = freeType;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_VM_OPERATION,
                 &params, RESURGENCE_VM_OPERATION_SIZE,
@@ -136,14 +146,16 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::QueryVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PMEMORY_BASIC_INFORMATION MemInfo)
+        error_code driver::query_virtual_memory(uint32_t pid, uint8_t* baseAddress, PMEMORY_BASIC_INFORMATION memoryInfo)
         {
-            if(!MemInfo) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
+            if(!memoryInfo) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
 
-            VM_QUERY_INFO params;
-            params.In.ProcessId = ProcessId;
-            params.In.BaseAddress = (ULONG_PTR)BaseAddress;
-            DWORD ioBytes;
+            DWORD           ioBytes;
+            VM_QUERY_INFO   params;
+
+            params.In.ProcessId     = pid;
+            params.In.BaseAddress   = (ULONG_PTR)baseAddress;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_VM_QUERY,
                 &params, RESURGENCE_VM_QUERY_SIZE,
@@ -151,52 +163,61 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            *MemInfo = params.Out;
+            *memoryInfo = params.Out;
 
             return STATUS_SUCCESS;
         }
-        error_code driver::ReadVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
+        error_code driver::read_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
         {
-            VM_READ_WRITE params;
-            params.ProcessId = ProcessId;
-            params.TargetAddress = (ULONG_PTR)BaseAddress;
-            params.Buffer = (ULONG_PTR)Buffer;
-            params.BufferSize = BufferSize;
-            DWORD ioBytes;
+            DWORD           ioBytes;
+            VM_READ_WRITE   params;
+
+            params.ProcessId        = pid;
+            params.TargetAddress    = (ULONG_PTR)baseAddress;
+            params.Buffer           = (ULONG_PTR)buffer;
+            params.BufferSize       = length;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_VM_READ,
                 &params, RESURGENCE_VM_READ_SIZE,
                 &params, RESURGENCE_VM_READ_SIZE,
                 &ioBytes, NULL))
                 return get_last_ntstatus();
+
             return STATUS_SUCCESS;
         }
-        error_code driver::WriteVirtualMemory(ULONG ProcessId, PVOID BaseAddress, PVOID Buffer, SIZE_T BufferSize)
+        error_code driver::write_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
         {
-            VM_READ_WRITE params;
-            params.ProcessId        = ProcessId;
-            params.TargetAddress    = (ULONG_PTR)BaseAddress;
-            params.Buffer           = (ULONG_PTR)Buffer;
-            params.BufferSize       = BufferSize;
-            DWORD ioBytes;
+            DWORD           ioBytes;
+            VM_READ_WRITE   params;
+
+            params.ProcessId        = pid;
+            params.TargetAddress    = (ULONG_PTR)baseAddress;
+            params.Buffer           = (ULONG_PTR)buffer;
+            params.BufferSize       = length;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_VM_WRITE,
                 &params, RESURGENCE_VM_WRITE_SIZE,
                 &params, RESURGENCE_VM_WRITE_SIZE,
                 &ioBytes, NULL))
                 return get_last_ntstatus();
+
             return STATUS_SUCCESS;
         }
-        error_code driver::OpenProcess(ULONG ProcessId, ULONG Access, PHANDLE Handle)
+        
+        error_code driver::open_process(uint32_t pid, uint32_t access, PHANDLE handle)
         {
-            if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
-
-            OPEN_PROCESS params;
-            params.In.ProcessId = ProcessId;
-            params.In.ThreadId = 0;
-            params.In.AccessMask = Access;
-
             DWORD ioBytes;
+            OPEN_PROCESS params;
+
+            if(!handle) 
+                return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
+
+            params.In.ProcessId     = pid;
+            params.In.ThreadId      = 0;
+            params.In.AccessMask    = access;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_OPEN_PROCESS,
                 &params, RESURGENCE_OPEN_PROCESS_SIZE,
@@ -204,19 +225,21 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            *Handle = (HANDLE)params.Out.Handle;
+            *handle = (HANDLE)params.Out.Handle;
+
             return STATUS_SUCCESS;
         }
-        error_code driver::OpenProcessWithThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
+        error_code driver::open_process_with_thread(uint32_t tid, uint32_t access, PHANDLE handle)
         {
-            if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
-
-            OPEN_PROCESS params;
-            params.In.ProcessId = 0;
-            params.In.ThreadId = ThreadId;
-            params.In.AccessMask = Access;
-
             DWORD ioBytes;
+            OPEN_PROCESS params;
+
+            if(!handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
+
+            params.In.ProcessId     = 0;
+            params.In.ThreadId      = tid;
+            params.In.AccessMask    = access;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_OPEN_PROCESS,
                 &params, RESURGENCE_OPEN_PROCESS_SIZE,
@@ -224,18 +247,20 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            *Handle = (HANDLE)params.Out.Handle;
+            *handle = (HANDLE)params.Out.Handle;
+
             return STATUS_SUCCESS;
         }
-        error_code driver::OpenThread(ULONG ThreadId, ULONG Access, PHANDLE Handle)
+        error_code driver::open_thread(uint32_t tid, uint32_t access, PHANDLE handle)
         {
-            if(!Handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
-
+            DWORD ioBytes;
             OPEN_THREAD params;
-            params.In.ThreadId = ThreadId;
-            params.In.AccessMask = Access;
 
-            DWORD ioBytes;
+            if(!handle) return set_last_ntstatus(STATUS_INVALID_PARAMETER_3);
+            
+            params.In.ThreadId      = tid;
+            params.In.AccessMask    = access;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_OPEN_THREAD,
                 &params, RESURGENCE_OPEN_THREAD_SIZE,
@@ -243,33 +268,39 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            *Handle = (HANDLE)params.Out.Handle;
+            *handle = (HANDLE)params.Out.Handle;
+
             return STATUS_SUCCESS;
         }
-        error_code driver::GrantHandleAccess(ULONG ProcessId, HANDLE Handle, ULONG Access, PULONG OldAccess)
+        error_code driver::grant_handle_access(uint32_t pid, HANDLE handle, uint32_t access, uint32_t* oldAccess)
         {
-            GRANT_ACCESS params;
-            params.In.ProcessId = ProcessId;
-            params.In.Handle = (ULONG_PTR)Handle;
-            params.In.AccessMask = Access;
+            DWORD           ioBytes;
+            GRANT_ACCESS    params;
 
-            DWORD ioBytes;
+            params.In.ProcessId     = pid;
+            params.In.Handle        = (ULONG_PTR)handle;
+            params.In.AccessMask    = access;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_GRANT_ACCESS,
                 &params, RESURGENCE_GRANT_ACCESS_SIZE,
                 &params, RESURGENCE_GRANT_ACCESS_SIZE,
                 &ioBytes, NULL))
                 return get_last_ntstatus();
-            if(OldAccess)
-                *OldAccess = params.Out.OldAccessMask;
+
+            if(oldAccess)
+                *oldAccess = params.Out.OldAccessMask;
+
             return STATUS_SUCCESS;
         }
-        error_code driver::SetProcessProtection(ULONG ProcessId, ULONG ProtectionLevel)
+        error_code driver::set_process_protection(uint32_t pid, uint32_t protectionLevel)
         {
+            DWORD           ioBytes;
             PROTECT_PROCESS params;
-            params.In.ProcessId = ProcessId;
-            params.In.ProtectionLevel = ProtectionLevel;
-            DWORD ioBytes;
+
+            params.In.ProcessId         = pid;
+            params.In.ProtectionLevel   = protectionLevel;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_PROTECT_PROCESS,
                 &params, RESURGENCE_PROTECT_PROCESS_SIZE,
@@ -279,13 +310,14 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::SetProcessDEP(ULONG ProcessId, BOOLEAN Enable)
+        error_code driver::set_process_dep(uint32_t pid, bool enable)
         {
-            SET_DEP_STATE params;
-            params.In.ProcessId = ProcessId;
-            params.In.Enabled = Enable;
+            DWORD           ioBytes;
+            SET_DEP_STATE   params;
 
-            DWORD ioBytes;
+            params.In.ProcessId = pid;
+            params.In.Enabled   = enable;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_SET_DEP_STATE,
                 &params, RESURGENCE_SET_DEP_STATE_SIZE,
@@ -295,19 +327,19 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
-        error_code driver::InjectModule(ULONG ProcessId, LPWSTR ModulePath, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        error_code driver::inject_module(uint32_t pid, const std::wstring& modulePath, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
         {
+            DWORD           ioBytes;
+            INJECT_MODULE   params;
 
-            INJECT_MODULE params;
-            params.In.ProcessId = ProcessId;
+            params.In.ProcessId     = pid;
             params.In.InjectionType = InjectLdrLoadDll;
-            params.In.ErasePE = EraseHeaders;
-            params.In.HideModule = HideModule;
-            params.In.ModuleBase = 0;
-            params.In.ModuleSize = 0;
-            wcscpy_s(params.In.ModulePath, MAX_PATH, ModulePath);
+            params.In.ErasePE       = eraseHeaders;
+            params.In.HideModule    = hideModule;
+            params.In.ModuleBase    = 0;
+            params.In.ModuleSize    = 0;
+            wcscpy_s(params.In.ModulePath, MAX_PATH, modulePath.data());
 
-            DWORD ioBytes;
             if(!DeviceIoControl(
                 _handle, RESURGENCE_INJECT_MODULE,
                 &params, RESURGENCE_INJECT_MODULE_SIZE,
@@ -315,23 +347,23 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            if(BaseAddress)
-                *BaseAddress = params.Out.BaseAddress;
+            if(baseAddress)
+                *baseAddress = (uintptr_t)params.Out.BaseAddress;
 
             return STATUS_SUCCESS;
         }
-        error_code driver::MMapModule(ULONG ProcessId, LPVOID ModuleBase, ULONG ModuleSize, BOOLEAN EraseHeaders, BOOLEAN HideModule, PULONG_PTR BaseAddress)
+        error_code driver::mmap_module(uint32_t pid, const uint8_t* moduleBase, size_t moduleSize, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
         {
-
-            INJECT_MODULE params;
-            params.In.ProcessId = ProcessId;
-            params.In.InjectionType = InjectManualMap;
-            params.In.ErasePE = EraseHeaders;
-            params.In.HideModule = HideModule;
-            params.In.ModuleBase = (ULONG_PTR)ModuleBase;
-            params.In.ModuleSize = ModuleSize;
-
             DWORD ioBytes;
+            INJECT_MODULE params;
+
+            params.In.ProcessId     = pid;
+            params.In.InjectionType = InjectManualMap;
+            params.In.ErasePE       = eraseHeaders;
+            params.In.HideModule    = hideModule;
+            params.In.ModuleBase    = (ULONG_PTR)moduleBase;
+            params.In.ModuleSize    = (ULONG)moduleSize;
+
             if(!DeviceIoControl(
                 _handle, RESURGENCE_INJECT_MODULE,
                 &params, RESURGENCE_INJECT_MODULE_SIZE,
@@ -339,8 +371,8 @@ namespace resurgence
                 &ioBytes, NULL))
                 return get_last_ntstatus();
 
-            if(BaseAddress)
-                *BaseAddress = params.Out.BaseAddress;
+            if(baseAddress)
+                *baseAddress = (uintptr_t)params.Out.BaseAddress;
 
             return STATUS_SUCCESS;
         }
