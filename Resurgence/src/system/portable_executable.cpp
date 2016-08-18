@@ -2,6 +2,8 @@
 #include <system/process.hpp>
 #include <misc/winnt.hpp>
 
+#define GET_NT_HEADER_FIELD(field) _is32Bit ? _ntHdr32.field : _ntHdr64.field
+
 namespace resurgence
 {
     namespace system
@@ -134,6 +136,86 @@ namespace resurgence
             free_local_buffer(&dosHdr);
         FAIL_3:
             return pe;
+        }
+        const IMAGE_DOS_HEADER* portable_executable::get_dos_header() const
+        {
+            return &_dosHdr;
+        }
+        const IMAGE_NT_HEADERS32* portable_executable::get_nt_headers32() const
+        {
+            return &_ntHdr32;
+        }
+        const IMAGE_NT_HEADERS64* portable_executable::get_nt_headers64() const
+        {
+            return &_ntHdr64;
+        }
+        const IMAGE_DATA_DIRECTORY* portable_executable::get_data_directory() const
+        {
+            return _is32Bit ? _ntHdr32.OptionalHeader.DataDirectory : _ntHdr64.OptionalHeader.DataDirectory;
+        }
+        const IMAGE_SECTION_HEADER* portable_executable::get_section_header() const
+        {
+            return nullptr;
+        }
+        bool portable_executable::is_valid() const
+        {
+            return _dosHdr.e_magic == IMAGE_DOS_SIGNATURE;
+        }
+        platform portable_executable::get_platform() const
+        {
+            return _is32Bit ? platform_x86 : platform_x64;
+        }
+        uint16_t portable_executable::get_size_opt_header() const
+        {
+            return GET_NT_HEADER_FIELD(FileHeader.SizeOfOptionalHeader);
+        }
+        uint16_t portable_executable::get_file_characteristics() const
+        {
+            return GET_NT_HEADER_FIELD(FileHeader.Characteristics);
+        }
+        uint16_t portable_executable::get_dll_characteristics() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.DllCharacteristics);
+        }
+        uint32_t portable_executable::get_base_of_code() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.BaseOfCode);
+        }
+        uint32_t portable_executable::get_size_of_code() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.SizeOfCode);
+        }
+        uint32_t portable_executable::get_size_of_image() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.SizeOfImage);
+        }
+        uint32_t portable_executable::get_size_of_headers() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.SizeOfHeaders);
+        }
+        uintptr_t portable_executable::get_entry_point_address() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.AddressOfEntryPoint);
+        }
+        uintptr_t portable_executable::get_image_base() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.ImageBase);
+        }
+        uint32_t portable_executable::get_section_alignment() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.SectionAlignment);
+        }
+        uint32_t portable_executable::get_file_alignment() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.FileAlignment);
+        }
+        uint32_t portable_executable::get_checksum() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.CheckSum);
+        }
+        uint16_t portable_executable::get_subsystem() const
+        {
+            return GET_NT_HEADER_FIELD(OptionalHeader.Subsystem);
         }
     }
 }

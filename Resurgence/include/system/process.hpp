@@ -17,13 +17,6 @@ namespace resurgence
 {
     namespace system
     {
-        enum platform
-        {
-            platform_unknown = 0,
-            platform_x86,
-            platform_x64
-        };
-
         class process_info
         {
         public:
