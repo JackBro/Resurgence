@@ -42,9 +42,3 @@ __forceinline NTSTATUS set_last_ntstatus(NTSTATUS status)
 {
     return NtCurrentTeb()->LastStatusValue = status;
 }
-
-#if !defined(GEN_UNIQUE)
-#define CONCAT_(a,b)    a##b
-#define LABEL_(a)       CONCAT_(_uid_, a)
-#define GEN_UNIQUE_NAME LABEL_(__COUNTER__)
-#endif

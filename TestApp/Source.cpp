@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Windows.h>
 #include <resurgence.hpp>
+#include <iomanip>
 
 int main(int argc, char** argv) {
     using namespace std;
@@ -10,10 +11,18 @@ int main(int argc, char** argv) {
         cout << "[!] Failed to set debug privilege" << endl;
     
     try {
-        auto processes = system::process::get_current_process();
+        auto process = system::process::get_current_process();
 
-        for(auto& process : processes.modules()->get_all_modules()) {
-            wcout << process.get_name() << endl;
+        for(auto& module : process.modules()->get_all_modules()) {
+            auto pe = module.get_pe();
+            wcout << setw(32) << left << module.get_name() << " : ";
+            if(pe.is_valid()) {
+                if(pe._is32Bit) {
+                    wcout << hex << pe._ntHdr32.OptionalHeader.ImageBase << endl;
+                } else {
+                    wcout << hex << pe._ntHdr64.OptionalHeader.ImageBase << endl;
+                }
+            }
         }
 
     } catch(const misc::exception& ex) {

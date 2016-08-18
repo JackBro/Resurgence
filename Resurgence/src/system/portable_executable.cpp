@@ -7,9 +7,16 @@ namespace resurgence
     namespace system
     {
         portable_executable::portable_executable()
-            : _dosHdr(nullptr), _ntHdr32(nullptr), _ntHdr64(nullptr)
+            : _process(nullptr), _dosHdr(), _ntHdr32(), _ntHdr64(), _is32Bit(false)
         {
-
+        }
+        portable_executable::portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS32 ntHdrs)
+            : _process(proc), _dosHdr(*dosHdr), _ntHdr32(*ntHdrs), _ntHdr64(), _is32Bit(true)
+        {
+        }
+        portable_executable::portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS64 ntHdrs)
+            : _process(proc), _dosHdr(*dosHdr), _ntHdr32(), _ntHdr64(*ntHdrs), _is32Bit(false)
+        {
         }
         portable_executable portable_executable::load_from_file(const std::wstring& file)
         {
@@ -21,7 +28,7 @@ namespace resurgence
             std::wstring        qualifiedPath;
             OBJECT_ATTRIBUTES   objAttr;
             IO_STATUS_BLOCK     ioStatus;
-            NTSTATUS          status;
+            NTSTATUS            status;
             portable_executable pe;
 
             qualifiedPath = L"\\??\\";
@@ -44,7 +51,8 @@ namespace resurgence
                 if(fileMapping) {
                     fileBase = (uint8_t*)MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);
                     if(fileBase) {
-                        pe = load_from_memory(nullptr, fileBase);
+                        auto targetProcess = process::get_current_process();
+                        pe = load_from_memory(&targetProcess, fileBase);
                         UnmapViewOfFile(fileBase);
                     } else {
                         set_last_ntstatus(STATUS_UNSUCCESSFUL);
@@ -59,16 +67,73 @@ namespace resurgence
         }
         portable_executable portable_executable::load_from_memory(process* proc, const std::uint8_t* base)
         {
-            throw;
-            //PIMAGE_DOS_HEADER dosHdr;
+            portable_executable pe;
+            PIMAGE_DOS_HEADER   dosHdr      = nullptr;
+            PIMAGE_NT_HEADERS32 ntHdrs32    = nullptr;
+            PIMAGE_NT_HEADERS64 ntHdrs64    = nullptr;
+            WORD ntHdrsMagic;
+            
+            allocate_local_buffer(&dosHdr, sizeof(IMAGE_DOS_HEADER));
+            if(!dosHdr) 
+                goto FAIL_3;
+
+            auto status = proc->memory()->read_bytes(base, (uint8_t*)dosHdr, sizeof(IMAGE_DOS_HEADER));
+
+            if(!NT_SUCCESS(status)) 
+                goto FAIL_2;
+
+            if(dosHdr->e_magic != IMAGE_DOS_SIGNATURE) {
+                set_last_ntstatus(STATUS_INVALID_IMAGE_NOT_MZ);
+                goto FAIL_2;
+            }
+
+            auto ntHdrsBase         = PTR_ADD(base, dosHdr->e_lfanew);
+            auto ntHdrsMagicAddress = PTR_ADD(ntHdrsBase, FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader));
+
+            status = proc->memory()->read_bytes(ntHdrsMagicAddress, (uint8_t*)&ntHdrsMagic, sizeof(WORD));
+
+            if(!NT_SUCCESS(status))
+                goto FAIL_2;
+
             //
-            ////
-            //// Use the current process if one isnt provided
-            ////
-            //if(proc == nullptr)                        
-            //    *proc = process::get_current_process();
+            // 32bit image
+            // 
+            if(ntHdrsMagic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+                allocate_local_buffer(&ntHdrs32, sizeof(IMAGE_NT_HEADERS32));
+                if(!ntHdrs32)
+                    goto FAIL_2; 
+
+                status = proc->memory()->read_bytes(ntHdrsBase, (uint8_t*)ntHdrs32, sizeof(IMAGE_NT_HEADERS32));
+
+                if(!NT_SUCCESS(status))
+                    goto FAIL_1;
+
+                return portable_executable(proc, dosHdr, ntHdrs32);
+            }
             //
-            //allocate_local_buffer(&dosHdr, )
+            // 64bit image
+            // 
+            else {
+
+                allocate_local_buffer(&ntHdrs64, sizeof(IMAGE_NT_HEADERS64));
+                if(!ntHdrs64)
+                    goto FAIL_2;
+
+                status = proc->memory()->read_bytes(ntHdrsBase, (uint8_t*)ntHdrs64, sizeof(IMAGE_NT_HEADERS64));
+
+                if(!NT_SUCCESS(status))
+                    goto FAIL_1;
+
+                return portable_executable(proc, dosHdr, ntHdrs64);
+            }
+
+        FAIL_1: // Failed after allocating all buffers
+            if(ntHdrs32) free_local_buffer(&ntHdrs32);
+            if(ntHdrs64) free_local_buffer(&ntHdrs64);
+        FAIL_2: // Failed after allocating only the dos header
+            free_local_buffer(&dosHdr);
+        FAIL_3:
+            return pe;
         }
     }
 }
