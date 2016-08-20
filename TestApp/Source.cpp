@@ -15,9 +15,14 @@ int main(int argc, char** argv) {
 
         for(auto& module : process.modules()->get_all_modules()) {
             auto pe = module.get_pe();
-            wcout << setw(32) << left << module.get_name() << " : ";
-            if(pe.is_valid()) {
-                wcout << hex << pe.get_entry_point_address() << endl;
+            const IMAGE_SECTION_HEADER* sections = pe.get_section_header();
+
+            wcout << module.get_name() << endl;
+
+            for(int i = 0;
+                i < pe.get_number_of_sections();
+                i++) {
+                cout << "  " << std::string((const char*)sections[i].Name, size_t(8)) << endl;
             }
         }
         

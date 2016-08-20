@@ -9,16 +9,18 @@ namespace resurgence
     namespace system
     {
         portable_executable::portable_executable()
-            : _process(nullptr), _dosHdr(), _ntHdr32(), _ntHdr64(), _is32Bit(false)
+            : _process(nullptr), _dosHdr(), _ntHdr32(), _ntHdr64(), _secHdr(), _is32Bit(false)
         {
         }
-        portable_executable::portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS32 ntHdrs)
+        portable_executable::portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS32 ntHdrs, PIMAGE_SECTION_HEADER secHdr)
             : _process(proc), _dosHdr(*dosHdr), _ntHdr32(*ntHdrs), _ntHdr64(), _is32Bit(true)
         {
+            RtlCopyMemory(_secHdr, secHdr, MAX_SECTION_COUNT * sizeof(IMAGE_SECTION_HEADER));
         }
-        portable_executable::portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS64 ntHdrs)
+        portable_executable::portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS64 ntHdrs, PIMAGE_SECTION_HEADER secHdr)
             : _process(proc), _dosHdr(*dosHdr), _ntHdr32(), _ntHdr64(*ntHdrs), _is32Bit(false)
         {
+            RtlCopyMemory(_secHdr, secHdr, MAX_SECTION_COUNT * sizeof(IMAGE_SECTION_HEADER));
         }
         portable_executable portable_executable::load_from_file(const std::wstring& file)
         {
@@ -69,10 +71,11 @@ namespace resurgence
         }
         portable_executable portable_executable::load_from_memory(process* proc, const std::uint8_t* base)
         {
-            portable_executable pe;
-            PIMAGE_DOS_HEADER   dosHdr      = nullptr;
-            PIMAGE_NT_HEADERS32 ntHdrs32    = nullptr;
-            PIMAGE_NT_HEADERS64 ntHdrs64    = nullptr;
+            portable_executable     pe;
+            PIMAGE_DOS_HEADER       dosHdr      = nullptr;
+            PIMAGE_NT_HEADERS32     ntHdrs32    = nullptr;
+            PIMAGE_NT_HEADERS64     ntHdrs64    = nullptr;
+            PIMAGE_SECTION_HEADER   secHdr      = nullptr;
             WORD ntHdrsMagic;
             
             allocate_local_buffer(&dosHdr, sizeof(IMAGE_DOS_HEADER));
@@ -102,36 +105,62 @@ namespace resurgence
             // 
             if(ntHdrsMagic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
                 allocate_local_buffer(&ntHdrs32, sizeof(IMAGE_NT_HEADERS32));
+
                 if(!ntHdrs32)
-                    goto FAIL_2; 
+                    goto FAIL_1;
 
                 status = proc->memory()->read_bytes(ntHdrsBase, (uint8_t*)ntHdrs32, sizeof(IMAGE_NT_HEADERS32));
 
                 if(!NT_SUCCESS(status))
                     goto FAIL_1;
 
-                return portable_executable(proc, dosHdr, ntHdrs32);
+                allocate_local_buffer(&secHdr, MAX_SECTION_COUNT * sizeof(IMAGE_SECTION_HEADER) );
+
+                if(!secHdr)
+                    goto FAIL_1;
+
+                RtlZeroMemory(secHdr, MAX_SECTION_COUNT * sizeof(IMAGE_SECTION_HEADER));
+                
+                status = proc->memory()->read_bytes(PTR_ADD(ntHdrsBase, sizeof(IMAGE_NT_HEADERS32)), (uint8_t*)secHdr, sizeof(IMAGE_SECTION_HEADER) * ntHdrs32->FileHeader.NumberOfSections);
+
+                if(!NT_SUCCESS(status))
+                    goto FAIL_1;
+
+                pe = portable_executable(proc, dosHdr, ntHdrs32, secHdr);
             }
             //
             // 64bit image
             // 
             else {
-
                 allocate_local_buffer(&ntHdrs64, sizeof(IMAGE_NT_HEADERS64));
+
                 if(!ntHdrs64)
-                    goto FAIL_2;
+                    goto FAIL_1;
 
                 status = proc->memory()->read_bytes(ntHdrsBase, (uint8_t*)ntHdrs64, sizeof(IMAGE_NT_HEADERS64));
 
                 if(!NT_SUCCESS(status))
                     goto FAIL_1;
 
-                return portable_executable(proc, dosHdr, ntHdrs64);
+                allocate_local_buffer(&secHdr, MAX_SECTION_COUNT * sizeof(IMAGE_SECTION_HEADER));
+
+                if(!secHdr)
+                    goto FAIL_1;
+
+                RtlZeroMemory(secHdr, MAX_SECTION_COUNT * sizeof(IMAGE_SECTION_HEADER));
+
+                status = proc->memory()->read_bytes(PTR_ADD(ntHdrsBase, sizeof(IMAGE_NT_HEADERS64)), (uint8_t*)secHdr, sizeof(IMAGE_SECTION_HEADER) * ntHdrs64->FileHeader.NumberOfSections);
+
+                if(!NT_SUCCESS(status))
+                    goto FAIL_1;
+
+                pe = portable_executable(proc, dosHdr, ntHdrs64, secHdr);
             }
 
         FAIL_1: // Failed after allocating all buffers
-            if(ntHdrs32) free_local_buffer(&ntHdrs32);
-            if(ntHdrs64) free_local_buffer(&ntHdrs64);
+            if(ntHdrs32)    free_local_buffer(&ntHdrs32);
+            if(ntHdrs64)    free_local_buffer(&ntHdrs64);
+            if(secHdr)      free_local_buffer(&secHdr);
         FAIL_2: // Failed after allocating only the dos header
             free_local_buffer(&dosHdr);
         FAIL_3:
@@ -155,7 +184,7 @@ namespace resurgence
         }
         const IMAGE_SECTION_HEADER* portable_executable::get_section_header() const
         {
-            return nullptr;
+            return _secHdr;
         }
         bool portable_executable::is_valid() const
         {
@@ -168,6 +197,10 @@ namespace resurgence
         uint16_t portable_executable::get_size_opt_header() const
         {
             return GET_NT_HEADER_FIELD(FileHeader.SizeOfOptionalHeader);
+        }
+        uint16_t portable_executable::get_number_of_sections() const
+        {
+            return GET_NT_HEADER_FIELD(FileHeader.NumberOfSections);
         }
         uint16_t portable_executable::get_file_characteristics() const
         {
