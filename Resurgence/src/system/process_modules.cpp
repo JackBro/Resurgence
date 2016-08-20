@@ -61,7 +61,6 @@ namespace resurgence
             _name = (path + entry->OffsetToFileName);
             _path = misc::winnt::get_dos_path(path);
         }
-
         const portable_executable&  process_module::get_pe()
         {
             if(!_pe.is_valid())
@@ -69,7 +68,6 @@ namespace resurgence
         
             return _pe;
         }
-        
         process_modules::process_modules(process* proc)
             : _process(proc)
         {
@@ -131,6 +129,11 @@ namespace resurgence
                 }
             }
             return modules;
+
+        }
+        process_module process_modules::get_main_module()
+        {
+            return get_module_by_load_order(0);
         }
         process_module process_modules::get_module_by_name(const std::wstring& name)
         {
