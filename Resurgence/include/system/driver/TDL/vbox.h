@@ -2,155 +2,160 @@
 
 typedef void* RTR0PTR;
 
-typedef struct _SUPREQHDR {
-    /** Cookie. */
-    uint32_t        u32Cookie;
-    /** Session cookie. */
-    uint32_t        u32SessionCookie;
-    /** The size of the input. */
-    uint32_t        cbIn;
-    /** The size of the output. */
-    uint32_t        cbOut;
-    /** Flags. See SUPREQHDR_FLAGS_* for details and values. */
-    uint32_t        fFlags;
-    /** The VBox status code of the operation, out direction only. */
-    int32_t         rc;
+typedef struct _SUPREQHDR
+{
+	/** Cookie. */
+	uint32_t        u32Cookie;
+	/** Session cookie. */
+	uint32_t        u32SessionCookie;
+	/** The size of the input. */
+	uint32_t        cbIn;
+	/** The size of the output. */
+	uint32_t        cbOut;
+	/** Flags. See SUPREQHDR_FLAGS_* for details and values. */
+	uint32_t        fFlags;
+	/** The VBox status code of the operation, out direction only. */
+	int32_t         rc;
 } SUPREQHDR;
 
 /** SUP_IOCTL_COOKIE. */
-typedef struct _SUPCOOKIE {
-    /** The header.
-     * u32Cookie must be set to SUPCOOKIE_INITIAL_COOKIE.
-     * u32SessionCookie should be set to some random value. */
-    SUPREQHDR               Hdr;
-    union
-    {
-        struct
-        {
-            /** Magic word. */
-            char            szMagic[16];
-            /** The requested interface version number. */
-            uint32_t        u32ReqVersion;
-            /** The minimum interface version number. */
-            uint32_t        u32MinVersion;
-        } In;
-        struct
-        {
-            /** Cookie. */
-            uint32_t        u32Cookie;
-            /** Session cookie. */
-            uint32_t        u32SessionCookie;
-            /** Interface version for this session. */
-            uint32_t        u32SessionVersion;
-            /** The actual interface version in the driver. */
-            uint32_t        u32DriverVersion;
-            /** Number of functions available for the SUP_IOCTL_QUERY_FUNCS request. */
-            uint32_t        cFunctions;
-            /** Session handle. */
-            /*R0PTRTYPE(PSUPDRVSESSION)*/ PVOID   pSession;
-        } Out;
-    } u;
+typedef struct _SUPCOOKIE
+{
+	/** The header.
+	* u32Cookie must be set to SUPCOOKIE_INITIAL_COOKIE.
+	* u32SessionCookie should be set to some random value. */
+	SUPREQHDR               Hdr;
+	union
+	{
+		struct
+		{
+			/** Magic word. */
+			char            szMagic[16];
+			/** The requested interface version number. */
+			uint32_t        u32ReqVersion;
+			/** The minimum interface version number. */
+			uint32_t        u32MinVersion;
+		} In;
+		struct
+		{
+			/** Cookie. */
+			uint32_t        u32Cookie;
+			/** Session cookie. */
+			uint32_t        u32SessionCookie;
+			/** Interface version for this session. */
+			uint32_t        u32SessionVersion;
+			/** The actual interface version in the driver. */
+			uint32_t        u32DriverVersion;
+			/** Number of functions available for the SUP_IOCTL_QUERY_FUNCS request. */
+			uint32_t        cFunctions;
+			/** Session handle. */
+			/*R0PTRTYPE(PSUPDRVSESSION)*/ PVOID   pSession;
+		} Out;
+	} u;
 } SUPCOOKIE, *PSUPCOOKIE;
 
-typedef struct _SUPLDROPEN {
-    /** The header. */
-    SUPREQHDR               Hdr;
-    union
-    {
-        struct
-        {
-            /** size of the image we'll be loading. */
-            uint32_t        cbImage;
-            /** Image name.
-             * This is the NAME of the image, not the file name. It is used
-             * to share code with other processes. (Max len is 32 chars!)  */
-            char            szName[32];
-        } In;
-        struct
-        {
-            /** The base address of the image. */
-            RTR0PTR         pvImageBase;
-            /** Indicate whether or not the image requires loading. */
-            BOOLEAN         fNeedsLoading;
-        } Out;
-    } u;
+typedef struct _SUPLDROPEN
+{
+	/** The header. */
+	SUPREQHDR               Hdr;
+	union
+	{
+		struct
+		{
+			/** size of the image we'll be loading. */
+			uint32_t        cbImage;
+			/** Image name.
+			* This is the NAME of the image, not the file name. It is used
+			* to share code with other processes. (Max len is 32 chars!)  */
+			char            szName[32];
+		} In;
+		struct
+		{
+			/** The base address of the image. */
+			RTR0PTR         pvImageBase;
+			/** Indicate whether or not the image requires loading. */
+			BOOLEAN         fNeedsLoading;
+		} Out;
+	} u;
 } SUPLDROPEN, *PSUPLDROPEN;
 
-typedef enum _SUPLDRLOADEP {
-    SUPLDRLOADEP_NOTHING = 0,
-    SUPLDRLOADEP_VMMR0,
-    SUPLDRLOADEP_SERVICE,
-    SUPLDRLOADEP_32BIT_HACK = 0x7fffffff
+typedef enum _SUPLDRLOADEP
+{
+	SUPLDRLOADEP_NOTHING = 0,
+	SUPLDRLOADEP_VMMR0,
+	SUPLDRLOADEP_SERVICE,
+	SUPLDRLOADEP_32BIT_HACK = 0x7fffffff
 } SUPLDRLOADEP;
 
-typedef struct _SUPSETVMFORFAST {
-    /** The header. */
-    SUPREQHDR               Hdr;
-    union
-    {
-        struct
-        {
-            /** The ring-0 VM handle (pointer). */
-            PVOID           pVMR0;
-        } In;
-    } u;
+typedef struct _SUPSETVMFORFAST
+{
+	/** The header. */
+	SUPREQHDR               Hdr;
+	union
+	{
+		struct
+		{
+			/** The ring-0 VM handle (pointer). */
+			PVOID           pVMR0;
+		} In;
+	} u;
 } SUPSETVMFORFAST, *PSUPSETVMFORFAST;
 
 typedef struct _SUPLDRLOAD
 {
-    /** The header. */
-    SUPREQHDR               Hdr;
-    union
-    {
-        struct
-        {
-            /** The address of module initialization function. Similar to _DLL_InitTerm(hmod, 0). */
-            PVOID pfnModuleInit;
-            /** The address of module termination function. Similar to _DLL_InitTerm(hmod, 1). */
-            PVOID pfnModuleTerm;
-            /** Special entry points. */
-            union
-            {
-                /** SUPLDRLOADEP_VMMR0. */
-                struct
-                {
-                    /** The module handle (i.e. address). */
-                    RTR0PTR                 pvVMMR0;
-                    /** Address of VMMR0EntryInt function. */
-                    RTR0PTR                 pvVMMR0EntryInt;
-                    /** Address of VMMR0EntryFast function. */
-                    RTR0PTR                 pvVMMR0EntryFast;
-                    /** Address of VMMR0EntryEx function. */
-                    RTR0PTR                 pvVMMR0EntryEx;
-                } VMMR0;
-                /** SUPLDRLOADEP_SERVICE. */
-                struct
-                {
-                    /** The service request handler.
-                     * (PFNR0SERVICEREQHANDLER isn't defined yet.) */
-                    RTR0PTR                 pfnServiceReq;
-                    /** Reserved, must be NIL. */
-                    RTR0PTR                 apvReserved[3];
-                } Service;
-            }               EP;
-            /** Address. */
-            RTR0PTR         pvImageBase;
-            /** Entry point type. */
-            SUPLDRLOADEP    eEPType;
-            /** The offset of the symbol table. */
-            uint32_t        offSymbols;
-            /** The number of entries in the symbol table. */
-            uint32_t        cSymbols;
-            /** The offset of the string table. */
-            uint32_t        offStrTab;
-            /** size of the string table. */
-            uint32_t        cbStrTab;
-            /** size of image (including string and symbol tables). */
-            uint32_t        cbImage;
-            /** The image data. */
-            char            achImage[1];
-        } In;
-    } u;
+	/** The header. */
+	SUPREQHDR               Hdr;
+	union
+	{
+		struct
+		{
+			/** The address of module initialization function. Similar to _DLL_InitTerm(hmod, 0). */
+			PVOID pfnModuleInit;
+			/** The address of module termination function. Similar to _DLL_InitTerm(hmod, 1). */
+			PVOID pfnModuleTerm;
+			/** Special entry points. */
+			union
+			{
+				/** SUPLDRLOADEP_VMMR0. */
+				struct
+				{
+					/** The module handle (i.e. address). */
+					RTR0PTR                 pvVMMR0;
+					/** Address of VMMR0EntryInt function. */
+					RTR0PTR                 pvVMMR0EntryInt;
+					/** Address of VMMR0EntryFast function. */
+					RTR0PTR                 pvVMMR0EntryFast;
+					/** Address of VMMR0EntryEx function. */
+					RTR0PTR                 pvVMMR0EntryEx;
+				} VMMR0;
+				/** SUPLDRLOADEP_SERVICE. */
+				struct
+				{
+					/** The service request handler.
+					* (PFNR0SERVICEREQHANDLER isn't defined yet.) */
+					RTR0PTR                 pfnServiceReq;
+					/** Reserved, must be NIL. */
+					RTR0PTR                 apvReserved[3];
+				} Service;
+			}               EP;
+			/** Address. */
+			RTR0PTR         pvImageBase;
+			/** Entry point type. */
+			SUPLDRLOADEP    eEPType;
+			/** The offset of the symbol table. */
+			uint32_t        offSymbols;
+			/** The number of entries in the symbol table. */
+			uint32_t        cSymbols;
+			/** The offset of the string table. */
+			uint32_t        offStrTab;
+			/** size of the string table. */
+			uint32_t        cbStrTab;
+			/** size of image (including string and symbol tables). */
+			uint32_t        cbImage;
+			/** The image data. */
+			char            achImage[1];
+		} In;
+	} u;
 } SUPLDRLOAD, *PSUPLDRLOAD;
 
 
@@ -184,9 +189,9 @@ typedef struct _SUPLDRLOAD
 #define SUPREQHDR_FLAGS_EXTRA_OUT                       UINT32_C(0x00000200)
 
 /** @name SUP_IOCTL_SET_VM_FOR_FAST
- * Set the VM handle for doing fast call ioctl calls.
- * @{
- */
+* Set the VM handle for doing fast call ioctl calls.
+* @{
+*/
 #define SUP_IOCTL_SET_VM_FOR_FAST                       SUP_CTL_CODE_SIZE(19, SUP_IOCTL_SET_VM_FOR_FAST_SIZE)
 #define SUP_IOCTL_SET_VM_FOR_FAST_SIZE                  sizeof(SUPSETVMFORFAST)
 #define SUP_IOCTL_SET_VM_FOR_FAST_SIZE_IN               sizeof(SUPSETVMFORFAST)
@@ -203,16 +208,17 @@ typedef struct _SUPLDRLOAD
 #define SUP_IOCTL_LDR_LOAD_SIZE_IN(cbImage)             RT_UOFFSETOF(SUPLDRLOAD, u.In.achImage[cbImage])
 #define SUP_IOCTL_LDR_LOAD_SIZE_OUT                     sizeof(SUPREQHDR)
 
- /** @name SUP_IOCTL_LDR_FREE
- * Free an image.
- * @{
- */
+/** @name SUP_IOCTL_LDR_FREE
+* Free an image.
+* @{
+*/
 #define SUP_IOCTL_LDR_FREE                              SUP_CTL_CODE_SIZE(7, SUP_IOCTL_LDR_FREE_SIZE)
 #define SUP_IOCTL_LDR_FREE_SIZE                         sizeof(SUPLDRFREE)
 #define SUP_IOCTL_LDR_FREE_SIZE_IN                      sizeof(SUPLDRFREE)
 #define SUP_IOCTL_LDR_FREE_SIZE_OUT                     sizeof(SUPREQHDR)
 
-typedef struct _SUPLDRFREE {
+typedef struct _SUPLDRFREE
+{
 	/** The header. */
 	SUPREQHDR               Hdr;
 	union

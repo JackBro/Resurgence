@@ -6,9 +6,9 @@
 extern "C" {
 #endif
 
-long __stdcall TDLload_driver(
-    LPCWSTR lpDriverFullName
-);
+	long __stdcall TDLload_driver(
+		LPCWSTR lpDriverFullName
+	);
 
 #ifdef __cplusplus
 }

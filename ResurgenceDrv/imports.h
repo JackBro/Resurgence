@@ -18,43 +18,43 @@ typedef NTSTATUS(NTAPI* tNtTerminateThread)(__in HANDLE ThreadHandle, __in NTSTA
 
 typedef NTSTATUS(NTAPI* tNtCreateThreadEx)
 (
-    __out PHANDLE hThread,
-    __in ACCESS_MASK DesiredAccess,
-    __in PVOID ObjectAttributes,
-    __in HANDLE ProcessHandle,
-    __in PVOID lpStartAddress,
-    __in PVOID lpParameter,
-    __in ULONG Flags,
-    __in SIZE_T StackZeroBits,
-    __in SIZE_T SizeOfStackCommit,
-    __in SIZE_T SizeOfStackReserve,
-    __out PVOID lpBytesBuffer
-);
+	__out PHANDLE hThread,
+	__in ACCESS_MASK DesiredAccess,
+	__in PVOID ObjectAttributes,
+	__in HANDLE ProcessHandle,
+	__in PVOID lpStartAddress,
+	__in PVOID lpParameter,
+	__in ULONG Flags,
+	__in SIZE_T StackZeroBits,
+	__in SIZE_T SizeOfStackCommit,
+	__in SIZE_T SizeOfStackReserve,
+	__out PVOID lpBytesBuffer
+	);
 
 typedef NTSTATUS(NTAPI* tNtQueryPerformanceCounter)(
-        __out PLARGE_INTEGER PerformanceCounter,
-        __out_opt PLARGE_INTEGER PerformanceFrequency
-    );
+	__out PLARGE_INTEGER PerformanceCounter,
+	__out_opt PLARGE_INTEGER PerformanceFrequency
+	);
 
 #if defined(_WIN8_) || defined (_WIN7_)
 
 typedef NTSTATUS(NTAPI* fnNtProtectVirtualMemory)
 (
-    __in HANDLE ProcessHandle,
-    __in PVOID* BaseAddress,
-    __in SIZE_T* NumberOfBytesToProtect,
-    __in ULONG NewAccessProtection,
-    __out PULONG OldAccessProtection
-    );
+	__in HANDLE ProcessHandle,
+	__in PVOID* BaseAddress,
+	__in SIZE_T* NumberOfBytesToProtect,
+	__in ULONG NewAccessProtection,
+	__out PULONG OldAccessProtection
+	);
 
 NTSTATUS
 NTAPI
 ZwProtectVirtualMemory(
-    __in HANDLE ProcessHandle,
-    __in PVOID* BaseAddress,
-    __in SIZE_T* NumberOfBytesToProtect,
-    __in ULONG NewAccessProtection,
-    __out PULONG OldAccessProtection
+	__in HANDLE ProcessHandle,
+	__in PVOID* BaseAddress,
+	__in SIZE_T* NumberOfBytesToProtect,
+	__in ULONG NewAccessProtection,
+	__out PULONG OldAccessProtection
 );
 
 
@@ -63,11 +63,11 @@ NTSYSAPI
 NTSTATUS
 NTAPI
 ZwProtectVirtualMemory(
-    __in HANDLE ProcessHandle,
-    __in PVOID* BaseAddress,
-    __in SIZE_T* NumberOfBytesToProtect,
-    __in ULONG NewAccessProtection,
-    __out PULONG OldAccessProtection
+	__in HANDLE ProcessHandle,
+	__in PVOID* BaseAddress,
+	__in SIZE_T* NumberOfBytesToProtect,
+	__in ULONG NewAccessProtection,
+	__out PULONG OldAccessProtection
 );
 
 #endif
@@ -75,29 +75,29 @@ ZwProtectVirtualMemory(
 NTSTATUS
 NTAPI
 ZwCreateThreadEx(
-    __out PHANDLE hThread,
-    __in ACCESS_MASK DesiredAccess,
-    __in PVOID ObjectAttributes,
-    __in HANDLE ProcessHandle,
-    __in PVOID lpStartAddress,
-    __in PVOID lpParameter,
-    __in ULONG Flags,
-    __in SIZE_T StackZeroBits,
-    __in SIZE_T SizeOfStackCommit,
-    __in SIZE_T SizeOfStackReserve,
-    __in PNT_PROC_THREAD_ATTRIBUTE_LIST AttributeList
+	__out PHANDLE hThread,
+	__in ACCESS_MASK DesiredAccess,
+	__in PVOID ObjectAttributes,
+	__in HANDLE ProcessHandle,
+	__in PVOID lpStartAddress,
+	__in PVOID lpParameter,
+	__in ULONG Flags,
+	__in SIZE_T StackZeroBits,
+	__in SIZE_T SizeOfStackCommit,
+	__in SIZE_T SizeOfStackReserve,
+	__in PNT_PROC_THREAD_ATTRIBUTE_LIST AttributeList
 );
 
 NTSTATUS
 NTAPI
 ZwTerminateThread(
-    __in HANDLE ThreadHandle,
-    __in NTSTATUS ExitStatus
+	__in HANDLE ThreadHandle,
+	__in NTSTATUS ExitStatus
 );
 
 NTSTATUS
 NTAPI
 ZwQueryPerformanceCounter(
-    __out PLARGE_INTEGER PerformanceCounter,
-    __out_opt PLARGE_INTEGER PerformanceFrequency
+	__out PLARGE_INTEGER PerformanceCounter,
+	__out_opt PLARGE_INTEGER PerformanceFrequency
 );
