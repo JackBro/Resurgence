@@ -70,14 +70,15 @@ namespace resurgence
 			static NTSTATUS         allocate_memory(HANDLE process, PVOID*  start, size_t* size, uint32_t allocation, uint32_t protection);
 			static NTSTATUS         protect_memory(HANDLE process, PVOID*  start, size_t* size, uint32_t protection, uint32_t* oldProtection);
 			static NTSTATUS         free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free);
-			static NTSTATUS         read_memory(HANDLE process, void* address, void* buffer, size_t size);
-			static NTSTATUS         write_memory(HANDLE process, void* address, void* buffer, size_t size);
+			static NTSTATUS         read_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size);
+			static NTSTATUS         write_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size);
 
 			//-----------------------------------------------
 			// Process routines
 			//-----------------------------------------------
 			static NTSTATUS         open_process(PHANDLE handle, uint32_t pid, uint32_t access);
 			static bool             process_is_wow64(HANDLE process);
+			static ULONG            create_thread(HANDLE process, LPVOID startAddress, LPVOID startParameter, bool wait);
 		};
 	}
 }

@@ -720,7 +720,7 @@ namespace resurgence
 		{
 			return NtFreeVirtualMemory(process, start, (PSIZE_T)&size, free);
 		}
-		NTSTATUS winnt::read_memory(HANDLE process, void* address, void* buffer, size_t size)
+		NTSTATUS winnt::read_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size)
 		{
 			if(process == GetCurrentProcess()) {
 				memcpy((PVOID)buffer, (PVOID)address, size);
@@ -729,7 +729,7 @@ namespace resurgence
 				return NtReadVirtualMemory(process, address, buffer, size, nullptr);
 			}
 		}
-		NTSTATUS winnt::write_memory(HANDLE process, void* address, void* buffer, size_t size)
+		NTSTATUS winnt::write_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size)
 		{
 			if(process == GetCurrentProcess()) {
 				memcpy(const_cast<void*>(address), buffer, size);
@@ -737,6 +737,22 @@ namespace resurgence
 			} else {
 				auto status = NtWriteVirtualMemory(process, address, buffer, size, nullptr);
 				return status;
+			}
+		}
+		ULONG winnt::create_thread(HANDLE process, LPVOID startAddress, LPVOID startParameter, bool wait)
+		{
+			HANDLE thread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)startAddress, startParameter, 0, NULL);
+
+			if(!thread) return get_last_ntstatus();
+
+			if(!wait) return STATUS_SUCCESS;
+
+			if(WaitForSingleObject(thread, INFINITE) == WAIT_OBJECT_0) {
+				DWORD exitCode = 0;
+				GetExitCodeThread(thread, &exitCode);
+				return exitCode;
+			} else {
+				return STATUS_SUCCESS;
 			}
 		}
 	}
