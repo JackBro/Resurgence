@@ -178,9 +178,9 @@ namespace resurgence
 		{
 			return &_ntHdr64;
 		}
-		const IMAGE_DATA_DIRECTORY* portable_executable::get_data_directory() const
+		IMAGE_DATA_DIRECTORY portable_executable::get_data_directory(int entry) const
 		{
-			return _is32Bit ? _ntHdr32.OptionalHeader.DataDirectory : _ntHdr64.OptionalHeader.DataDirectory;
+			return _is32Bit ? _ntHdr32.OptionalHeader.DataDirectory[entry]: _ntHdr64.OptionalHeader.DataDirectory[entry];
 		}
 		const IMAGE_SECTION_HEADER* portable_executable::get_section_header() const
 		{

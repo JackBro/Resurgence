@@ -26,12 +26,11 @@ namespace resurgence
 			portable_executable(process* proc, PIMAGE_DOS_HEADER dosHdr, PIMAGE_NT_HEADERS64 ntHdrs, PIMAGE_SECTION_HEADER secHdr);
 
 			static portable_executable  load_from_file(const std::wstring& file);
-			static portable_executable  load_from_memory(process* proc, const std::uint8_t* base);
 
 			const IMAGE_DOS_HEADER*     get_dos_header() const;
 			const IMAGE_NT_HEADERS32*   get_nt_headers32() const;
 			const IMAGE_NT_HEADERS64*   get_nt_headers64() const;
-			const IMAGE_DATA_DIRECTORY* get_data_directory() const;
+			IMAGE_DATA_DIRECTORY        get_data_directory(int entry) const;
 			const IMAGE_SECTION_HEADER* get_section_header() const;
 
 			bool                        is_valid() const;
@@ -54,6 +53,8 @@ namespace resurgence
 			uint16_t                    get_subsystem() const;
 
 		private:
+			static portable_executable  load_from_memory(process* proc, const std::uint8_t* base);
+
 			process*                _process;
 			bool                    _is32Bit;
 			IMAGE_DOS_HEADER        _dosHdr;
