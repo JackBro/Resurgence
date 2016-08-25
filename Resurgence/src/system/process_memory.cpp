@@ -23,6 +23,10 @@ namespace resurgence
 			misc::winnt::allocate_memory(_process->get_handle().get(), (PVOID*)&address, &size, allocation, protection);
 			return address;
 		}
+		NTSTATUS process_memory::allocate_ex(uint8_t** address, size_t size, uint32_t allocation, uint32_t protection)
+		{
+			return misc::winnt::allocate_memory(_process->get_handle().get(), (PVOID*)address, &size, allocation, protection);
+		}
 		NTSTATUS process_memory::protect(const uint8_t* address, size_t size, uint32_t protection, uint32_t* oldProtection /*= nullptr*/)
 		{
 			uint32_t old;

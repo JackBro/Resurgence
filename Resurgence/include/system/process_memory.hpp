@@ -14,6 +14,7 @@ namespace resurgence
 			process_memory(process* proc);
 
 			uint8_t*                            allocate(size_t size, uint32_t allocation, uint32_t protection);
+			NTSTATUS                            allocate_ex(uint8_t** address, size_t size, uint32_t allocation, uint32_t protection);
 			NTSTATUS                            protect(const uint8_t* address, size_t size, uint32_t protection, uint32_t* oldProtection = nullptr);
 			NTSTATUS                            free(const uint8_t* address, size_t size, uint32_t freeType);
 			NTSTATUS                            read_bytes(const uint8_t* address, uint8_t* buffer, size_t size);
