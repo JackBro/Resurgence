@@ -36,9 +36,9 @@ typedef long NTSTATUS;
 
 __forceinline NTSTATUS get_last_ntstatus()
 {
-	return NtCurrentTeb()->LastStatusValue;
+    return NtCurrentTeb()->LastStatusValue;
 }
 __forceinline NTSTATUS set_last_ntstatus(NTSTATUS status)
 {
-	return NtCurrentTeb()->LastStatusValue = status;
+    return NtCurrentTeb()->LastStatusValue = status;
 }

@@ -62,159 +62,159 @@
 
 typedef enum _INJECT_METHOD
 {
-	InjectLdrLoadDll,
-	InjectManualMap
+    InjectLdrLoadDll,
+    InjectManualMap
 } INJECT_METHOD;
 
 typedef struct _VERSION_INFO
 {
-	ULONG           MajorVersion;
-	ULONG           MinorVersion;
-	USHORT          ServicePackMajor;
-	USHORT          ServicePackMinor;
-	ULONG           BuildNumber;
-	ULONG           VersionLong;
+    ULONG           MajorVersion;
+    ULONG           MinorVersion;
+    USHORT          ServicePackMajor;
+    USHORT          ServicePackMinor;
+    ULONG           BuildNumber;
+    ULONG           VersionLong;
 } VERSION_INFO, *PVERSION_INFO;
 
 typedef struct _VM_OPERATION
 {
-	union
-	{
-		struct
-		{
-			ULONG       Operation; //Alloc, Free or Protect
-			ULONG       ProcessId;
-			ULONGLONG   BaseAddress;
-			SIZE_T      RegionSize;
-			ULONG       ProtectionFlags;
-			ULONG       AllocationFlags;
-			ULONG       FreeType;
-		} In;
-		struct
-		{
-			ULONGLONG   BaseAddress;
-			SIZE_T      RegionSize;
-			ULONG       OldProtection;
-		} Out;
-	};
+    union
+    {
+        struct
+        {
+            ULONG       Operation; //Alloc, Free or Protect
+            ULONG       ProcessId;
+            ULONGLONG   BaseAddress;
+            SIZE_T      RegionSize;
+            ULONG       ProtectionFlags;
+            ULONG       AllocationFlags;
+            ULONG       FreeType;
+        } In;
+        struct
+        {
+            ULONGLONG   BaseAddress;
+            SIZE_T      RegionSize;
+            ULONG       OldProtection;
+        } Out;
+    };
 } VM_OPERATION, *PVM_OPERATION;
 
 typedef struct _VM_READ_WRITE
 {
-	ULONG       ProcessId;
-	ULONGLONG   TargetAddress;
-	ULONGLONG   Buffer;
-	ULONGLONG   BufferSize;
+    ULONG       ProcessId;
+    ULONGLONG   TargetAddress;
+    ULONGLONG   Buffer;
+    ULONGLONG   BufferSize;
 } VM_READ_WRITE, *PVM_READ_WRITE;
 
 typedef struct _VM_QUERY_INFO
 {
-	union
-	{
-		struct
-		{
-			ULONG       ProcessId;
-			ULONGLONG   BaseAddress;
-		} In;
-		MEMORY_BASIC_INFORMATION Out;
-	};
+    union
+    {
+        struct
+        {
+            ULONG       ProcessId;
+            ULONGLONG   BaseAddress;
+        } In;
+        MEMORY_BASIC_INFORMATION Out;
+    };
 } VM_QUERY_INFO, *PVM_QUERY_INFO;
 
 typedef struct _GRANT_ACCESS
 {
-	union
-	{
-		struct
-		{
-			ULONG       ProcessId;
-			ULONGLONG   Handle;
-			ULONG       AccessMask;
-		} In;
-		struct
-		{
-			ULONG   OldAccessMask;
-		} Out;
-	};
+    union
+    {
+        struct
+        {
+            ULONG       ProcessId;
+            ULONGLONG   Handle;
+            ULONG       AccessMask;
+        } In;
+        struct
+        {
+            ULONG   OldAccessMask;
+        } Out;
+    };
 } GRANT_ACCESS, *PGRANT_ACCESS;
 
 typedef struct _PROTECT_PROCESS
 {
-	union
-	{
-		struct
-		{
-			ULONG   ProcessId;
-			ULONG   ProtectionLevel;
-		} In;
-	};
+    union
+    {
+        struct
+        {
+            ULONG   ProcessId;
+            ULONG   ProtectionLevel;
+        } In;
+    };
 } PROTECT_PROCESS, *PPROTECT_PROCESS;
 
 typedef struct _OPEN_PROCESS
 {
-	union
-	{
-		struct
-		{
-			ULONG   ProcessId;      // Any of these can be 0, but not both.
-			ULONG   ThreadId;       // If ProcessId is 0, we open the process that contains the ThreadId
-			ULONG   AccessMask;
-		} In;
-		struct
-		{
-			ULONGLONG Handle;
-		} Out;
-	};
+    union
+    {
+        struct
+        {
+            ULONG   ProcessId;      // Any of these can be 0, but not both.
+            ULONG   ThreadId;       // If ProcessId is 0, we open the process that contains the ThreadId
+            ULONG   AccessMask;
+        } In;
+        struct
+        {
+            ULONGLONG Handle;
+        } Out;
+    };
 } OPEN_PROCESS, *POPEN_PROCESS;
 
 typedef struct _OPEN_THREAD
 {
-	union
-	{
-		struct
-		{
-			ULONG   ThreadId;
-			ULONG   AccessMask;
-		} In;
-		struct
-		{
-			ULONGLONG Handle;
-		} Out;
-	};
+    union
+    {
+        struct
+        {
+            ULONG   ThreadId;
+            ULONG   AccessMask;
+        } In;
+        struct
+        {
+            ULONGLONG Handle;
+        } Out;
+    };
 } OPEN_THREAD, *POPEN_THREAD;
 
 typedef struct _SET_DEP_STATE
 {
-	union
-	{
-		struct
-		{
-			ULONG   ProcessId;
-			BOOLEAN Enabled;
-		} In;
-	};
+    union
+    {
+        struct
+        {
+            ULONG   ProcessId;
+            BOOLEAN Enabled;
+        } In;
+    };
 } SET_DEP_STATE, *PSET_DEP_STATE;
 
 typedef struct _INJECT_MODULE
 {
-	union
-	{
-		struct
-		{
-			ULONG           ProcessId;
-			INJECT_METHOD   InjectionType;
-			BOOLEAN         ErasePE;
-			BOOLEAN         HideModule;
-			BOOLEAN         CallEntryPoint;
-			ULONGLONG       CustomParameter;
-			ULONGLONG       ModuleBase;
-			ULONG           ModuleSize;
-			WCHAR           ModulePath[MAX_PATH];
-		} In;
-		struct
-		{
-			ULONGLONG       BaseAddress;
-		} Out;
-	};
+    union
+    {
+        struct
+        {
+            ULONG           ProcessId;
+            INJECT_METHOD   InjectionType;
+            BOOLEAN         ErasePE;
+            BOOLEAN         HideModule;
+            BOOLEAN         CallEntryPoint;
+            ULONGLONG       CustomParameter;
+            ULONGLONG       ModuleBase;
+            ULONG           ModuleSize;
+            WCHAR           ModulePath[MAX_PATH];
+        } In;
+        struct
+        {
+            ULONGLONG       BaseAddress;
+        } Out;
+    };
 } INJECT_MODULE, *PINJECT_MODULE;
 
 #pragma warning(default : 4201)

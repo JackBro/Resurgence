@@ -12,6 +12,6 @@
 /// <param name="Irp">The I/O Request Packet sent by the I/O Manager</param>
 /// <returns></returns>
 NTSTATUS RDrvDispatch(
-	__in PDEVICE_OBJECT DeviceObject,
-	__in PIRP Irp
+    __in PDEVICE_OBJECT DeviceObject,
+    __in PIRP Irp
 );

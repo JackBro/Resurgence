@@ -3,42 +3,42 @@
 #include "internal.h"
 
 NTSTATUS RDrvQueryOSVersion(
-	__out PVERSION_INFO Version
+    __out PVERSION_INFO Version
 );
 
 NTSTATUS RDrvQueyVirtualMemory(
-	__inout PVM_QUERY_INFO Params
+    __inout PVM_QUERY_INFO Params
 );
 
 NTSTATUS RDrvVirtualMemoryOperation(
-	__inout PVM_OPERATION Params
+    __inout PVM_OPERATION Params
 );
 
 NTSTATUS RDrvReadWriteVirtualMemory(
-	__inout PVM_READ_WRITE Params,
-	__in BOOLEAN Write
+    __inout PVM_READ_WRITE Params,
+    __in BOOLEAN Write
 );
 
 NTSTATUS RDrvGrantHandleAccess(
-	__inout PGRANT_ACCESS Params
+    __inout PGRANT_ACCESS Params
 );
 
 NTSTATUS RDrvProtectProcess(
-	__in PPROTECT_PROCESS Params
+    __in PPROTECT_PROCESS Params
 );
 
 NTSTATUS RDrvOpenProcess(
-	__inout POPEN_PROCESS Params
+    __inout POPEN_PROCESS Params
 );
 
 NTSTATUS RDrvSetProcessDEP(
-	__in PSET_DEP_STATE Params
+    __in PSET_DEP_STATE Params
 );
 
 NTSTATUS RDrvOpenThread(
-	__inout POPEN_THREAD Params
+    __inout POPEN_THREAD Params
 );
 
 NTSTATUS RDrvInjectModule(
-	__inout PINJECT_MODULE Params
+    __inout PINJECT_MODULE Params
 );
