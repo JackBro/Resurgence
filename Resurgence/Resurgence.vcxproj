@@ -23,7 +23,7 @@
     <ClInclude Include="include\misc\exceptions.hpp" />
     <ClInclude Include="include\misc\safe_handle.hpp" />
     <ClInclude Include="include\misc\winnt.hpp" />
-    <ClInclude Include="include\NtAPI.hpp" />
+    <ClInclude Include="include\nt_api.hpp" />
     <ClInclude Include="include\resurgence.hpp" />
     <ClInclude Include="include\system\driver\driver.hpp" />
     <ClInclude Include="include\system\driver\driver_shellcode.hpp" />

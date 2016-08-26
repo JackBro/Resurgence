@@ -15,14 +15,13 @@ namespace resurgence
             _modules(this)
         {
             RtlZeroMemory(&_info, sizeof(_info));
+            _info.pid = (uint32_t)-1;
         }
         process::process(uint32_t pid)
             : _handle(nullptr),
             _memory(this),
             _modules(this)
         {
-            NTSTATUS status = STATUS_SUCCESS;
-
             RtlZeroMemory(&_info, sizeof(_info));
 
             _info.pid = pid;
@@ -109,8 +108,8 @@ namespace resurgence
                     _info.wow64peb_address = _info.peb_address;
                 #endif
 
-                    free_local_buffer(&basic_info);
-                    free_local_buffer(&fileName);
+                    free_local_buffer(basic_info);
+                    free_local_buffer(fileName);
                     if(needDispose)
                         NtClose(handle);
                 }
@@ -153,6 +152,12 @@ namespace resurgence
             BOOLEAN enabled;
             return NT_SUCCESS(RtlAdjustPrivilege(privilege, FALSE, FALSE, &enabled));
         }
+
+        void process::ensure_access(uint32_t access) const
+        {
+            if(!_handle.has_access(access))
+                throw misc::exception("Handle doesnt have the required access rights");
+        }
         const std::wstring& process::get_name() const
         {
             return _info.name;
@@ -193,6 +198,10 @@ namespace resurgence
         {
             return get_pid() == SYSTEM_PROCESS;
         }
+        bool process::is_valid() const
+        {
+            return _info.pid != (uint32_t)-1;
+        }
         NTSTATUS process::open(uint32_t access)
         {
             if(is_current_process())
@@ -209,7 +218,7 @@ namespace resurgence
                         handle_info->GrantedAccess == access ||
                         handle_info->GrantedAccess == PROCESS_ALL_ACCESS;
 
-                    free_local_buffer(&handle_info);
+                    free_local_buffer(handle_info);
 
                     if(b) return STATUS_SUCCESS;
                 }
@@ -223,6 +232,12 @@ namespace resurgence
             }
 
             return status;
+        }
+        void process::terminate(uint32_t exitCode /*= 0*/)
+        {
+            ensure_access(PROCESS_TERMINATE);
+
+            misc::winnt::terminate_process(_handle.get(), exitCode);
         }
     }
 }

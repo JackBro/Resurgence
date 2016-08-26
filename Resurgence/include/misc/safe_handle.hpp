@@ -16,18 +16,22 @@ namespace resurgence
                 safe_handle(const safe_handle& rhs);
                 virtual ~safe_handle();
 
-                HANDLE  get() const;
-                void    set(HANDLE value);
-                void    close();
-                bool    is_valid() const;
+                HANDLE      get() const;
+                void        set(HANDLE value);
+                void        close();
+                bool        is_valid() const;
+                uint32_t    access_mask() const;
+                void        update_access();
+                bool        has_access(uint32_t access) const;
 
-                safe_handle& operator=(const safe_handle& rhs);
+                virtual safe_handle& operator=(const safe_handle& rhs);
 
             protected:
                 void duplicate(safe_handle& other) const;
 
-                HANDLE _value;
-                HANDLE _invalid;
+                HANDLE   _value;
+                HANDLE   _invalid;
+                uint32_t _grantedBits;
             };
         }
 

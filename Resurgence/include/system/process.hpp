@@ -48,6 +48,7 @@ namespace resurgence
             static bool                         grant_privilege(uint32_t privilege);
             static bool                         revoke_privilege(uint32_t privilege);
 
+            void                                ensure_access(uint32_t access) const;
             const std::wstring&                 get_name() const;
             const std::wstring&                 get_path() const;
             uintptr_t                           get_peb_address() const;
@@ -58,15 +59,17 @@ namespace resurgence
             bool                                is_current_process() const;
             bool                                is_system_idle_process() const;
             bool                                is_system_process() const;
+            bool                                is_valid() const;
 
             NTSTATUS                            open(uint32_t access);
+            void                                terminate(uint32_t exitCode = 0);
 
             process_memory*                     memory() { return &_memory; }
             process_modules*                    modules() { return &_modules; }
 
         private:
             void                                get_process_info();
-
+            
         private:
             process_info                _info;
             misc::safe_process_handle   _handle;

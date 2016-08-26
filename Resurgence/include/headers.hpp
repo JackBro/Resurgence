@@ -16,7 +16,7 @@ typedef long NTSTATUS;
 #include <winioctl.h>
 #include <ntstatus.h>
 #include <strsafe.h>
-#include <NtApi.hpp>
+#include <nt_api.hpp>
 
 #ifndef PTR_ADD
 #define PTR_ADD(ptr, off) ((uint8_t*)ptr + off)

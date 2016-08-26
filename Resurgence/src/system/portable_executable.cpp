@@ -158,11 +158,11 @@ namespace resurgence
             }
 
         FAIL_1: // Failed after allocating all buffers
-            if(ntHdrs32)    free_local_buffer(&ntHdrs32);
-            if(ntHdrs64)    free_local_buffer(&ntHdrs64);
-            if(secHdr)      free_local_buffer(&secHdr);
+            if(ntHdrs32)    free_local_buffer(ntHdrs32);
+            if(ntHdrs64)    free_local_buffer(ntHdrs64);
+            if(secHdr)      free_local_buffer(secHdr);
         FAIL_2: // Failed after allocating only the dos header
-            free_local_buffer(&dosHdr);
+            free_local_buffer(dosHdr);
         FAIL_3:
             return pe;
         }

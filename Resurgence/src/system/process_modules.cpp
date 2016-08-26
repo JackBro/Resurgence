@@ -9,7 +9,6 @@ namespace resurgence
 {
     namespace system
     {
-
     #define INJECTION_BUFFER_SIZE 0x100
 
         typedef struct _INJECTION_BUFFER
@@ -353,6 +352,114 @@ namespace resurgence
         }
         NTSTATUS process_modules::inject_module(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module /*= nullptr*/)
         {
+            _process->ensure_access(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD);
+
+            switch(_process->get_platform()) {
+                case platform_x86:
+                    return inject_module32(path, injectionType, flags, module);
+                case platform_x64:
+                    return inject_module64(path, injectionType, flags, module);
+            }
+            return STATUS_UNSUCCESSFUL;
+        }
+        NTSTATUS process_modules::inject_module32(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module)
+        {
+            switch(injectionType) {
+                case INJECTION_TYPE_LDRLOADLL:
+                    goto LDRLOADLL_INJECTION;
+                case INJECTION_TYPE_LOADLIBRARY:
+                    goto LOADLIBRARY_INJECTION;
+                default:
+                    return STATUS_INVALID_PARAMETER_2;
+            }
+        LOADLIBRARY_INJECTION:
+            {
+            auto fnLoadLibraryW = get_module_by_name(L"kernel32.dll").get_proc_address("LoadLibraryW");
+            if(!fnLoadLibraryW) return STATUS_PROCEDURE_NOT_FOUND;
+
+                PINJECTION_BUFFER remoteBuffer = nullptr;
+
+                uint8_t codeBuffer[] =
+                {
+                    0x55,                               //push ebp                         |
+                    0x89, 0xE5,                         //mov  ebp,esp                     |
+                    0x68, 0x00, 0x00, 0x00, 0x00,       //push ModulePath                  | offset 0x04
+                    0xE8, 0x00, 0x00, 0x00, 0x00,       //call LoadLibraryW                | offset 0x09
+                    0xA3, 0x00, 0x00, 0x00, 0x00,       //mov  ModuleHandle, eax           | offset 0x0E
+                    0x64, 0xA1, 0x18, 0x00, 0x00, 0x00, //mov  eax, large fs:18h           |
+                    0x8B, 0x40, 0x34,                   //mov  eax, dword ptr[eax + 34h]   |
+                    0x5D,                               //pop  ebp                         |
+                    0xC2, 0x04, 0x00                    //ret  0x4                         |
+                };
+
+                auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+                if(!NT_SUCCESS(status)) return status;
+
+                *(ULONG*)((PUCHAR)codeBuffer + 0x04) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath);
+                *(ULONG*)((PUCHAR)codeBuffer + 0x09) = (ULONG)(ULONG_PTR)(fnLoadLibraryW - ((ULONG_PTR)remoteBuffer + 0x0D));
+                *(ULONG*)((PUCHAR)codeBuffer + 0x0E) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
+
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), (path.size() + 1) * sizeof(wchar_t));
+
+                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+
+                if(NT_SUCCESS(ret) && module) {
+                    ULONG handle = _process->memory()->read<ULONG>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
+
+                    *module = get_module_by_address((uint8_t*)handle);
+                }
+                return ret;
+            }
+        LDRLOADLL_INJECTION:
+            {
+                auto fnLdrLoadDll = get_module_by_name(L"ntdll.dll").get_proc_address("LdrLoadDll");
+                if(!fnLdrLoadDll) return STATUS_PROCEDURE_NOT_FOUND;
+
+                PINJECTION_BUFFER remoteBuffer = nullptr;
+                UNICODE_STRING32 usModulePath32;
+                uint8_t codeBuffer[] =
+                {
+                    0x55,                      		//push   ebp            | 
+                    0x89, 0xE5,                   	//mov    ebp,esp        | 
+                    0x68, 0x00, 0x00, 0x00, 0x00,   //push   ModuleHandle   | offset 0x04
+                    0x68, 0x00, 0x00, 0x00, 0x00,   //push   ModulePath     | offset 0x09
+                    0x6A, 0x00,                    	//push   0              | 
+                    0x6A, 0x00,                    	//push   0              | 
+                    0xE8, 0x00, 0x00, 0x00, 0x00,  	//call   LdrLoadDll     | offset 0x12
+                    0x5D,                      		//pop    ebp            | 
+                    0xC2, 0x04, 0x00             	//ret    4              | 
+                };
+
+                auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+                if(!NT_SUCCESS(status)) return status;
+
+                *(ULONG*)((PUCHAR)codeBuffer + 0x04) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
+                *(ULONG*)((PUCHAR)codeBuffer + 0x09) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath32);
+                *(ULONG*)((PUCHAR)codeBuffer + 0x12) = (ULONG)(ULONG_PTR)(fnLdrLoadDll - ((ULONG_PTR)remoteBuffer + 0x16));
+
+                usModulePath32.Length = (USHORT)(path.size() * sizeof(wchar_t));
+                usModulePath32.MaximumLength = MAX_PATH * sizeof(wchar_t);
+                usModulePath32.Buffer = (ULONG)(ULONG_PTR)remoteBuffer->DllPath;
+
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), path.size() * sizeof(wchar_t));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath32), (uint8_t*)&usModulePath32, sizeof(UNICODE_STRING32));
+
+                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+
+                if(NT_SUCCESS(ret) && module) {
+                    ULONG handle = _process->memory()->read<ULONG>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
+
+                    *module = get_module_by_address((uint8_t*)handle);
+                }
+                return ret;
+            }
+        }
+        NTSTATUS process_modules::inject_module64(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module)
+        {
             switch(injectionType) {
                 case INJECTION_TYPE_LDRLOADLL:
                     goto LDRLOADLL_INJECTION;
@@ -366,177 +473,98 @@ namespace resurgence
                 auto fnLoadLibraryW = get_module_by_name(L"kernel32.dll").get_proc_address("LoadLibraryW");
                 if(!fnLoadLibraryW) return STATUS_PROCEDURE_NOT_FOUND;
 
-                if(_process->get_platform() == platform_x86) {
-                    PINJECTION_BUFFER remoteBuffer = nullptr;
+            #ifdef _WIN64
+                PINJECTION_BUFFER remoteBuffer = nullptr;
+                uint8_t codeBuffer[] =
+                {
+                    0x48, 0x83, 0xEC, 0x28,									//sub rsp, 0x28		      | 
+                    0x48, 0xB9, 0, 0, 0, 0, 0, 0, 0, 0,                     //mov rcs, ModulePath	  | offset 0x06
+                    0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,                     //mov rax, LoadLibraryW   | offset 0x10
+                    0xFF, 0xD0,                                             //call rax				  |
+                    0x48, 0xA3, 0, 0, 0, 0, 0, 0, 0, 0,                     //mov ModuleHandle, rax   | offset 0x1C
+                    0x65, 0x48, 0x8B, 0x04, 0x25, 0x30, 0x00, 0x00, 0x00,   //mov rax, gs:30h		  |
+                    0x8B, 0x40, 0x68,                                       //mov raxx, [rax + 68h]   |
+                    0x48, 0x83, 0xC4, 0x28,									//add rsp, 0x28		      |
+                    0xC3													//ret					  | 
+                };
 
-                    uint8_t codeBuffer[] =
-                    {
-                        0x55,                               //push ebp                         |
-                        0x89, 0xE5,                         //mov  ebp,esp                     |
-                        0x68, 0x00, 0x00, 0x00, 0x00,       //push ModulePath                  | offset 0x04
-                        0xE8, 0x00, 0x00, 0x00, 0x00,       //call LoadLibraryW                | offset 0x09
-                        0xA3, 0x00, 0x00, 0x00, 0x00,       //mov  ModuleHandle, eax           | offset 0x0E
-                        0x64, 0xA1, 0x18, 0x00, 0x00, 0x00, //mov  eax, large fs:18h           |
-                        0x8B, 0x40, 0x34,                   //mov  eax, dword ptr[eax + 34h]   |
-                        0x5D,                               //pop  ebp                         |
-                        0xC2, 0x04, 0x00                    //ret  0x4                         |
-                    };
+                auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-                    auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+                if(!NT_SUCCESS(status)) return status;
 
-                    if(!NT_SUCCESS(status)) return status;
+                *(ULONGLONG*)((PUCHAR)codeBuffer + 0x06) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath);
+                *(ULONGLONG*)((PUCHAR)codeBuffer + 0x10) = (ULONGLONG)fnLoadLibraryW;
+                *(ULONGLONG*)((PUCHAR)codeBuffer + 0x1C) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
 
-                    *(ULONG*)((PUCHAR)codeBuffer + 0x04) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath);
-                    *(ULONG*)((PUCHAR)codeBuffer + 0x09) = (ULONG)(ULONG_PTR)(fnLoadLibraryW - ((ULONG_PTR)remoteBuffer + 0x0D));
-                    *(ULONG*)((PUCHAR)codeBuffer + 0x0E) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), (path.size() + 1) * sizeof(wchar_t));
 
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), (path.size() + 1) * sizeof(wchar_t));
+                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
-                    auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+                if(NT_SUCCESS(ret) && module) {
+                    HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
 
-                    if(NT_SUCCESS(ret) && module) {
-                        ULONG handle = _process->memory()->read<ULONG>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
-
-                        *module = get_module_by_address((uint8_t*)handle);
-                    }
-                    return ret;
-                } else {
-                #ifdef _WIN64
-                    PINJECTION_BUFFER remoteBuffer = nullptr;
-                    uint8_t codeBuffer[] =
-                    {
-                        0x48, 0x83, 0xEC, 0x28,									//sub rsp, 0x28		      | 
-                        0x48, 0xB9, 0, 0, 0, 0, 0, 0, 0, 0,                     //mov rcs, ModulePath	  | offset 0x06
-                        0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,                     //mov rax, LoadLibraryW   | offset 0x10
-                        0xFF, 0xD0,                                             //call rax				  |
-                        0x48, 0xA3, 0, 0, 0, 0, 0, 0, 0, 0,                     //mov ModuleHandle, rax   | offset 0x1C
-                        0x65, 0x48, 0x8B, 0x04, 0x25, 0x30, 0x00, 0x00, 0x00,   //mov rax, gs:30h		  |
-                        0x8B, 0x40, 0x68,                                       //mov raxx, [rax + 68h]   |
-                        0x48, 0x83, 0xC4, 0x28,									//add rsp, 0x28		      |
-                        0xC3													//ret					  | 
-                    };
-
-                    auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-
-                    if(!NT_SUCCESS(status)) return status;
-
-                    *(ULONGLONG*)((PUCHAR)codeBuffer + 0x06) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath);
-                    *(ULONGLONG*)((PUCHAR)codeBuffer + 0x10) = (ULONGLONG)fnLoadLibraryW;
-                    *(ULONGLONG*)((PUCHAR)codeBuffer + 0x1C) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
-
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), (path.size() + 1) * sizeof(wchar_t));
-
-                    auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
-
-                    if(NT_SUCCESS(ret) && module) {
-                        HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
-
-                        *module = get_module_by_address((uint8_t*)handle);
-                    }
-                    return ret;
-                #else
-                    //
-                    // Cannot inject into x64 process from wow64
-                    // 
-                    return 0;
-                #endif
+                    *module = get_module_by_address((uint8_t*)handle);
                 }
+                return ret;
+            #else
+                //
+                // Cannot inject into x64 process from wow64
+                // 
+                return 0;
+            #endif
             }
         LDRLOADLL_INJECTION:
             {
                 auto fnLdrLoadDll = get_module_by_name(L"ntdll.dll").get_proc_address("LdrLoadDll");
                 if(!fnLdrLoadDll) return STATUS_PROCEDURE_NOT_FOUND;
 
-                if(_process->get_platform() == platform_x86) {
-                    PINJECTION_BUFFER remoteBuffer = nullptr;
-                    UNICODE_STRING32 usModulePath32;
-                    uint8_t codeBuffer[] =
-                    {
-                        0x55,                      		//push   ebp            | 
-                        0x89, 0xE5,                   	//mov    ebp,esp        | 
-                        0x68, 0x00, 0x00, 0x00, 0x00,   //push   ModuleHandle   | offset 0x04
-                        0x68, 0x00, 0x00, 0x00, 0x00,   //push   ModulePath     | offset 0x09
-                        0x6A, 0x00,                    	//push   0              | 
-                        0x6A, 0x00,                    	//push   0              | 
-                        0xE8, 0x00, 0x00, 0x00, 0x00,  	//call   LdrLoadDll     | offset 0x12
-                        0x5D,                      		//pop    ebp            | 
-                        0xC2, 0x04, 0x00             	//ret    4              | 
-                    };
+            #ifdef _WIN64
+                PINJECTION_BUFFER remoteBuffer = nullptr;
+                UNICODE_STRING usModulePath64;
+                uint8_t codeBuffer[] =
+                {
+                    0x48, 0x83, 0xEC, 0x28,                 // sub rsp, 0x28		  |
+                    0x48, 0x31, 0xC9,                       // xor rcx, rcx			  |
+                    0x48, 0x31, 0xD2,                       // xor rdx, rdx			  |
+                    0x49, 0xB9, 0, 0, 0, 0, 0, 0, 0, 0,     // mov r9, ModuleHandle   | offset 0x0C
+                    0x49, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,     // mov r8, ModuleFileName | offset 0x16
+                    0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,     // mov rax, LdrLoadDll    | offset 0x20
+                    0xFF, 0xD0,                             // call rax				  |
+                    0x48, 0x83, 0xC4, 0x28,                 // add rsp, 0x28		  |
+                    0xC3                                    // ret					  |
+                };
 
-                    auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+                auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-                    if(!NT_SUCCESS(status)) return status;
+                if(!NT_SUCCESS(status)) return status;
 
-                    *(ULONG*)((PUCHAR)codeBuffer + 0x04) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
-                    *(ULONG*)((PUCHAR)codeBuffer + 0x09) = (ULONG)(ULONG_PTR)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath32);
-                    *(ULONG*)((PUCHAR)codeBuffer + 0x12) = (ULONG)(ULONG_PTR)(fnLdrLoadDll - ((ULONG_PTR)remoteBuffer + 0x16));
+                *(ULONGLONG*)((PUCHAR)codeBuffer + 0x0C) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
+                *(ULONGLONG*)((PUCHAR)codeBuffer + 0x16) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath64);
+                *(ULONGLONG*)((PUCHAR)codeBuffer + 0x20) = (ULONGLONG)fnLdrLoadDll;
 
-                    usModulePath32.Length = (USHORT)(path.size() * sizeof(wchar_t));
-                    usModulePath32.MaximumLength = MAX_PATH * sizeof(wchar_t);
-                    usModulePath32.Buffer = (ULONG)(ULONG_PTR)remoteBuffer->DllPath;
+                usModulePath64.Length = (USHORT)(path.size() * sizeof(wchar_t));
+                usModulePath64.MaximumLength = MAX_PATH * sizeof(wchar_t);
+                usModulePath64.Buffer = remoteBuffer->DllPath;
 
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), path.size() * sizeof(wchar_t));
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath32), (uint8_t*)&usModulePath32, sizeof(UNICODE_STRING32));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), path.size() * sizeof(wchar_t));
+                _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath64), (uint8_t*)&usModulePath64, sizeof(UNICODE_STRING));
 
-                    auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
-                    if(NT_SUCCESS(ret) && module) {
-                        ULONG handle = _process->memory()->read<ULONG>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
+                if(NT_SUCCESS(ret) && module) {
+                    HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
 
-                        *module = get_module_by_address((uint8_t*)handle);
-                    }
-                    return ret;
-                } else {
-                #ifdef _WIN64
-                    PINJECTION_BUFFER remoteBuffer = nullptr;
-                    UNICODE_STRING usModulePath64;
-                    uint8_t codeBuffer[] =
-                    {
-                        0x48, 0x83, 0xEC, 0x28,                 // sub rsp, 0x28		  |
-                        0x48, 0x31, 0xC9,                       // xor rcx, rcx			  |
-                        0x48, 0x31, 0xD2,                       // xor rdx, rdx			  |
-                        0x49, 0xB9, 0, 0, 0, 0, 0, 0, 0, 0,     // mov r9, ModuleHandle   | offset 0x0C
-                        0x49, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,     // mov r8, ModuleFileName | offset 0x16
-                        0x48, 0xB8, 0, 0, 0, 0, 0, 0, 0, 0,     // mov rax, LdrLoadDll    | offset 0x20
-                        0xFF, 0xD0,                             // call rax				  |
-                        0x48, 0x83, 0xC4, 0x28,                 // add rsp, 0x28		  |
-                        0xC3                                    // ret					  |
-                    };
-
-                    auto status = _process->memory()->allocate_ex((uint8_t**)&remoteBuffer, sizeof(INJECTION_BUFFER), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-
-                    if(!NT_SUCCESS(status)) return status;
-
-                    *(ULONGLONG*)((PUCHAR)codeBuffer + 0x0C) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle);
-                    *(ULONGLONG*)((PUCHAR)codeBuffer + 0x16) = (ULONGLONG)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath64);
-                    *(ULONGLONG*)((PUCHAR)codeBuffer + 0x20) = (ULONGLONG)fnLdrLoadDll;
-
-                    usModulePath64.Length = (USHORT)(path.size() * sizeof(wchar_t));
-                    usModulePath64.MaximumLength = MAX_PATH * sizeof(wchar_t);
-                    usModulePath64.Buffer = remoteBuffer->DllPath;
-
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), path.size() * sizeof(wchar_t));
-                    _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath64), (uint8_t*)&usModulePath64, sizeof(UNICODE_STRING));
-
-                    auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
-
-                    if(NT_SUCCESS(ret) && module) {
-                        HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
-
-                        *module = get_module_by_address((uint8_t*)handle);
-                    }
-                    return ret;
-                #else
-                    //
-                    // Cannot inject into x64 process from wow64
-                    // 
-                    return 0;
-                #endif
+                    *module = get_module_by_address((uint8_t*)handle);
                 }
+                return ret;
+            #else
+                //
+                // Cannot inject into x64 process from wow64
+                // 
+                return 0;
+            #endif
             }
         }
     }

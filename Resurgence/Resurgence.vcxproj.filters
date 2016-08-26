@@ -27,9 +27,6 @@
     <ClInclude Include="include\headers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\NtAPI.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\resurgence.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -55,6 +52,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\system\portable_executable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\nt_api.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

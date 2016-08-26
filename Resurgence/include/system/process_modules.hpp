@@ -37,6 +37,7 @@ namespace resurgence
             const portable_executable&  get_pe();
 
             uintptr_t                   get_proc_address(const std::string& name);
+
         private:
             process*            _process;
             uint8_t*            _base;
@@ -48,6 +49,7 @@ namespace resurgence
 
         class process_modules
         {
+            friend class process;
         public:
             process_modules(process* proc);
 
@@ -59,7 +61,8 @@ namespace resurgence
 
             NTSTATUS                    inject_module(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module = nullptr);
         private:
-            friend class process;
+            NTSTATUS                    inject_module32(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module);
+            NTSTATUS                    inject_module64(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module);
             process_modules();
 
             process* _process;
