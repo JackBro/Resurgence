@@ -341,22 +341,29 @@ typedef struct _LDR_DATA_TABLE_ENTRY
 
 typedef struct _PEB
 {
-    UCHAR InheritedAddressSpace;
-    UCHAR ReadImageFileExecOptions;
-    UCHAR BeingDebugged;
-    UCHAR ImageUsesLargePages : 1;
-    UCHAR IsProtectedProcess : 1;
-    UCHAR IsImageDynamicallyRelocated : 1;
-    UCHAR SkipPatchingUser32Forwarders : 1;
-    UCHAR IsPackagedProcess : 1;
-    UCHAR IsAppContainer : 1;
-    UCHAR IsProtectedProcessLight : 1;
-    UCHAR SpareBits : 1;
-    UCHAR Padding0[4];
-    PVOID Mutant;
+    BOOLEAN InheritedAddressSpace;
+    BOOLEAN ReadImageFileExecOptions;
+    BOOLEAN BeingDebugged;
+    union
+    {
+        BOOLEAN BitField;
+        struct
+        {
+            BOOLEAN ImageUsesLargePages : 1;
+            BOOLEAN IsProtectedProcess : 1;
+            BOOLEAN IsLegacyProcess : 1;
+            BOOLEAN IsImageDynamicallyRelocated : 1;
+            BOOLEAN SkipPatchingUser32Forwarders : 1;
+            BOOLEAN IsPackagedProcess : 1;
+            BOOLEAN IsAppContainer : 1;
+            BOOLEAN IsProtectedProcessLight : 1;
+            BOOLEAN SpareBits : 1;
+        };
+    };
+    HANDLE Mutant;
     PVOID ImageBaseAddress;
     PPEB_LDR_DATA Ldr;
-    PVOID ProcessParameters;
+    PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
     PVOID SubSystemData;
     PVOID ProcessHeap;
     PVOID FastPebLock;
@@ -367,6 +374,18 @@ typedef struct _PEB
     ULONG SystemReserved;
     ULONG AtlThunkSListPtr32;
     PVOID ApiSetMap;
+    ULONG TlsExpansionCounter;
+    ULONG Padding2;
+    PVOID TlsBitmap;
+    ULONG TlsBitmapBits[2];
+    PVOID ReadOnlySharedMemoryBase;
+    PVOID SparePvoid0;
+    PVOID* ReadOnlyStaticServerData;
+    PVOID AnsiCodePageData;
+    PVOID OemCodePageData;
+    PVOID UnicodeCaseTableData;
+    ULONG NumberOfProcessors;
+    ULONG NtGlobalFlag;
 } PEB, *PPEB;
 
 typedef struct _PEB_LDR_DATA32

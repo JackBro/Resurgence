@@ -86,6 +86,49 @@ extern "C" {
 #define TRACELOG_ACCESS_REALTIME      0x0400
 #define TRACELOG_REGISTER_GUIDS       0x0800
 
+//
+// Global flags that can be set to control system behavior.
+// Flag word is 32 bits.
+//
+
+#define FLG_STOP_ON_EXCEPTION           0x00000001      // user and kernel mode
+#define FLG_SHOW_LDR_SNAPS              0x00000002      // user and kernel mode
+#define FLG_DEBUG_INITIAL_COMMAND       0x00000004      // kernel mode only up until WINLOGON started
+#define FLG_STOP_ON_HUNG_GUI            0x00000008      // kernel mode only while running
+
+#define FLG_HEAP_ENABLE_TAIL_CHECK      0x00000010      // user mode only
+#define FLG_HEAP_ENABLE_FREE_CHECK      0x00000020      // user mode only
+#define FLG_HEAP_VALIDATE_PARAMETERS    0x00000040      // user mode only
+#define FLG_HEAP_VALIDATE_ALL           0x00000080      // user mode only
+
+#define FLG_APPLICATION_VERIFIER        0x00000100      // user mode only
+#define FLG_POOL_ENABLE_TAGGING         0x00000400      // kernel mode only
+#define FLG_HEAP_ENABLE_TAGGING         0x00000800      // user mode only
+
+#define FLG_USER_STACK_TRACE_DB         0x00001000      // x86 user mode only
+#define FLG_KERNEL_STACK_TRACE_DB       0x00002000      // x86 kernel mode only at boot time
+#define FLG_MAINTAIN_OBJECT_TYPELIST    0x00004000      // kernel mode only at boot time
+#define FLG_HEAP_ENABLE_TAG_BY_DLL      0x00008000      // user mode only
+
+#define FLG_DISABLE_STACK_EXTENSION     0x00010000      // user mode only
+#define FLG_ENABLE_CSRDEBUG             0x00020000      // kernel mode only at boot time
+#define FLG_ENABLE_KDEBUG_SYMBOL_LOAD   0x00040000      // kernel mode only
+#define FLG_DISABLE_PAGE_KERNEL_STACKS  0x00080000      // kernel mode only at boot time
+
+#define FLG_ENABLE_SYSTEM_CRIT_BREAKS   0x00100000      // user mode only
+#define FLG_HEAP_DISABLE_COALESCING     0x00200000      // user mode only
+#define FLG_ENABLE_CLOSE_EXCEPTIONS     0x00400000      // kernel mode only
+#define FLG_ENABLE_EXCEPTION_LOGGING    0x00800000      // kernel mode only
+
+#define FLG_ENABLE_HANDLE_TYPE_TAGGING  0x01000000      // kernel mode only
+#define FLG_HEAP_PAGE_ALLOCS            0x02000000      // user mode only
+#define FLG_DEBUG_INITIAL_COMMAND_EX    0x04000000      // kernel mode only up until WINLOGON started
+#define FLG_DISABLE_DBGPRINT            0x08000000      // kernel mode only
+
+#define FLG_CRITSEC_EVENT_CREATION      0x10000000      // user mode only, Force early creation of resource events
+#define FLG_LDR_TOP_DOWN                0x20000000      // user mode only, win64 only
+#define FLG_ENABLE_HANDLE_EXCEPTIONS    0x40000000      // kernel mode only
+#define FLG_DISABLE_PROTDLLS            0x80000000      // user mode only (smss/winlogon)
 #define NtCurrentThread() ( (HANDLE)(LONG_PTR) -2 )
 #define NtCurrentProcess() ( (HANDLE)(LONG_PTR) -1 )
 #define ZwCurrentProcess() NtCurrentProcess()
@@ -3074,6 +3117,12 @@ extern "C" {
         HANDLE Handle;
     } CURDIR, *PCURDIR;
 
+    typedef struct _CURDIR32
+    {
+        UNICODE_STRING32 DosPath;
+        ULONG Handle;
+    } CURDIR32, *PCURDIR32;
+
 #define RTL_USER_PROC_CURDIR_CLOSE 0x00000002
 #define RTL_USER_PROC_CURDIR_INHERIT 0x00000003
 
@@ -3133,7 +3182,7 @@ extern "C" {
         ULONG StandardInput;
         ULONG StandardOutput;
         ULONG StandardError;
-        CURDIR CurrentDirectory;
+        CURDIR32 CurrentDirectory;
         UNICODE_STRING32 DllPath;
         UNICODE_STRING32 ImagePathName;
         UNICODE_STRING32 CommandLine;
@@ -3185,7 +3234,10 @@ extern "C" {
                 BOOLEAN IsLegacyProcess : 1;
                 BOOLEAN IsImageDynamicallyRelocated : 1;
                 BOOLEAN SkipPatchingUser32Forwarders : 1;
-                BOOLEAN SpareBits : 3;
+                BOOLEAN IsPackagedProcess : 1;
+                BOOLEAN IsAppContainer : 1;
+                BOOLEAN IsProtectedProcessLight : 1;
+                BOOLEAN SpareBits : 1;
             };
         };
         HANDLE Mutant;
@@ -3202,6 +3254,18 @@ extern "C" {
         ULONG SystemReserved;
         ULONG AtlThunkSListPtr32;
         PVOID ApiSetMap;
+        ULONG TlsExpansionCounter;
+        ULONG Padding2;
+        PVOID TlsBitmap;
+        ULONG TlsBitmapBits[2];
+        PVOID ReadOnlySharedMemoryBase;
+        PVOID SparePvoid0;
+        PVOID* ReadOnlyStaticServerData;
+        PVOID AnsiCodePageData;
+        PVOID OemCodePageData;
+        PVOID UnicodeCaseTableData;
+        ULONG NumberOfProcessors;
+        ULONG NtGlobalFlag;
     } PEB, *PPEB;
 
     typedef struct _PEB_LDR_DATA32
@@ -3246,7 +3310,10 @@ extern "C" {
                 BOOLEAN IsLegacyProcess : 1;
                 BOOLEAN IsImageDynamicallyRelocated : 1;
                 BOOLEAN SkipPatchingUser32Forwarders : 1;
-                BOOLEAN SpareBits : 3;
+                BOOLEAN IsPackagedProcess : 1;
+                BOOLEAN IsAppContainer : 1;
+                BOOLEAN IsProtectedProcessLight : 1;
+                BOOLEAN SpareBits : 1;
             };
         };
         ULONG Mutant;
@@ -3263,6 +3330,17 @@ extern "C" {
         ULONG SystemReserved;
         ULONG AtlThunkSListPtr32;
         ULONG ApiSetMap;
+        ULONG TlsExpansionCounter;
+        ULONG TlsBitmap;
+        ULONG TlsBitmapBits[2];
+        ULONG ReadOnlySharedMemoryBase;
+        ULONG SparePvoid0;
+        ULONG ReadOnlyStaticServerData;
+        ULONG AnsiCodePageData;
+        ULONG OemCodePageData;
+        ULONG UnicodeCaseTableData;
+        ULONG NumberOfProcessors;
+        ULONG NtGlobalFlag;
     } PEB32, *PPEB32;
 
     typedef struct _GDI_HANDLE_ENTRY
