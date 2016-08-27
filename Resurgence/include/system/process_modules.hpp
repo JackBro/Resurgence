@@ -183,12 +183,7 @@ namespace resurgence
             /// The status code. 
             ///</returns>
             NTSTATUS inject_module64(const std::wstring& path, uint32_t injectionType, process_module* module);
-
-            ///<summary>
-            /// Default ctor.
-            ///<summary>
-            process_modules();
-
+            
             process* _process;
         };
     }

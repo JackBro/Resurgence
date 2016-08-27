@@ -33,6 +33,7 @@
     <ClInclude Include="include\system\process.hpp" />
     <ClInclude Include="include\system\process_memory.hpp" />
     <ClInclude Include="include\system\process_modules.hpp" />
+    <ClInclude Include="include\system\process_threads.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp" />
@@ -44,6 +45,7 @@
     <ClCompile Include="src\system\process.cpp" />
     <ClCompile Include="src\system\process_memory.cpp" />
     <ClCompile Include="src\system\process_modules.cpp" />
+    <ClCompile Include="src\system\process_threads.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6872536E-3320-48D7-91A2-363B8CA39055}</ProjectGuid>

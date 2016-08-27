@@ -178,6 +178,7 @@ NTSTATUS RDrvInjectModule(
             if(Params->In.InjectionType == InjectLdrLoadDll) {
                 status = RDrvInjectLdrLoadDll(process, Params->In.ModulePath, &base);
             } else if(Params->In.InjectionType == InjectManualMap) {
+                status = STATUS_NOT_IMPLEMENTED;
                 //PVOID systemBuffer;
                 //ULONG imageSize;
                 //if(Params->In.ModuleBase != 0) {

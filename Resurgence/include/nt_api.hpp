@@ -385,7 +385,29 @@ extern "C" {
         KWAIT_REASON    WaitReason;
     } SYSTEM_THREAD_INFORMATION, *PSYSTEM_THREAD_INFORMATION;
 
-    typedef struct _SYSTEM_PROCESSES_INFORMATION
+    typedef struct _SYSTEM_EXTENDED_THREAD_INFORMATION
+    {
+        LARGE_INTEGER   KernelTime;
+        LARGE_INTEGER   UserTime;
+        LARGE_INTEGER   CreateTime;
+        ULONG           WaitTime;
+        PVOID           StartAddress;
+        CLIENT_ID       ClientId;
+        KPRIORITY       Priority;
+        KPRIORITY       BasePriority;
+        ULONG           ContextSwitchCount;
+        THREAD_STATE    State;
+        KWAIT_REASON    WaitReason;
+        PVOID           StackBase;
+        PVOID           StackLimit;
+        PVOID           Win32StartAddress;
+        ULONG_PTR       Reserved1;
+        ULONG_PTR       Reserved2;
+        ULONG_PTR       Reserved3;
+        ULONG_PTR       Reserved4;
+    } SYSTEM_EXTENDED_THREAD_INFORMATION, *PSYSTEM_EXTENDED_THREAD_INFORMATION;
+
+    typedef struct _SYSTEM_PROCESS_INFORMATION
     {
         ULONG           NextEntryDelta;
         ULONG           ThreadCount;
@@ -405,7 +427,7 @@ extern "C" {
         VM_COUNTERS     VmCounters;
         IO_COUNTERS     IoCounters;
         SYSTEM_THREAD_INFORMATION Threads[1];
-    } SYSTEM_PROCESSES_INFORMATION, *PSYSTEM_PROCESSES_INFORMATION;
+    } SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
 
     typedef struct _PROCESS_PRIORITY_CLASS
     {
@@ -2701,10 +2723,10 @@ extern "C" {
         CSHORT                      Type;
         USHORT                      size;
         LONG                        ReferenceCount;
-        struct _DRIVER_OBJECT  *DriverObject;
-        struct _DEVICE_OBJECT  *NextDevice;
-        struct _DEVICE_OBJECT  *AttachedDevice;
-        struct _IRP  *CurrentIrp;
+        struct _DRIVER_OBJECT*      DriverObject;
+        struct _DEVICE_OBJECT*      NextDevice;
+        struct _DEVICE_OBJECT*      AttachedDevice;
+        struct _IRP*                CurrentIrp;
         PVOID		                Timer;
         ULONG                       Flags;
         ULONG                       Characteristics;
@@ -2714,8 +2736,8 @@ extern "C" {
         CCHAR                       StackSize;
         union
         {
-            LIST_ENTRY         ListEntry;
-            WAIT_CONTEXT_BLOCK Wcb;
+            LIST_ENTRY              ListEntry;
+            WAIT_CONTEXT_BLOCK      Wcb;
         } Queue;
         ULONG                       AlignmentRequirement;
         KDEVICE_QUEUE               DeviceQueue;
@@ -2725,7 +2747,7 @@ extern "C" {
         KEVENT                      DeviceLock;
         USHORT                      SectorSize;
         USHORT                      Spare1;
-        struct _DEVOBJ_EXTENSION  *  DeviceObjectExtension;
+        struct _DEVOBJ_EXTENSION*   DeviceObjectExtension;
         PVOID                       Reserved;
     } DEVICE_OBJECT, *PDEVICE_OBJECT;
 
@@ -2741,23 +2763,20 @@ extern "C" {
 
         PDEVICE_OBJECT  DeviceObject;               // owning device object
 
-                                                    // end_ntddk end_nthal end_ntifs end_wdm end_ntosp
+        //
+        // Universal Power Data - all device objects must have this
+        //
 
-                                                    //
-                                                    // Universal Power Data - all device objects must have this
-                                                    //
+        // see ntos\po\pop.h
+        // WARNING: Access via PO macros
+        // and with PO locking rules ONLY.
+        ULONG           PowerFlags;           
 
-        ULONG           PowerFlags;             // see ntos\po\pop.h
-                                                // WARNING: Access via PO macros
-                                                // and with PO locking rules ONLY.
-
-                                                //
-                                                // pointer to the non-universal power data
-                                                //  Power data that only some device objects need is stored in the
-                                                //  device object power extension -> DOPE
-                                                //  see po.h
-                                                //
-
+        // pointer to the non-universal power data
+        //  Power data that only some device objects need is stored in the
+        //  device object power extension -> DOPE
+        //  see po.h
+        //
         struct          _DEVICE_OBJECT_POWER_EXTENSION  *Dope;
 
         //
@@ -2796,9 +2815,6 @@ extern "C" {
         PVPB           Vpb;                // If not NULL contains the VPB of the mounted volume.
                                            // Set in the filesystem's volume device object.
                                            // This is a reverse VPB pointer.
-
-                                           // begin_ntddk begin_wdm begin_nthal begin_ntifs begin_ntosp
-
     } DEVOBJ_EXTENSION, *PDEVOBJ_EXTENSION;
 
     typedef struct _FAST_IO_DISPATCH

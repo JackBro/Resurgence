@@ -16,7 +16,7 @@ namespace resurgence
     namespace misc
     {
         typedef std::function<NTSTATUS(POBJECT_DIRECTORY_INFORMATION)>     object_enumeration_callback;
-        typedef std::function<NTSTATUS(PSYSTEM_PROCESSES_INFORMATION)>     process_enumeration_callback;
+        typedef std::function<NTSTATUS(PSYSTEM_PROCESS_INFORMATION)>       process_enumeration_callback;
         typedef std::function<NTSTATUS(PRTL_PROCESS_MODULE_INFORMATION)>   system_module_enumeration_callback;
         typedef std::function<NTSTATUS(PLDR_DATA_TABLE_ENTRY)>             module_enumeration_callback;
         typedef std::function<NTSTATUS(PLDR_DATA_TABLE_ENTRY32)>           module_enumeration_callback32;

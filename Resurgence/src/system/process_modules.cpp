@@ -164,16 +164,7 @@ namespace resurgence
         }
 
         //-----------------------------------------------------------------------
-
-        ///<summary>
-        /// Default ctor.
-        ///<summary>
-        process_modules::process_modules()
-            : _process(nullptr)
-        {
-
-        }
-
+        
         ///<summary>
         /// Default ctor.
         ///<summary>

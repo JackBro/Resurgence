@@ -6,6 +6,7 @@
 #include <misc/safe_handle.hpp>
 #include "process_memory.hpp"
 #include "process_modules.hpp"
+#include "process_threads.hpp"
 
 #define SYSTEM_IDLE_PROCESS     (0)
 #define SYSTEM_PROCESS          (4)
@@ -71,6 +72,7 @@ namespace resurgence
 
             process_memory*                     memory() { return &_memory; }
             process_modules*                    modules() { return &_modules; }
+            process_threads*                    threads() { return &_threads; }
 
         private:
             void                                get_process_info();
@@ -80,6 +82,7 @@ namespace resurgence
             misc::safe_process_handle   _handle;
             process_memory              _memory;
             process_modules             _modules;
+            process_threads             _threads;
         };
     }
 }

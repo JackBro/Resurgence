@@ -13,7 +13,8 @@ namespace resurgence
         process::process()
             : _handle(nullptr),
             _memory(this),
-            _modules(this)
+            _modules(this),
+            _threads(this)
         {
             RtlZeroMemory(&_info, sizeof(_info));
             _info.pid = (uint32_t)-1;
@@ -21,7 +22,8 @@ namespace resurgence
         process::process(uint32_t pid)
             : _handle(nullptr),
             _memory(this),
-            _modules(this)
+            _modules(this),
+            _threads(this)
         {
             RtlZeroMemory(&_info, sizeof(_info));
 
@@ -39,7 +41,8 @@ namespace resurgence
         }
         process::process(const process& rhs)
             : _memory(this),
-            _modules(this)
+            _modules(this),
+            _threads(this)
         {
             _handle = rhs._handle;
             _info = rhs._info;
@@ -48,6 +51,7 @@ namespace resurgence
         {
             _memory = process_memory(this);
             _modules = process_modules(this);
+            _threads = process_threads(this);
             _handle = rhs._handle;
             _info = rhs._info;
             return *this;
@@ -121,7 +125,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> NTSTATUS {
+            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION info) -> NTSTATUS {
                 processes.push_back(process((uint32_t)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
@@ -136,7 +140,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> NTSTATUS {
+            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION info) -> NTSTATUS {
                 if(info->ImageName.Length > 0 && !_wcsicmp(std::data(name), info->ImageName.Buffer))
                     processes.emplace_back(static_cast<uint32_t>((ULONG_PTR)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;

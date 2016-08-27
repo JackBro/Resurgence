@@ -320,14 +320,14 @@ namespace resurgence
             uint8_t*   buffer = nullptr;
             NTSTATUS   status = STATUS_SUCCESS;
 
-            buffer = query_system_information(SystemProcessInformation);
+            buffer = query_system_information(SystemExtendedProcessInformation);
             if(buffer) {
-                auto pProcessEntry = (PSYSTEM_PROCESSES_INFORMATION)buffer;
+                auto pProcessEntry = (PSYSTEM_PROCESS_INFORMATION)buffer;
                 while(pProcessEntry->NextEntryDelta) {
-                    status = callback((PSYSTEM_PROCESSES_INFORMATION)pProcessEntry);
+                    status = callback((PSYSTEM_PROCESS_INFORMATION)pProcessEntry);
                     if(NT_SUCCESS(status))
                         break;
-                    pProcessEntry = (PSYSTEM_PROCESSES_INFORMATION)((PUCHAR)pProcessEntry + pProcessEntry->NextEntryDelta);
+                    pProcessEntry = (PSYSTEM_PROCESS_INFORMATION)((PUCHAR)pProcessEntry + pProcessEntry->NextEntryDelta);
                 }
                 free_local_buffer(buffer);
             }
