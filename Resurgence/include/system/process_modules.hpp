@@ -103,18 +103,90 @@ namespace resurgence
         {
             friend class process;
         public:
+            ///<summary>
+            /// Default ctor.
+            ///<summary>
+            ///<param name="proc"> The owner process. </param>
             process_modules(process* proc);
 
+            ///<summary>
+            /// Get process modules.
+            ///<summary>
+            ///<returns> A vector with all modules loaded by the process. </returns>
             std::vector<process_module> get_all_modules();
-            process_module              get_main_module();
-            process_module              get_module_by_name(const std::wstring& name);
-            process_module              get_module_by_address(const std::uint8_t* address);
-            process_module              get_module_by_load_order(uint32_t i);
 
-            NTSTATUS                    inject_module(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module = nullptr);
+            ///<summary>
+            /// Get main module.
+            ///<summary>
+            ///<returns> The main module. </returns>
+            process_module get_main_module();
+
+            ///<summary>
+            /// Get module by name.
+            ///<summary>
+            ///<param name="name"> The name. </param>
+            ///<returns> 
+            /// The module. 
+            ///</returns>
+            process_module get_module_by_name(const std::wstring& name);
+
+            ///<summary>
+            /// Get the module that contains the target address.
+            ///<summary>
+            ///<param name="address"> The address. </param>
+            ///<returns> 
+            /// The module. 
+            ///</returns>
+            process_module get_module_by_address(const std::uint8_t* address);
+
+            ///<summary>
+            /// Get module by load order.
+            ///<summary>
+            ///<param name="i"> The module number. </param>
+            ///<returns> 
+            /// The module. 
+            ///</returns>
+            process_module get_module_by_load_order(uint32_t i);
+
+            ///<summary>
+            /// Injects a module.
+            ///<summary>
+            ///<param name="path">          The module path. </param>
+            ///<param name="injectionType"> The injection type. </param>
+            ///<param name="flags">         The injection flags. </param>
+            ///<param name="module">        The injected module entry. </param>
+            ///<returns> 
+            /// The status code. 
+            ///</returns>
+            NTSTATUS inject_module(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module = nullptr);
+
         private:
-            NTSTATUS                    inject_module32(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module);
-            NTSTATUS                    inject_module64(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module);
+
+            ///<summary>
+            /// [Internal] Injects a module on a x86 process.
+            ///<summary>
+            ///<param name="path">          The module path. </param>
+            ///<param name="injectionType"> The injection type. </param>
+            ///<param name="module">        The injected module entry. </param>
+            ///<returns> 
+            /// The status code. 
+            ///</returns>
+            NTSTATUS inject_module32(const std::wstring& path, uint32_t injectionType, process_module* module);
+
+            ///<summary>
+            /// [Internal] Injects a module on a x86 process.
+            ///<summary>
+            ///<param name="path">          The module path. </param>
+            ///<param name="injectionType"> The injection type. </param>
+            ///<param name="module">        The injected module entry. </param>
+            ///<returns> 
+            /// The status code. 
+            ///</returns>
+            NTSTATUS inject_module64(const std::wstring& path, uint32_t injectionType, process_module* module);
+
+            ///<summary>
+            /// Default ctor.
+            ///<summary>
             process_modules();
 
             process* _process;
