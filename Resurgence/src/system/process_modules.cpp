@@ -31,10 +31,19 @@ namespace resurgence
             }
         };
 
+        ///<summary>
+        /// Default ctor.
+        ///<summary>
         process_module::process_module()
         {
             RtlZeroMemory(this, sizeof(*this));
         }
+
+        ///<summary>
+        /// x64 module constructor.
+        ///<summary>
+        ///<param name="proc">  The owner process. </param>
+        ///<param name="entry"> The loader table entry. </param>
         process_module::process_module(process* proc, PLDR_DATA_TABLE_ENTRY entry)
         {
             _process = proc;
@@ -50,6 +59,12 @@ namespace resurgence
                 _path = proc->memory()->read_unicode_string(entry->FullDllName.Buffer, entry->FullDllName.Length / sizeof(wchar_t));
             }
         }
+
+        ///<summary>
+        /// x86 module constructor.
+        ///<summary>
+        ///<param name="proc">  The owner process. </param>
+        ///<param name="entry"> The loader table entry. </param>
         process_module::process_module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry)
         {
             _process = proc;
@@ -64,6 +79,12 @@ namespace resurgence
                 _path = _path.replace(0, system32.size(), syswow64);
             }
         }
+
+        ///<summary>
+        /// System module constructor.
+        ///<summary>
+        ///<param name="proc">  The owner process. </param>
+        ///<param name="entry"> The module information. </param>
         process_module::process_module(process* proc, PRTL_PROCESS_MODULE_INFORMATION entry)
         {
             wchar_t path[MAX_PATH] = {NULL};
@@ -75,6 +96,10 @@ namespace resurgence
             _name = (path + entry->OffsetToFileName);
             _path = misc::winnt::get_dos_path(path);
         }
+
+        ///<summary>
+        /// Gets the portable executable linked with this module.
+        ///<summary>
         const portable_executable&  process_module::get_pe()
         {
             if(!_pe.is_valid())
@@ -82,6 +107,14 @@ namespace resurgence
 
             return _pe;
         }
+
+        ///<summary>
+        /// Get procedure address.
+        ///<summary>
+        ///<param name="name">  The function name. </param>
+        ///<returns>
+        /// The address, 0 on failure.
+        ///</returns>
         uintptr_t process_module::get_proc_address(const std::string& name)
         {
             IMAGE_EXPORT_DIRECTORY exports;
@@ -129,15 +162,31 @@ namespace resurgence
 
             return 0;
         }
-        process_modules::process_modules(process* proc)
-            : _process(proc)
-        {
-        }
+
+        //-----------------------------------------------------------------------
+
+        ///<summary>
+        /// Default ctor.
+        ///<summary>
         process_modules::process_modules()
             : _process(nullptr)
         {
 
         }
+
+        ///<summary>
+        /// Default ctor.
+        ///<summary>
+        ///<param name="proc"> The owner process. </param>
+        process_modules::process_modules(process* proc)
+            : _process(proc)
+        {
+        }
+
+        ///<summary>
+        /// Get process modules.
+        ///<summary>
+        ///<returns> A vector with all modules loaded by the process. </returns>
         std::vector<process_module> process_modules::get_all_modules()
         {
             using namespace misc;
@@ -191,10 +240,23 @@ namespace resurgence
             }
             return modules;
         }
+
+        ///<summary>
+        /// Get main module.
+        ///<summary>
+        ///<returns> The main module. </returns>
         process_module process_modules::get_main_module()
         {
             return get_module_by_load_order(0);
         }
+
+        ///<summary>
+        /// Get module by name.
+        ///<summary>
+        ///<param name="name"> The name. </param>
+        ///<returns> 
+        /// The module. 
+        ///</returns>
         process_module process_modules::get_module_by_name(const std::wstring& name)
         {
             using namespace misc;
@@ -264,6 +326,14 @@ namespace resurgence
             }
             return mod;
         }
+
+        ///<summary>
+        /// Get the module that contains the target address.
+        ///<summary>
+        ///<param name="address"> The address. </param>
+        ///<returns> 
+        /// The module. 
+        ///</returns>
         process_module process_modules::get_module_by_address(const std::uint8_t* address)
         {
             using namespace misc;
@@ -321,6 +391,14 @@ namespace resurgence
             }
             return mod;
         }
+
+        ///<summary>
+        /// Get module by load order.
+        ///<summary>
+        ///<param name="i"> The module number. </param>
+        ///<returns> 
+        /// The module. 
+        ///</returns>
         process_module process_modules::get_module_by_load_order(uint32_t i)
         {
             process_module mod;
@@ -350,19 +428,54 @@ namespace resurgence
             }
         #endif
         }
+
+        ///<summary>
+        /// Injects a module.
+        ///<summary>
+        ///<param name="path">          The module path. </param>
+        ///<param name="injectionType"> The injection type. </param>
+        ///<param name="flags">         The injection flags. </param>
+        ///<param name="module">        The injected module entry. </param>
+        ///<returns> 
+        /// The status code. 
+        ///</returns>
         NTSTATUS process_modules::inject_module(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module /*= nullptr*/)
         {
             _process->ensure_access(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD);
 
+            NTSTATUS status = STATUS_UNSUCCESSFUL;
+            process_module mod;
+
             switch(_process->get_platform()) {
                 case platform_x86:
-                    return inject_module32(path, injectionType, flags, module);
+                    status = inject_module32(path, injectionType, &mod);
                 case platform_x64:
-                    return inject_module64(path, injectionType, flags, module);
+                    status = inject_module64(path, injectionType, &mod);
             }
-            return STATUS_UNSUCCESSFUL;
+            if(NT_SUCCESS(status)) {
+                //
+                // TODO: Post injection stuff here
+                //
+                //if(flags & INJECTION_HIDE_MODULE) {
+                //    mod.unlink();
+                //}
+                //if(flags & INJECTION_ERASE_HEADERS) {
+                //    mod.erase_headers();
+                //}
+            }
+            return status;
         }
-        NTSTATUS process_modules::inject_module32(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module)
+
+        ///<summary>
+        /// [Internal] Injects a module on a x86 process.
+        ///<summary>
+        ///<param name="path">          The module path. </param>
+        ///<param name="injectionType"> The injection type. </param>
+        ///<param name="module">        The injected module entry. </param>
+        ///<returns> 
+        /// The status code. 
+        ///</returns>
+        NTSTATUS process_modules::inject_module32(const std::wstring& path, uint32_t injectionType, process_module* module)
         {
             switch(injectionType) {
                 case INJECTION_TYPE_LDRLOADLL:
@@ -458,7 +571,17 @@ namespace resurgence
                 return ret;
             }
         }
-        NTSTATUS process_modules::inject_module64(const std::wstring& path, uint32_t injectionType, uint32_t flags, process_module* module)
+
+        ///<summary>
+        /// [Internal] Injects a module on a x86 process.
+        ///<summary>
+        ///<param name="path">          The module path. </param>
+        ///<param name="injectionType"> The injection type. </param>
+        ///<param name="module">        The injected module entry. </param>
+        ///<returns> 
+        /// The status code. 
+        ///</returns>
+        NTSTATUS process_modules::inject_module64(const std::wstring& path, uint32_t injectionType, process_module* module)
         {
             switch(injectionType) {
                 case INJECTION_TYPE_LDRLOADLL:
@@ -501,7 +624,7 @@ namespace resurgence
 
                 auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
-                if(NT_SUCCESS(ret) && module) {
+                if(NT_SUCCESS(ret)) {
                     HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
 
                     *module = get_module_by_address((uint8_t*)handle);
@@ -553,7 +676,7 @@ namespace resurgence
 
                 auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
-                if(NT_SUCCESS(ret) && module) {
+                if(NT_SUCCESS(ret)) {
                     HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
 
                     *module = get_module_by_address((uint8_t*)handle);

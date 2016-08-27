@@ -13,7 +13,7 @@ namespace resurgence
     namespace misc
     {
         ///<summary>
-        /// Gets the message associated with a status value 
+        /// Gets the message associated with a status value.
         ///</summary>
         ///<param name="status"> The status code. </param>
         ///<returns> 
@@ -1059,18 +1059,19 @@ namespace resurgence
 
             return NtOpenProcess(handle, access, &objAttr, &cid);
         }
-
         ///<summary>
         /// Checks if the process is running under WOW64.
         ///</summary>
         ///<param name="process"> The target process. </param>
+        ///<param name="pebAddress"> The address of the x86 PEB. </param>
         ///<returns> 
         /// True if the process is a wow64 process.
         ///</returns>
-        bool winnt::process_is_wow64(HANDLE process)
+        bool winnt::process_is_wow64(HANDLE process, PPEB32* pebAddress /*= nullptr*/)
         {
             PULONG_PTR buffer = (PULONG_PTR)query_process_information(process, ProcessWow64Information);
             bool iswow64 = *buffer != 0;
+            if(pebAddress) *pebAddress = (PPEB32)*buffer;
             free_local_buffer(buffer);
             return iswow64;
         }
@@ -1110,7 +1111,7 @@ namespace resurgence
         ///<param name="exitCode"> The exit code. </param>
         void winnt::terminate_process(HANDLE process, uint32_t exitCode)
         {
-            TerminateProcess(process, exitCode);
+            NtTerminateProcess(process, exitCode);
         }
     }
 }

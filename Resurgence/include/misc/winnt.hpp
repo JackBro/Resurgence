@@ -25,13 +25,13 @@ namespace resurgence
         {
         public:
             ///<summary>
-            /// Gets the message associated with a status value 
+            /// Gets the message associated with a status value.
             ///</summary>
             ///<param name="status"> The status code. </param>
             ///<returns> 
             /// A string containing the message.
             ///</returns>
-            static std::wstring     get_status_message(NTSTATUS status);
+            static std::wstring get_status_message(NTSTATUS status);
 
             //-----------------------------------------------
             // System routines
@@ -44,7 +44,7 @@ namespace resurgence
             ///<returns> 
             /// The required buffer size.
             ///</returns>
-            static size_t           query_required_size(SYSTEM_INFORMATION_CLASS information);
+            static size_t query_required_size(SYSTEM_INFORMATION_CLASS information);
 
             ///<summary>
             /// Gets the required size needed for a NtQueryInformationProcess call.
@@ -53,7 +53,7 @@ namespace resurgence
             ///<returns> 
             /// The required buffer size.
             ///</returns>
-            static size_t           query_required_size(PROCESS_INFORMATION_CLASSEX information);
+            static size_t query_required_size(PROCESS_INFORMATION_CLASSEX information);
 
             ///<summary>
             /// Gets the required size needed for a NtQueryObject call.
@@ -62,7 +62,7 @@ namespace resurgence
             ///<returns> 
             /// The required buffer size.
             ///</returns>
-            static size_t           query_required_size(OBJECT_INFORMATION_CLASS information);
+            static size_t query_required_size(OBJECT_INFORMATION_CLASS information);
 
             ///<summary>
             /// Query system information.
@@ -74,7 +74,7 @@ namespace resurgence
             ///<remarks>
             /// The returned buffer, if not null, must be freed with free_local_buffer.
             ///</remarks>
-            static uint8_t*         query_system_information(SYSTEM_INFORMATION_CLASS information);
+            static uint8_t* query_system_information(SYSTEM_INFORMATION_CLASS information);
 
             ///<summary>
             /// Query process information.
@@ -86,7 +86,7 @@ namespace resurgence
             ///<remarks>
             /// The returned buffer, if not null, must be freed with free_local_buffer.
             ///</remarks>
-            static uint8_t*         query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information);
+            static uint8_t* query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information);
 
             ///<summary>
             /// Query object information.
@@ -98,7 +98,7 @@ namespace resurgence
             ///<remarks>
             /// The returned buffer, if not null, must be freed with free_local_buffer.
             ///</remarks>
-            static uint8_t*         query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information);
+            static uint8_t* query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information);
 
             ///<summary>
             /// Enumerates system modules (drivers).
@@ -110,7 +110,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         enumerate_system_modules(system_module_enumeration_callback callback);
+            static NTSTATUS enumerate_system_modules(system_module_enumeration_callback callback);
 
             ///<summary>
             /// Enumerates system objects.
@@ -125,7 +125,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback);
+            static NTSTATUS enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback);
 
             ///<summary>
             /// Enumerates running processes.
@@ -137,7 +137,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         enumerate_processes(process_enumeration_callback callback);
+            static NTSTATUS enumerate_processes(process_enumeration_callback callback);
 
             ///<summary>
             /// Enumerates process' x64 modules.
@@ -152,7 +152,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         enumerate_process_modules(HANDLE process, module_enumeration_callback callback);
+            static NTSTATUS enumerate_process_modules(HANDLE process, module_enumeration_callback callback);
 
             ///<summary>
             /// Enumerates process' x86 modules.
@@ -167,7 +167,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         enumerate_process_modules32(HANDLE process, module_enumeration_callback32 callback);
+            static NTSTATUS enumerate_process_modules32(HANDLE process, module_enumeration_callback32 callback);
 
             ///<summary>
             /// Checks if a object exists on the system.
@@ -178,7 +178,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         object_exists(const std::wstring& root, const std::wstring& object, bool* found);
+            static NTSTATUS object_exists(const std::wstring& root, const std::wstring& object, bool* found);
 
             ///<summary>
             /// Queries information about a system module.
@@ -188,7 +188,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         get_system_module_info(const std::string& module, PRTL_PROCESS_MODULE_INFORMATION info);
+            static NTSTATUS get_system_module_info(const std::string& module, PRTL_PROCESS_MODULE_INFORMATION info);
 
             //-----------------------------------------------
             // File routines
@@ -203,7 +203,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         write_file(const std::wstring& path, uint8_t* buffer, size_t length);
+            static NTSTATUS write_file(const std::wstring& path, uint8_t* buffer, size_t length);
 
             ///<summary>
             /// Copy a file.
@@ -213,7 +213,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         copy_file(const std::wstring& oldPath, const std::wstring& newPath);
+            static NTSTATUS copy_file(const std::wstring& oldPath, const std::wstring& newPath);
 
             ///<summary>
             /// Translates a relative path to full path.
@@ -222,7 +222,7 @@ namespace resurgence
             ///<returns> 
             /// The full path.
             ///</returns>
-            static std::wstring     get_full_path(const std::wstring& path);
+            static std::wstring get_full_path(const std::wstring& path);
 
             ///<summary>
             /// Translates a NT path to DOS path.
@@ -231,7 +231,7 @@ namespace resurgence
             ///<returns> 
             /// The DOS path (i.e "C:\Windows\system32\ntoskrnl.exe").
             ///</returns>
-            static std::wstring     get_dos_path(const std::wstring& path);
+            static std::wstring get_dos_path(const std::wstring& path);
 
             ///<summary>
             /// Query mounted devices (i.e C:\, D:\ etc).
@@ -240,7 +240,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         query_mounted_drives(std::vector<std::wstring>& letters);
+            static NTSTATUS query_mounted_drives(std::vector<std::wstring>& letters);
 
             ///<summary>
             /// Gets the symbolic device link from a driver letter.
@@ -250,7 +250,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink);
+            static NTSTATUS get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink);
 
             //-----------------------------------------------
             // Driver related routines
@@ -265,7 +265,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         create_service(SC_HANDLE manager, const std::wstring& driverName, const std::wstring& driverPath);
+            static NTSTATUS create_service(SC_HANDLE manager, const std::wstring& driverName, const std::wstring& driverPath);
 
             ///<summary>
             /// Starts a driver service.
@@ -275,7 +275,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         start_driver(SC_HANDLE manager, const std::wstring& driverName);
+            static NTSTATUS start_driver(SC_HANDLE manager, const std::wstring& driverName);
 
             ///<summary>
             /// Stops a driver service.
@@ -285,7 +285,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         stop_driver(SC_HANDLE manager, const std::wstring& driverName);
+            static NTSTATUS stop_driver(SC_HANDLE manager, const std::wstring& driverName);
 
             ///<summary>
             /// Gets a driver device handle.
@@ -295,7 +295,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         get_driver_device(const std::wstring& driver, PHANDLE deviceHandle);
+            static NTSTATUS get_driver_device(const std::wstring& driver, PHANDLE deviceHandle);
 
             ///<summary>
             /// Removes a service from the database.
@@ -305,7 +305,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         delete_service(SC_HANDLE manager, const std::wstring& driverName);
+            static NTSTATUS delete_service(SC_HANDLE manager, const std::wstring& driverName);
 
             ///<summary>
             /// Loads a driver.
@@ -316,7 +316,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         load_driver(const std::wstring& driverName, const std::wstring& driverPath, PHANDLE deviceHandle);
+            static NTSTATUS load_driver(const std::wstring& driverName, const std::wstring& driverPath, PHANDLE deviceHandle);
 
             ///<summary>
             /// Unloads a driver.
@@ -325,7 +325,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         unload_driver(const std::wstring& driverName);
+            static NTSTATUS unload_driver(const std::wstring& driverName);
 
             //-----------------------------------------------
             // Memory routines
@@ -342,7 +342,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection);
+            static NTSTATUS allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection);
 
             ///<summary>
             /// Change virtual memory protection.
@@ -355,7 +355,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection);
+            static NTSTATUS protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection);
 
             ///<summary>
             /// Frees virtual memory.
@@ -367,7 +367,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free);
+            static NTSTATUS free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free);
 
             ///<summary>
             /// Read virtual memory.
@@ -379,7 +379,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         read_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size);
+            static NTSTATUS read_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size);
 
             ///<summary>
             /// Write virtual memory.
@@ -391,7 +391,7 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         write_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size);
+            static NTSTATUS write_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size);
 
             //-----------------------------------------------
             // Process routines
@@ -406,16 +406,17 @@ namespace resurgence
             ///<returns> 
             /// The status code.
             ///</returns>
-            static NTSTATUS         open_process(PHANDLE handle, uint32_t pid, uint32_t access);
+            static NTSTATUS open_process(PHANDLE handle, uint32_t pid, uint32_t access);
 
             ///<summary>
             /// Checks if the process is running under WOW64.
             ///</summary>
             ///<param name="process"> The target process. </param>
+            ///<param name="pebAddress"> The address of the x86 PEB. </param>
             ///<returns> 
             /// True if the process is a wow64 process.
             ///</returns>
-            static bool             process_is_wow64(HANDLE process);
+            static bool process_is_wow64(HANDLE process, PPEB32* pebAddress = nullptr);
 
             ///<summary>
             /// Creates a thread.
@@ -428,14 +429,14 @@ namespace resurgence
             /// On success the thread exit status if wait is true. 0 if wait is false.
             /// On failure the status code.
             ///</returns>
-            static ULONG            create_thread(HANDLE process, LPVOID startAddress, LPVOID startParameter, bool wait);
+            static ULONG create_thread(HANDLE process, LPVOID startAddress, LPVOID startParameter, bool wait);
 
             ///<summary>
             /// Terminate a process.
             ///</summary>
             ///<param name="process">  The target process. </param>
             ///<param name="exitCode"> The exit code. </param>
-            static void             terminate_process(HANDLE process, uint32_t exitCode);
+            static void terminate_process(HANDLE process, uint32_t exitCode);
         };
     }
 }

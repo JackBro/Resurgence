@@ -14,22 +14,45 @@ namespace resurgence
 {
     namespace system
     {
+        ///<summary>
+        /// Constructor. 
+        ///</summary>
+        ///<param name="path"> The driver path. </param>
         driver::driver(const std::wstring& path)
             : _handle(INVALID_HANDLE_VALUE)
         {
             _path = misc::winnt::get_full_path(path);
         }
+
+        ///<summary>
+        /// Destructor. 
+        ///</summary>
         driver::~driver()
         {
             if(is_loaded())
                 NtClose(_handle);
             _handle = INVALID_HANDLE_VALUE;
         }
+
+        ///<summary>
+        /// Check if the driver is already loaded on the system.
+        ///</summary>
+        ///<returns> 
+        /// TRUE if loaded, FALSE otherwise.
+        ///</returns>
         BOOL driver::is_loaded()
         {
             open();
             return _handle != INVALID_HANDLE_VALUE;
         }
+
+        ///<summary>
+        /// Loads the driver.
+        ///</summary>
+        ///<param name="method"> The load method. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::load(driver_load_method method)
         {
             NTSTATUS status = STATUS_SUCCESS;
@@ -47,6 +70,7 @@ namespace resurgence
             }
             return status;
         }
+
         NTSTATUS driver::open()
         {
             NTSTATUS status = STATUS_NO_SUCH_DEVICE;
@@ -61,6 +85,13 @@ namespace resurgence
             return status;
         }
 
+        ///<summary>
+        /// Query the OS version.
+        ///</summary>
+        ///<param name="version"> The version info. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::query_version_info(PVERSION_INFO version)
         {
             DWORD ioBytes;
@@ -73,6 +104,18 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Allocate virtual memory.
+        ///</summary>
+        ///<param name="pid">         The process id. </param>
+        ///<param name="baseAddress"> The allocation base. </param>
+        ///<param name="regionSize"> The allocation size. </param>
+        ///<param name="allocation"> The allocation flags. </param>
+        ///<param name="protection"> The protection flags. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::allocate_virtual_memory(uint32_t pid, uint8_t** baseAddress, size_t* regionSize, uint32_t allocation, uint32_t protection)
         {
             DWORD           ioBytes;
@@ -99,6 +142,18 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Allocate virtual memory.
+        ///</summary>
+        ///<param name="pid">           The process id. </param>
+        ///<param name="baseAddress">   The start address. </param>
+        ///<param name="regionSize">    The region size. </param>
+        ///<param name="newProtection"> The new protection. </param>
+        ///<param name="oldProtection"> The old protection. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::protect_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t newProtection, uint32_t* oldProtection)
         {
             DWORD ioBytes;
@@ -124,6 +179,17 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Free virtual memory.
+        ///</summary>
+        ///<param name="pid">         The process id. </param>
+        ///<param name="baseAddress"> The start address. </param>
+        ///<param name="regionSize">  The region size. </param>
+        ///<param name="freeType">    The free type. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::free_virtual_memory(uint32_t pid, uint8_t* baseAddress, size_t regionSize, uint32_t freeType)
         {
             DWORD ioBytes;
@@ -146,6 +212,16 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Query memory information.
+        ///</summary>
+        ///<param name="pid">         The process id. </param>
+        ///<param name="baseAddress"> The base address. </param>
+        ///<param name="memoryInfo">  The returned memory information. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::query_virtual_memory(uint32_t pid, uint8_t* baseAddress, PMEMORY_BASIC_INFORMATION memoryInfo)
         {
             if(!memoryInfo) return set_last_ntstatus(STATUS_INVALID_PARAMETER);
@@ -167,6 +243,17 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Read virtual memory.
+        ///</summary>
+        ///<param name="pid">         The process id. </param>
+        ///<param name="baseAddress"> The base address. </param>
+        ///<param name="buffer">      The buffer. </param>
+        ///<param name="length">      The buffer size. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::read_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
         {
             DWORD           ioBytes;
@@ -186,6 +273,17 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Write virtual memory.
+        ///</summary>
+        ///<param name="pid">         The process id. </param>
+        ///<param name="baseAddress"> The base address. </param>
+        ///<param name="buffer">      The buffer. </param>
+        ///<param name="length">      The buffer size. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::write_virtual_memory(uint32_t pid, const uint8_t* baseAddress, uint8_t* buffer, size_t length)
         {
             DWORD           ioBytes;
@@ -206,6 +304,15 @@ namespace resurgence
             return STATUS_SUCCESS;
         }
 
+        ///<summary>
+        /// Opens a process.
+        ///</summary>
+        ///<param name="pid">    The process id. </param>
+        ///<param name="access"> The desired access. </param>
+        ///<param name="handle"> The returned handle. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::open_process(uint32_t pid, uint32_t access, PHANDLE handle)
         {
             DWORD ioBytes;
@@ -229,6 +336,16 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Opens the process that contains the target thread.
+        ///</summary>
+        ///<param name="tid">    The thread id. </param>
+        ///<param name="access"> The desired access. </param>
+        ///<param name="handle"> The returned handle. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::open_process_with_thread(uint32_t tid, uint32_t access, PHANDLE handle)
         {
             DWORD ioBytes;
@@ -251,6 +368,16 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Opens a thread.
+        ///</summary>
+        ///<param name="tid">    The thread id. </param>
+        ///<param name="access"> The desired access. </param>
+        ///<param name="handle"> The returned handle. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::open_thread(uint32_t tid, uint32_t access, PHANDLE handle)
         {
             DWORD ioBytes;
@@ -272,6 +399,17 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Grants access to a handle.
+        ///</summary>
+        ///<param name="pid">       The process id (current process on most cases). </param>
+        ///<param name="handle">    The target handle. </param>
+        ///<param name="access">    The desired access. </param>
+        ///<param name="oldAccess"> The old access. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::grant_handle_access(uint32_t pid, HANDLE handle, uint32_t access, uint32_t* oldAccess)
         {
             DWORD           ioBytes;
@@ -293,6 +431,15 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Set process protection.
+        ///</summary>
+        ///<param name="pid">             The process id. </param>
+        ///<param name="protectionLevel"> The protection level (0: None. 1: Light. 2: Full). </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::set_process_protection(uint32_t pid, uint32_t protectionLevel)
         {
             DWORD           ioBytes;
@@ -310,6 +457,15 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Enables or disables DEP.
+        ///</summary>
+        ///<param name="pid">    The process id. </param>
+        ///<param name="enable"> The DEP state. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::set_process_dep(uint32_t pid, bool enable)
         {
             DWORD           ioBytes;
@@ -327,6 +483,18 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Injects a module.
+        ///</summary>
+        ///<param name="pid">          The process id. </param>
+        ///<param name="modulePath">   The module path. </param>
+        ///<param name="eraseHeaders"> Erase headers. </param>
+        ///<param name="hideModule">   Hide module. </param>
+        ///<param name="baseAddress">  The returned module base. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::inject_module(uint32_t pid, const std::wstring& modulePath, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
         {
             DWORD           ioBytes;
@@ -352,6 +520,19 @@ namespace resurgence
 
             return STATUS_SUCCESS;
         }
+
+        ///<summary>
+        /// Maps a module to the process.
+        ///</summary>
+        ///<param name="pid">          The process id. </param>
+        ///<param name="moduleBase">   The module base. </param>
+        ///<param name="moduleSize">   The module size. </param>
+        ///<param name="eraseHeaders"> Erase headers. </param>
+        ///<param name="hideModule">   Hide module. </param>
+        ///<param name="baseAddress">  The returned module base. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
         NTSTATUS driver::mmap_module(uint32_t pid, const uint8_t* moduleBase, size_t moduleSize, bool eraseHeaders, bool hideModule, uintptr_t* baseAddress)
         {
             DWORD ioBytes;
