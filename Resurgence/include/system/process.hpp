@@ -60,9 +60,14 @@ namespace resurgence
             bool                                is_system_idle_process() const;
             bool                                is_system_process() const;
             bool                                is_valid() const;
+            bool                                has_exited() const;
+            bool                                is_being_debugged();
+            bool                                is_protected();
 
             NTSTATUS                            open(uint32_t access);
             void                                terminate(uint32_t exitCode = 0);
+            NTSTATUS                            get_exit_code() const;
+            std::wstring                        get_command_line();
 
             process_memory*                     memory() { return &_memory; }
             process_modules*                    modules() { return &_modules; }

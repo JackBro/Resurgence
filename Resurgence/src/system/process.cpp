@@ -2,6 +2,7 @@
 #include <misc/exceptions.hpp>
 #include <misc/winnt.hpp>
 
+#include <bitset>
 #include <Shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -89,10 +90,11 @@ namespace resurgence
                     handle = _handle.get();
 
                 if(handle) {
+                    PPEB32 peb32;
                     auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(handle, ProcessBasicInformation);
                     auto fileName = (PUNICODE_STRING)winnt::query_process_information(handle, ProcessImageFileName);
 
-                    _info.target_platform = winnt::process_is_wow64(handle) ? platform_x86 : platform_x64;
+                    _info.target_platform = winnt::process_is_wow64(handle, &peb32) ? platform_x86 : platform_x64;
                     _info.parent_pid = static_cast<uint32_t>(basic_info->InheritedFromUniqueProcessId);
                     _info.peb_address = reinterpret_cast<uintptr_t>(basic_info->PebBaseAddress);
                     _info.path = winnt::get_dos_path(std::wstring(fileName->Buffer, fileName->Length / sizeof(wchar_t)));
@@ -100,7 +102,7 @@ namespace resurgence
 
                 #ifdef _WIN64
                     if(_info.target_platform == platform_x86) {
-                        _info.wow64peb_address = reinterpret_cast<uint32_t>(PTR_ADD(basic_info->PebBaseAddress, PAGE_SIZE));
+                        _info.wow64peb_address = reinterpret_cast<uint32_t>(peb32);
                     } else {
                         _info.wow64peb_address = 0;
                     }
@@ -135,7 +137,7 @@ namespace resurgence
             std::vector<process> processes;
 
             misc::winnt::enumerate_processes([&](PSYSTEM_PROCESSES_INFORMATION info) -> NTSTATUS {
-                if(info->ImageName.Length > 0 && !wcscmp(std::data(name), info->ImageName.Buffer))
+                if(info->ImageName.Length > 0 && !_wcsicmp(std::data(name), info->ImageName.Buffer))
                     processes.emplace_back(static_cast<uint32_t>((ULONG_PTR)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
@@ -202,6 +204,25 @@ namespace resurgence
         {
             return _info.pid != (uint32_t)-1;
         }
+        bool process::has_exited() const
+        {
+            return WaitForSingleObject(_handle.get(), 0) != WAIT_TIMEOUT;
+        }
+        bool process::is_being_debugged()
+        {
+            ensure_access(PROCESS_VM_READ);
+
+            return !!memory()->read<BOOLEAN>(PTR_ADD(_info.peb_address, FIELD_OFFSET(PEB, BeingDebugged)));
+        }
+        bool process::is_protected()
+        {
+            ensure_access(PROCESS_VM_READ);
+
+            std::bitset<8> bitfield(memory()->read<BOOLEAN>(PTR_ADD(_info.peb_address, FIELD_OFFSET(PEB, BitField))));
+
+
+            return bitfield.test(1) || bitfield.test(7);
+        }
         NTSTATUS process::open(uint32_t access)
         {
             if(is_current_process())
@@ -238,6 +259,54 @@ namespace resurgence
             ensure_access(PROCESS_TERMINATE);
 
             misc::winnt::terminate_process(_handle.get(), exitCode);
+        }
+        NTSTATUS process::get_exit_code() const
+        {
+            DWORD exitCode = 0;
+            GetExitCodeProcess(_handle.get(), &exitCode);
+            return (NTSTATUS)exitCode;
+        }
+        std::wstring process::get_command_line()
+        {
+            ensure_access(PROCESS_VM_READ);
+
+        #ifdef _WIN64
+            if(_info.target_platform == platform_x86) {
+
+                ULONG address;
+                RTL_USER_PROCESS_PARAMETERS32 parameters;
+
+                //
+                // Read ProcessParameters address
+                // 
+                address = memory()->read<ULONG>(
+                    PTR_ADD(_info.wow64peb_address,
+                        FIELD_OFFSET(PEB32, ProcessParameters))
+                    );
+
+                parameters = memory()->read<RTL_USER_PROCESS_PARAMETERS32>((uint8_t*)address);
+
+                return memory()->read_unicode_string(parameters.CommandLine.Buffer, parameters.CommandLine.Length / sizeof(wchar_t));
+            } else
+        #endif
+        #ifdef _WIN64
+            {
+                ULONGLONG address;
+                RTL_USER_PROCESS_PARAMETERS parameters;
+
+                //
+                // Read ProcessParameters address
+                // 
+                address = memory()->read<ULONGLONG>(
+                    PTR_ADD(_info.peb_address,
+                        FIELD_OFFSET(PEB, ProcessParameters))
+                    );
+
+                parameters = memory()->read<RTL_USER_PROCESS_PARAMETERS>((uint8_t*)address);
+
+                return memory()->read_unicode_string(parameters.CommandLine.Buffer, parameters.CommandLine.Length / sizeof(wchar_t));
+            }
+        #endif
         }
     }
 }
