@@ -54,10 +54,16 @@
     <ClInclude Include="include\system\portable_executable.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\nt_api.hpp">
+    <ClInclude Include="include\system\process_threads.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\system\process_threads.hpp">
+    <ClInclude Include="include\native_enums.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\native_structs.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\native_functions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
