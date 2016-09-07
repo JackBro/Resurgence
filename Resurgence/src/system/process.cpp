@@ -1,6 +1,6 @@
 #include <system/process.hpp>
 #include <misc/exceptions.hpp>
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 
 #include <bitset>
 #include <Shlwapi.h>
@@ -14,7 +14,8 @@ namespace resurgence
             : _handle(nullptr),
             _memory(this),
             _modules(this),
-            _threads(this)
+            _threads(this),
+            _symbols(this)
         {
             RtlZeroMemory(&_info, sizeof(_info));
             _info.pid = (uint32_t)-1;
@@ -23,11 +24,13 @@ namespace resurgence
             : _handle(nullptr),
             _memory(this),
             _modules(this),
-            _threads(this)
+            _threads(this),
+            _symbols(this)
         {
             RtlZeroMemory(&_info, sizeof(_info));
 
             _info.pid = pid;
+            _info.current_process = GetCurrentProcessId() == pid;
 
             if(!is_system_idle_process()) {
                 if(!is_current_process()) {
@@ -42,7 +45,8 @@ namespace resurgence
         process::process(const process& rhs)
             : _memory(this),
             _modules(this),
-            _threads(this)
+            _threads(this),
+            _symbols(this)
         {
             _handle = rhs._handle;
             _info = rhs._info;
@@ -52,6 +56,7 @@ namespace resurgence
             _memory = process_memory(this);
             _modules = process_modules(this);
             _threads = process_threads(this);
+            _symbols = symbol_system(this);
             _handle = rhs._handle;
             _info = rhs._info;
             return *this;
@@ -59,9 +64,6 @@ namespace resurgence
         void process::get_process_info()
         {
             using namespace misc;
-
-            _info.current_process
-                = GetCurrentProcessId() == _info.pid;
 
             if(is_system_idle_process()) {
                 _info.target_platform = platform_x64;
@@ -76,11 +78,11 @@ namespace resurgence
                 _info.peb_address = 0;
                 _info.wow64peb_address = 0;
                 _info.name = L"System Process";
-                winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
+                native::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
                     wchar_t processPath[MAX_PATH];
                     ZeroMemory(processPath, sizeof(processPath));
                     MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (LPCCH)info->FullPathName, 256, processPath, MAX_PATH);
-                    _info.path = winnt::get_dos_path(processPath);
+                    _info.path = native::get_dos_path(processPath);
                     return STATUS_SUCCESS;
                 });
             } else {
@@ -88,21 +90,21 @@ namespace resurgence
                 auto handle = HANDLE{nullptr};
 
                 if(!_handle.is_valid()) {
-                    winnt::open_process(&handle, get_pid(), PROCESS_QUERY_LIMITED_INFORMATION);
+                    native::open_process(&handle, get_pid(), PROCESS_QUERY_LIMITED_INFORMATION);
                     needDispose = true;
                 } else
                     handle = _handle.get();
 
                 if(handle) {
                     PPEB32 peb32;
-                    auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(handle, ProcessBasicInformation);
-                    auto fileName = (PUNICODE_STRING)winnt::query_process_information(handle, ProcessImageFileName);
+                    auto basic_info = (PPROCESS_BASIC_INFORMATION)native::query_process_information(handle, ProcessBasicInformation);
+                    auto fileName = (PUNICODE_STRING)native::query_process_information(handle, ProcessImageFileName);
 
-                    _info.target_platform = winnt::process_is_wow64(handle, &peb32) ? platform_x86 : platform_x64;
-                    _info.parent_pid = static_cast<uint32_t>(basic_info->InheritedFromUniqueProcessId);
-                    _info.peb_address = reinterpret_cast<uintptr_t>(basic_info->PebBaseAddress);
-                    _info.path = winnt::get_dos_path(std::wstring(fileName->Buffer, fileName->Length / sizeof(wchar_t)));
-                    _info.name = PathFindFileNameW(fileName->Buffer);
+                    _info.target_platform   = native::process_is_wow64(handle, &peb32) ? platform_x86 : platform_x64;
+                    _info.parent_pid        = static_cast<uint32_t>(basic_info->InheritedFromUniqueProcessId);
+                    _info.peb_address       = reinterpret_cast<uintptr_t>(basic_info->PebBaseAddress);
+                    _info.path              = native::get_dos_path(std::wstring(fileName->Buffer, fileName->Length / sizeof(wchar_t)));
+                    _info.name              = PathFindFileNameW(fileName->Buffer);
 
                 #ifdef _WIN64
                     if(_info.target_platform == platform_x86) {
@@ -110,12 +112,19 @@ namespace resurgence
                     } else {
                         _info.wow64peb_address = 0;
                     }
-                #else 
-                    _info.wow64peb_address = _info.peb_address;
+                #else
+                    if(_info.target_platform == platform_x86) {
+                        _info.wow64peb_address  = reinterpret_cast<uint32_t>(peb32);
+                        _info.peb_address       = _info.peb_address - PAGE_SIZE;
+                    } else {
+                        _info.wow64peb_address  = 0;
+                        _info.peb_address       = 0;
+                    }
                 #endif
 
                     free_local_buffer(basic_info);
                     free_local_buffer(fileName);
+                    
                     if(needDispose)
                         NtClose(handle);
                 }
@@ -125,7 +134,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION info) -> NTSTATUS {
+            native::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION info) -> NTSTATUS {
                 processes.push_back(process((uint32_t)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
             });
@@ -140,7 +149,7 @@ namespace resurgence
         {
             std::vector<process> processes;
 
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION info) -> NTSTATUS {
+            native::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION info) -> NTSTATUS {
                 if(info->ImageName.Length > 0 && !_wcsicmp(std::data(name), info->ImageName.Buffer))
                     processes.emplace_back(static_cast<uint32_t>((ULONG_PTR)info->UniqueProcessId));
                 return STATUS_NOT_FOUND;
@@ -233,7 +242,7 @@ namespace resurgence
                 return STATUS_SUCCESS;
 
             if(_handle.is_valid()) {
-                auto handle_info = (POBJECT_BASIC_INFORMATION)misc::winnt::query_object_information(_handle.get(), ObjectBasicInformation);
+                auto handle_info = (POBJECT_BASIC_INFORMATION)native::query_object_information(_handle.get(), ObjectBasicInformation);
 
                 if(handle_info) {
                     //
@@ -250,7 +259,7 @@ namespace resurgence
             }
 
             auto handle = HANDLE{nullptr};
-            auto status = misc::winnt::open_process(&handle, get_pid(), PROCESS_DEFAULT_ACCESS | access);
+            auto status = native::open_process(&handle, get_pid(), PROCESS_DEFAULT_ACCESS | access);
 
             if(NT_SUCCESS(status)) {
                 _handle = misc::safe_process_handle(handle);
@@ -262,7 +271,7 @@ namespace resurgence
         {
             ensure_access(PROCESS_TERMINATE);
 
-            misc::winnt::terminate_process(_handle.get(), exitCode);
+            native::terminate_process(_handle.get(), exitCode);
         }
         NTSTATUS process::get_exit_code() const
         {
@@ -273,28 +282,24 @@ namespace resurgence
         std::wstring process::get_command_line()
         {
             ensure_access(PROCESS_VM_READ);
-
-        #ifdef _WIN64
+            
             if(_info.target_platform == platform_x86) {
 
                 ULONG address;
-                RTL_USER_PROCESS_PARAMETERS32 parameters;
+                RTL_USER_PROCESS_PARAMETERS parameters;
 
                 //
                 // Read ProcessParameters address
                 // 
                 address = memory()->read<ULONG>(
-                    PTR_ADD(_info.wow64peb_address,
-                        FIELD_OFFSET(PEB32, ProcessParameters))
+                    PTR_ADD(_info.peb_address,
+                        FIELD_OFFSET(PEB, ProcessParameters))
                     );
 
-                parameters = memory()->read<RTL_USER_PROCESS_PARAMETERS32>((uint8_t*)address);
+                parameters = memory()->read<RTL_USER_PROCESS_PARAMETERS>((uint8_t*)address);
 
                 return memory()->read_unicode_string(parameters.CommandLine.Buffer, parameters.CommandLine.Length / sizeof(wchar_t));
-            } else
-        #endif
-        #ifdef _WIN64
-            {
+            } else {
                 ULONGLONG address;
                 RTL_USER_PROCESS_PARAMETERS parameters;
 
@@ -310,7 +315,6 @@ namespace resurgence
 
                 return memory()->read_unicode_string(parameters.CommandLine.Buffer, parameters.CommandLine.Length / sizeof(wchar_t));
             }
-        #endif
         }
     }
 }

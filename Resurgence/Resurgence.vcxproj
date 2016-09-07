@@ -22,10 +22,11 @@
     <ClInclude Include="include\headers.hpp" />
     <ClInclude Include="include\misc\exceptions.hpp" />
     <ClInclude Include="include\misc\safe_handle.hpp" />
-    <ClInclude Include="include\misc\winnt.hpp" />
+    <ClInclude Include="include\misc\native.hpp" />
     <ClInclude Include="include\native_functions.hpp" />
     <ClInclude Include="include\native_structs.hpp" />
     <ClInclude Include="include\resurgence.hpp" />
+    <ClInclude Include="include\system\symbols\symbol_system.hpp" />
     <ClInclude Include="include\system\driver\driver.hpp" />
     <ClInclude Include="include\system\driver\driver_shellcode.hpp" />
     <ClInclude Include="include\system\driver\TDL\TDL.h" />
@@ -40,7 +41,7 @@
   <ItemGroup>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp" />
     <ClCompile Include="src\misc\safe_handle.cpp" />
-    <ClCompile Include="src\misc\winnt.cpp" />
+    <ClCompile Include="src\misc\native.cpp" />
     <ClCompile Include="src\system\driver\driver.cpp" />
     <ClCompile Include="src\system\driver\driver_shellcode.cpp" />
     <ClCompile Include="src\system\portable_executable.cpp" />
@@ -48,6 +49,7 @@
     <ClCompile Include="src\system\process_memory.cpp" />
     <ClCompile Include="src\system\process_modules.cpp" />
     <ClCompile Include="src\system\process_threads.cpp" />
+    <ClCompile Include="src\system\symbols\symbol_system.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6872536E-3320-48D7-91A2-363B8CA39055}</ProjectGuid>

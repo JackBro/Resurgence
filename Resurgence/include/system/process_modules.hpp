@@ -27,63 +27,63 @@ namespace resurgence
         public:
             ///<summary>
             /// Default ctor.
-            ///<summary>
+            ///</summary>
             process_module();
 
             ///<summary>
             /// x64 module constructor.
-            ///<summary>
+            ///</summary>
             ///<param name="proc">  The owner process. </param>
             ///<param name="entry"> The loader table entry. </param>
             process_module(process* proc, PLDR_DATA_TABLE_ENTRY entry);
 
             ///<summary>
             /// x86 module constructor.
-            ///<summary>
+            ///</summary>
             ///<param name="proc">  The owner process. </param>
             ///<param name="entry"> The loader table entry. </param>
             process_module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry);
 
             ///<summary>
             /// System module constructor.
-            ///<summary>
+            ///</summary>
             ///<param name="proc">  The owner process. </param>
             ///<param name="entry"> The module information. </param>
             process_module(process* proc, PRTL_PROCESS_MODULE_INFORMATION entry);
 
             ///<summary>
             /// Gets the module base.
-            ///<summary>
+            ///</summary>
             const uint8_t* get_base() const { return _base; }
 
             ///<summary>
             /// Gets the module size.
-            ///<summary>
+            ///</summary>
             size_t get_size() const { return _size; }
 
             ///<summary>
             /// Gets the module name.
-            ///<summary>
+            ///</summary>
             const std::wstring& get_name() const { return _name; }
 
             ///<summary>
             /// Gets the module path.
-            ///<summary>
+            ///</summary>
             const std::wstring& get_path() const { return _path; }
 
             ///<summary>
             /// Checks whether the module is valid.
-            ///<summary>
+            ///</summary>
             bool is_valid() const { return _base != nullptr; }
 
             ///<summary>
             /// Gets the portable executable linked with this module.
-            ///<summary>
+            ///</summary>
             const portable_executable& get_pe();
 
             ///<summary>
             /// Get procedure address.
-            ///<summary>
+            ///</summary>
             ///<param name="name">  The function name. </param>
             ///<returns>
             /// The address, 0 on failure.
@@ -105,25 +105,25 @@ namespace resurgence
         public:
             ///<summary>
             /// Default ctor.
-            ///<summary>
+            ///</summary>
             ///<param name="proc"> The owner process. </param>
             process_modules(process* proc);
 
             ///<summary>
             /// Get process modules.
-            ///<summary>
+            ///</summary>
             ///<returns> A vector with all modules loaded by the process. </returns>
             std::vector<process_module> get_all_modules();
 
             ///<summary>
             /// Get main module.
-            ///<summary>
+            ///</summary>
             ///<returns> The main module. </returns>
             process_module get_main_module();
 
             ///<summary>
             /// Get module by name.
-            ///<summary>
+            ///</summary>
             ///<param name="name"> The name. </param>
             ///<returns> 
             /// The module. 
@@ -132,7 +132,7 @@ namespace resurgence
 
             ///<summary>
             /// Get the module that contains the target address.
-            ///<summary>
+            ///</summary>
             ///<param name="address"> The address. </param>
             ///<returns> 
             /// The module. 
@@ -141,7 +141,7 @@ namespace resurgence
 
             ///<summary>
             /// Get module by load order.
-            ///<summary>
+            ///</summary>
             ///<param name="i"> The module number. </param>
             ///<returns> 
             /// The module. 
@@ -150,7 +150,7 @@ namespace resurgence
 
             ///<summary>
             /// Injects a module.
-            ///<summary>
+            ///</summary>
             ///<param name="path">          The module path. </param>
             ///<param name="injectionType"> The injection type. </param>
             ///<param name="flags">         The injection flags. </param>
@@ -164,7 +164,7 @@ namespace resurgence
 
             ///<summary>
             /// [Internal] Injects a module on a x86 process.
-            ///<summary>
+            ///</summary>
             ///<param name="path">          The module path. </param>
             ///<param name="injectionType"> The injection type. </param>
             ///<param name="module">        The injected module entry. </param>
@@ -175,7 +175,7 @@ namespace resurgence
 
             ///<summary>
             /// [Internal] Injects a module on a x86 process.
-            ///<summary>
+            ///</summary>
             ///<param name="path">          The module path. </param>
             ///<param name="injectionType"> The injection type. </param>
             ///<param name="module">        The injected module entry. </param>

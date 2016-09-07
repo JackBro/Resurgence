@@ -1,6 +1,6 @@
 #include <system/driver/driver.hpp>
 #include <system/driver/driver_shellcode.hpp>
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 
 #include <Shlwapi.h>
 
@@ -21,7 +21,7 @@ namespace resurgence
         driver::driver(const std::wstring& path)
             : _handle(INVALID_HANDLE_VALUE)
         {
-            _path = misc::winnt::get_full_path(path);
+            _path = native::get_full_path(path);
         }
 
         ///<summary>
@@ -66,7 +66,7 @@ namespace resurgence
                 if(NT_SUCCESS(status))
                     return open();
             } else {
-                status = misc::winnt::load_driver(RDRV_SYMLINK, _path, &_handle);
+                status = native::load_driver(RDRV_SYMLINK, _path, &_handle);
             }
             return status;
         }
@@ -77,7 +77,7 @@ namespace resurgence
             int tries = 0;
 
             while(tries++ < 10) {
-                status = misc::winnt::get_driver_device(RDRV_SYMLINK, &_handle);
+                status = native::get_driver_device(RDRV_SYMLINK, &_handle);
                 if(NT_SUCCESS(status))
                     break;
                 Sleep(1000);

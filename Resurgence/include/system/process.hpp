@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <misc/safe_handle.hpp>
+#include "symbols/symbol_system.hpp"
 #include "process_memory.hpp"
 #include "process_modules.hpp"
 #include "process_threads.hpp"
@@ -74,8 +75,15 @@ namespace resurgence
             process_modules*                    modules() { return &_modules; }
             process_threads*                    threads() { return &_threads; }
 
+            symbol_system* symbols()
+            {
+                if(!_symbols.is_initialized())
+                    _symbols.initialize();
+                return &_symbols;
+            }
+
         private:
-            void                                get_process_info();
+            void get_process_info();
             
         private:
             process_info                _info;
@@ -83,6 +91,7 @@ namespace resurgence
             process_memory              _memory;
             process_modules             _modules;
             process_threads             _threads;
+            symbol_system               _symbols;
         };
     }
 }

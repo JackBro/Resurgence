@@ -1,4 +1,4 @@
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 #include <misc/safe_handle.hpp>
 #include <misc/exceptions.hpp>
 #include <system/process.hpp>
@@ -10,16 +10,16 @@
 
 namespace resurgence
 {
-    namespace misc
+    namespace native
     {
-        ///<summary>
+        ///</summary>
         /// Gets the message associated with a status value.
         ///</summary>
         ///<param name="status"> The status code. </param>
         ///<returns> 
         /// A string containing the message.
         ///</returns>
-        std::wstring winnt::get_status_message(NTSTATUS status)
+        std::wstring get_status_message(NTSTATUS status)
         {
             HMODULE ntdll = GetModuleHandle(L"ntdll.dll");
 
@@ -34,14 +34,14 @@ namespace resurgence
             return std::wstring(buffer);
         }
 
-        ///<summary>
+        ///</summary>
         /// Gets the required size needed for a NtQuerySystemInformation call.
         ///</summary>
         ///<param name="status"> The information class. </param>
         ///<returns> 
         /// The required buffer size.
         ///</returns>
-        size_t winnt::query_required_size(SYSTEM_INFORMATION_CLASS information)
+        size_t query_required_size(SYSTEM_INFORMATION_CLASS information)
         {
             ULONG cb;
 
@@ -59,7 +59,7 @@ namespace resurgence
         ///<returns> 
         /// The required buffer size.
         ///</returns>
-        size_t winnt::query_required_size(PROCESS_INFORMATION_CLASSEX information)
+        size_t query_required_size(PROCESSINFOCLASS information)
         {
             switch(information) {
                 case ProcessBasicInformation:
@@ -100,7 +100,7 @@ namespace resurgence
         ///<returns> 
         /// The required buffer size.
         ///</returns>
-        size_t winnt::query_required_size(OBJECT_INFORMATION_CLASS information)
+        size_t query_required_size(OBJECT_INFORMATION_CLASS information)
         {
             switch(information) {
                 case ObjectBasicInformation:
@@ -124,7 +124,7 @@ namespace resurgence
         ///<remarks>
         /// The returned buffer, if not null, must be freed with free_local_buffer.
         ///</remarks>
-        uint8_t* winnt::query_system_information(SYSTEM_INFORMATION_CLASS information)
+        uint8_t* query_system_information(SYSTEM_INFORMATION_CLASS information)
         {
             uint8_t*        buffer = nullptr;
             NTSTATUS        status = STATUS_SUCCESS;
@@ -160,7 +160,7 @@ namespace resurgence
         ///<remarks>
         /// The returned buffer, if not null, must be freed with free_local_buffer.
         ///</remarks>
-        uint8_t* winnt::query_process_information(HANDLE handle, PROCESS_INFORMATION_CLASSEX information)
+        uint8_t* query_process_information(HANDLE handle, PROCESSINFOCLASS information)
         {
             uint8_t*    buffer = nullptr;
             NTSTATUS    status = STATUS_SUCCESS;
@@ -190,7 +190,7 @@ namespace resurgence
         ///<remarks>
         /// The returned buffer, if not null, must be freed with free_local_buffer.
         ///</remarks>
-        uint8_t* winnt::query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information)
+        uint8_t* query_object_information(HANDLE handle, OBJECT_INFORMATION_CLASS information)
         {
             uint8_t*    buffer = nullptr;
             NTSTATUS    status = STATUS_SUCCESS;
@@ -218,7 +218,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::enumerate_system_modules(system_module_enumeration_callback callback)
+        NTSTATUS enumerate_system_modules(system_module_enumeration_callback callback)
         {
             if(!callback) return STATUS_INVALID_PARAMETER_1;
 
@@ -251,7 +251,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback)
+        NTSTATUS enumerate_system_objects(const std::wstring& root, object_enumeration_callback callback)
         {
             if(root.empty()) return STATUS_INVALID_PARAMETER_1;
             if(!callback)    return STATUS_INVALID_PARAMETER_2;
@@ -313,7 +313,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::enumerate_processes(process_enumeration_callback callback)
+        NTSTATUS enumerate_processes(process_enumeration_callback callback)
         {
             if(!callback) return STATUS_INVALID_PARAMETER_1;
 
@@ -335,6 +335,36 @@ namespace resurgence
         }
 
         ///<summary>
+        /// Enumerates process' threads.
+        ///</summary>
+        ///<param name="process"> 
+        /// Handle to the process. Must have read and query information access. 
+        ///</param>
+        ///<param name="callback"> 
+        /// The callback that will be called for each thread. 
+        /// Enumeration stops if the callback returns STATUS_SUCCESS. 
+        ///</param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
+        NTSTATUS enumerate_process_threads(uint32_t pid, thread_enumeration_callback callback)
+        {
+            if(!callback) return STATUS_INVALID_PARAMETER_2;
+            
+            return enumerate_processes([=](PSYSTEM_PROCESS_INFORMATION entry) {
+                if(pid == reinterpret_cast<uint32_t>(entry->UniqueProcessId)) {
+                    for(auto i = 0ul; i < entry->ThreadCount; i++) {
+                        auto status = callback((PSYSTEM_EXTENDED_THREAD_INFORMATION)&entry->Threads[i]);
+                        if(NT_SUCCESS(status))
+                            break;
+                    }
+                    return STATUS_SUCCESS;
+                }
+                return STATUS_NOT_FOUND;
+            });
+        }
+
+        ///<summary>
         /// Enumerates process' x64 modules.
         ///</summary>
         ///<param name="process"> 
@@ -347,7 +377,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::enumerate_process_modules(HANDLE process, module_enumeration_callback callback)
+        NTSTATUS enumerate_process_modules(HANDLE process, module_enumeration_callback callback)
         {
             PPEB_LDR_DATA           ldr;
             PEB_LDR_DATA            ldrData;
@@ -355,7 +385,7 @@ namespace resurgence
             PLIST_ENTRY             currentLink;
             LDR_DATA_TABLE_ENTRY    currentEntry;
 
-            auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(process, ProcessBasicInformation);
+            auto basic_info = (PPROCESS_BASIC_INFORMATION)query_process_information(process, ProcessBasicInformation);
 
             if(!basic_info)
                 return STATUS_UNSUCCESSFUL;
@@ -433,20 +463,20 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::enumerate_process_modules32(HANDLE process, module_enumeration_callback32 callback)
+        NTSTATUS enumerate_process_modules32(HANDLE process, module_enumeration_callback32 callback)
         {
-            auto basic_info = (PPROCESS_BASIC_INFORMATION)winnt::query_process_information(process, ProcessBasicInformation);
+            auto basic_info = (PULONG_PTR)query_process_information(process, ProcessWow64Information);
 
             ULONG                   ldr;
             PEB_LDR_DATA32          ldrData;
             ULONG                   startLink;
             ULONG                   currentLink;
             LDR_DATA_TABLE_ENTRY32  currentEntry;
-            ULONG                   wow64Peb = (ULONG)((PUCHAR)basic_info->PebBaseAddress + PAGE_SIZE);
+            ULONG_PTR               wow64Peb = *basic_info;
 
             NTSTATUS status = read_memory(
                 process,
-                PTR_ADD((ULONG_PTR)wow64Peb, FIELD_OFFSET(PEB32, Ldr)),
+                PTR_ADD(wow64Peb, FIELD_OFFSET(PEB32, Ldr)),
                 &ldr,
                 sizeof(ldr)
             );
@@ -454,7 +484,7 @@ namespace resurgence
             if(!NT_SUCCESS(status)) {
                 free_local_buffer(basic_info);
                 return status;
-            }
+            }   
 
             status = read_memory(process, (PVOID)ldr, &ldrData, sizeof(ldrData));
             if(!NT_SUCCESS(status)) {
@@ -506,7 +536,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::object_exists(const std::wstring& root, const std::wstring& object, bool* found)
+        NTSTATUS object_exists(const std::wstring& root, const std::wstring& object, bool* found)
         {
             UNICODE_STRING  uName;
 
@@ -530,7 +560,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::get_system_module_info(const std::string& module, PRTL_PROCESS_MODULE_INFORMATION moduleInfo)
+        NTSTATUS get_system_module_info(const std::string& module, PRTL_PROCESS_MODULE_INFORMATION moduleInfo)
         {
             if(!moduleInfo) return STATUS_INVALID_PARAMETER;
 
@@ -545,6 +575,47 @@ namespace resurgence
         }
 
         ///<summary>
+        /// Opens an existing file.
+        ///</summary>
+        ///<param name="path">        The file path. </param>
+        ///<param name="accessFlags"> The desired access. </param>
+        ///<param name="handle">      The returned handle. </param>
+        ///<returns> 
+        /// The status code.
+        ///</returns>
+        NTSTATUS open_file(const std::wstring& path, uint32_t accessFlags, PHANDLE handle)
+        {
+            NTSTATUS            status;
+            OBJECT_ATTRIBUTES   objAttr;
+            UNICODE_STRING      usFilePath;
+            IO_STATUS_BLOCK     ioStatus;
+
+            if(!RtlDosPathNameToNtPathName_U(
+                std::data(path),
+                &usFilePath,
+                NULL,
+                NULL))
+                return STATUS_OBJECT_NAME_NOT_FOUND;
+
+            InitializeObjectAttributes(&objAttr, &usFilePath, OBJ_CASE_INSENSITIVE, NULL, NULL);
+
+            status = NtCreateFile(
+                handle,
+                accessFlags,
+                &objAttr, 
+                &ioStatus, 
+                0, 
+                FILE_ATTRIBUTE_NORMAL, 
+                FILE_SHARE_READ, 
+                FILE_OPEN,
+                FILE_SYNCHRONOUS_IO_NONALERT, 
+                nullptr, 
+                0);
+
+            return status;
+        }
+
+        ///<summary>
         /// Writes to a file.
         ///</summary>
         ///<param name="path">   The file path. </param>
@@ -553,15 +624,45 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::write_file(const std::wstring& path, uint8_t* buffer, size_t length)
+        NTSTATUS write_file(const std::wstring& path, uint8_t* buffer, size_t length)
         {
-            auto handle = safe_generic_handle(CreateFile(std::data(path), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, 0, nullptr));
+            HANDLE          handle;
+            NTSTATUS        status;
+            IO_STATUS_BLOCK ioStatus;
 
-            if(!handle.is_valid())
-                return get_last_ntstatus();
+            status = open_file(std::data(path), GENERIC_WRITE, &handle);
 
-            decltype(length) nBytesWritten = 0;
-            return WriteFile(handle.get(), buffer, (DWORD)length, (PDWORD)&nBytesWritten, nullptr) && nBytesWritten != length;
+            if(NT_SUCCESS(status)) {
+                status = NtWriteFile(handle, NULL, NULL, NULL, &ioStatus, buffer, static_cast<uint32_t>(length), NULL, NULL);
+
+                NtClose(handle);
+            }
+            return status;
+        }
+
+        NTSTATUS get_file_size(HANDLE handle, size_t* size, LARGE_INTEGER* li)
+        {
+            NTSTATUS                    status;
+            FILE_STANDARD_INFORMATION   standardInfo;
+            IO_STATUS_BLOCK             isb;
+
+            status = NtQueryInformationFile(
+                handle,
+                &isb,
+                &standardInfo,
+                sizeof(FILE_STANDARD_INFORMATION),
+                FileStandardInformation
+            );
+
+            if(!NT_SUCCESS(status))
+                return status;
+
+            if(size)
+                *size = static_cast<size_t>(standardInfo.EndOfFile.QuadPart);
+            if(li)
+                *li = standardInfo.EndOfFile;
+
+            return status;
         }
 
         ///<summary>
@@ -572,7 +673,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::copy_file(const std::wstring& oldPath, const std::wstring& newPath)
+        NTSTATUS copy_file(const std::wstring& oldPath, const std::wstring& newPath)
         {
             if(!::CopyFileW(std::data(oldPath), std::data(newPath), FALSE))
                 return get_last_ntstatus();
@@ -586,7 +687,7 @@ namespace resurgence
         ///<returns> 
         /// The full path.
         ///</returns>
-        std::wstring winnt::get_full_path(const std::wstring& path)
+        std::wstring get_full_path(const std::wstring& path)
         {
             wchar_t fullpath[MAX_PATH];
 
@@ -603,7 +704,7 @@ namespace resurgence
         ///<returns> 
         /// The DOS path (i.e "C:\Windows\system32\ntoskrnl.exe").
         ///</returns>
-        std::wstring winnt::get_dos_path(const std::wstring& path)
+        std::wstring get_dos_path(const std::wstring& path)
         {
             auto startsWith = [](const std::wstring& str1, const std::wstring& str2, bool ignoreCasing) {
                 if(ignoreCasing) {
@@ -647,7 +748,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::query_mounted_drives(std::vector<std::wstring>& letters)
+        NTSTATUS query_mounted_drives(std::vector<std::wstring>& letters)
         {
             // Required size:
             // 26 letters * 2 * sizeof(WCHAR) = 104
@@ -677,7 +778,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink)
+        NTSTATUS get_symbolic_link_from_drive(const std::wstring& drive, std::wstring& deviceLink)
         {
             HANDLE              linkHandle;
             OBJECT_ATTRIBUTES   oa;
@@ -702,7 +803,11 @@ namespace resurgence
 
             devicePrefix.Length = MAX_PATH * sizeof(WCHAR);
             devicePrefix.MaximumLength = MAX_PATH * sizeof(WCHAR);
-            devicePrefix.Buffer = (PWSTR)RtlAllocateHeap(NtCurrentPeb()->ProcessHeap, HEAP_ZERO_MEMORY, MAX_PATH * sizeof(WCHAR));
+            devicePrefix.Buffer = nullptr;
+            allocate_local_buffer(&devicePrefix.Buffer, MAX_PATH * sizeof(WCHAR));
+            
+            ZeroMemory(devicePrefix.Buffer, MAX_PATH * sizeof(WCHAR));
+            //devicePrefix.Buffer = (PWSTR)RtlAllocateHeap(NtCurrentPeb()->ProcessHeap, 0, MAX_PATH * sizeof(WCHAR));
 
             auto status = NtOpenSymbolicLinkObject(&linkHandle, SYMBOLIC_LINK_QUERY, &oa);
             if(NT_SUCCESS(status)) {
@@ -712,7 +817,7 @@ namespace resurgence
                 }
                 NtClose(linkHandle);
             }
-            RtlFreeHeap(NtCurrentPeb()->ProcessHeap, 0, devicePrefix.Buffer);
+            free_local_buffer(devicePrefix.Buffer);
             return status;
         }
 
@@ -725,7 +830,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::create_service(SC_HANDLE manager, const std::wstring& driverName, const std::wstring& driverPath)
+        NTSTATUS create_service(SC_HANDLE manager, const std::wstring& driverName, const std::wstring& driverPath)
         {
             SC_HANDLE schService;
 
@@ -759,7 +864,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::start_driver(SC_HANDLE manager, const std::wstring& driverName)
+        NTSTATUS start_driver(SC_HANDLE manager, const std::wstring& driverName)
         {
             SC_HANDLE  schService;
 
@@ -785,7 +890,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::stop_driver(SC_HANDLE manager, const std::wstring& driverName)
+        NTSTATUS stop_driver(SC_HANDLE manager, const std::wstring& driverName)
         {
             INT             iRetryCount;
             SC_HANDLE       schService;
@@ -823,7 +928,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::get_driver_device(const std::wstring& driver, PHANDLE deviceHandle)
+        NTSTATUS get_driver_device(const std::wstring& driver, PHANDLE deviceHandle)
         {
             wchar_t szDeviceName[MAX_PATH];
             HANDLE  hDevice;
@@ -857,7 +962,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::delete_service(SC_HANDLE manager, const std::wstring& driverName)
+        NTSTATUS delete_service(SC_HANDLE manager, const std::wstring& driverName)
         {
             SC_HANDLE  schService;
             schService = OpenService(manager,
@@ -884,7 +989,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::load_driver(const std::wstring& driverName, const std::wstring& driverPath, PHANDLE deviceHandle)
+        NTSTATUS load_driver(const std::wstring& driverName, const std::wstring& driverPath, PHANDLE deviceHandle)
         {
             SC_HANDLE	  schSCManager;
             NTSTATUS    status;
@@ -930,7 +1035,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::unload_driver(const std::wstring& driverName)
+        NTSTATUS unload_driver(const std::wstring& driverName)
         {
             SC_HANDLE	  schSCManager;
             NTSTATUS  status;
@@ -961,7 +1066,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection)
+        NTSTATUS allocate_memory(HANDLE process, PVOID* start, size_t* size, uint32_t allocation, uint32_t protection)
         {
             return NtAllocateVirtualMemory(process, start, 0, (PSIZE_T)size, allocation, protection);
         }
@@ -977,7 +1082,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection)
+        NTSTATUS protect_memory(HANDLE process, PVOID* start, size_t* size, uint32_t protection, uint32_t* oldProtection)
         {
             auto status = NtProtectVirtualMemory(process, start, (PSIZE_T)size, protection, (PULONG)oldProtection);
             return status;
@@ -993,7 +1098,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free)
+        NTSTATUS free_memory(HANDLE process, PVOID* start, size_t size, uint32_t free)
         {
             return NtFreeVirtualMemory(process, start, (PSIZE_T)&size, free);
         }
@@ -1008,7 +1113,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::read_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size)
+        NTSTATUS read_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size)
         {
             if(process == GetCurrentProcess()) {
                 memcpy((PVOID)buffer, (PVOID)address, size);
@@ -1028,7 +1133,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::write_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size)
+        NTSTATUS write_memory(HANDLE process, LPVOID address, LPVOID buffer, size_t size)
         {
             if(process == GetCurrentProcess()) {
                 memcpy(const_cast<void*>(address), buffer, size);
@@ -1048,7 +1153,7 @@ namespace resurgence
         ///<returns> 
         /// The status code.
         ///</returns>
-        NTSTATUS winnt::open_process(PHANDLE handle, uint32_t pid, uint32_t access)
+        NTSTATUS open_process(PHANDLE handle, uint32_t pid, uint32_t access)
         {
             OBJECT_ATTRIBUTES objAttr;
 
@@ -1059,6 +1164,7 @@ namespace resurgence
 
             return NtOpenProcess(handle, access, &objAttr, &cid);
         }
+
         ///<summary>
         /// Checks if the process is running under WOW64.
         ///</summary>
@@ -1067,7 +1173,7 @@ namespace resurgence
         ///<returns> 
         /// True if the process is a wow64 process.
         ///</returns>
-        bool winnt::process_is_wow64(HANDLE process, PPEB32* pebAddress /*= nullptr*/)
+        bool process_is_wow64(HANDLE process, PPEB32* pebAddress /*= nullptr*/)
         {
             PULONG_PTR buffer = (PULONG_PTR)query_process_information(process, ProcessWow64Information);
             bool iswow64 = *buffer != 0;
@@ -1087,7 +1193,7 @@ namespace resurgence
         /// On success the thread exit status if wait is true. 0 if wait is false.
         /// On failure the status code.
         ///</returns>
-        ULONG winnt::create_thread(HANDLE process, LPVOID startAddress, LPVOID startParameter, bool wait)
+        ULONG create_thread(HANDLE process, LPVOID startAddress, LPVOID startParameter, bool wait)
         {
             HANDLE thread = CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)startAddress, startParameter, 0, NULL);
 
@@ -1109,9 +1215,116 @@ namespace resurgence
         ///</summary>
         ///<param name="process">  The target process. </param>
         ///<param name="exitCode"> The exit code. </param>
-        void winnt::terminate_process(HANDLE process, uint32_t exitCode)
+        void terminate_process(HANDLE process, uint32_t exitCode)
         {
             NtTerminateProcess(process, exitCode);
+        }
+
+        ///<summary>
+        /// Maps an image to the current process. This does not call the entry point.
+        ///</summary>
+        ///<param name="process"> The target image path. </param>
+        ///<returns> 
+        /// The image base.
+        ///</returns>
+        NTSTATUS load_mapped_image(const std::wstring& path, mapped_image& image)
+        {
+            NTSTATUS        status;
+            HANDLE          fileHandle;
+            LARGE_INTEGER   fileSize;
+            HANDLE          sectionHandle;
+
+            status = open_file(
+                path, 
+                FILE_EXECUTE | FILE_READ_ATTRIBUTES | FILE_READ_DATA | SYNCHRONIZE, 
+                &fileHandle);
+
+            sectionHandle = nullptr;
+            if(NT_SUCCESS(status)) {
+                status = get_file_size(fileHandle, nullptr, &fileSize);
+                if(NT_SUCCESS(status)) {
+                    status = NtCreateSection(
+                        &sectionHandle,
+                        SECTION_ALL_ACCESS,
+                        NULL,
+                        &fileSize,
+                        PAGE_EXECUTE_READ,
+                        SEC_COMMIT,
+                        fileHandle);
+
+                    if(NT_SUCCESS(status)) {
+                        image.view_base = 0;
+                        image.view_size = static_cast<size_t>(fileSize.QuadPart);
+
+                        status = NtMapViewOfSection(
+                            sectionHandle,
+                            NtCurrentProcess(),
+                            (PVOID*)&image.view_base,
+                            0,
+                            0,
+                            NULL,
+                            (SIZE_T*)&image.view_size,
+                            ViewShare,
+                            0,
+                            PAGE_EXECUTE_READ);
+
+                        if(NT_SUCCESS(status)) {
+                            auto nthdrs = reinterpret_cast<PIMAGE_NT_HEADERS>(image.view_base + image.dos_hdr->e_lfanew);
+                            if(nthdrs->Signature != IMAGE_NT_SIGNATURE) {
+                                status = STATUS_INVALID_IMAGE_FORMAT;
+                            } else {
+                                if(nthdrs->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC) {
+                                    image.nt_hdrs32 = reinterpret_cast<PIMAGE_NT_HEADERS32>(nthdrs);
+                                    image.nt_hdrs64 = nullptr;
+                                } else {
+                                    image.nt_hdrs32 = nullptr;
+                                    image.nt_hdrs64 = reinterpret_cast<PIMAGE_NT_HEADERS64>(nthdrs);
+                                }
+                                image.section_count = nthdrs->FileHeader.NumberOfSections;
+                                image.sections = (IMAGE_SECTION_HEADER*)((uintptr_t)&nthdrs->OptionalHeader + nthdrs->FileHeader.SizeOfOptionalHeader);
+                            }
+                        }
+                        NtClose(sectionHandle);
+                    }
+                }
+                NtClose(fileHandle);
+            }
+            return status;
+        }
+
+        ///<summary>
+        /// Unloads a previously mapped image
+        ///</summary>
+        ///<param name="process"> The image base. </param>
+        void unload_mapped_image(const mapped_image& image)
+        {
+            NtUnmapViewOfSection(NtCurrentProcess(), (PVOID)image.view_base);
+        }
+
+        PIMAGE_SECTION_HEADER mapped_image_rva_to_section(const mapped_image& image, ULONG rva)
+        {
+            ULONG i;
+
+            for(i = 0; i < image.section_count; i++) {
+                if((rva >= image.sections[i].VirtualAddress) &&
+                   (rva < image.sections[i].VirtualAddress + image.sections[i].SizeOfRawData)) {
+                    return &image.sections[i];
+                }
+            }
+
+            return NULL;
+        }
+
+        uintptr_t mapped_image_rva_to_va(const mapped_image& image, ULONG rva)
+        {
+            PIMAGE_SECTION_HEADER section;
+
+            section = mapped_image_rva_to_section(image, rva);
+
+            if(!section)
+                return NULL;
+
+            return (uintptr_t)(image.view_base + (rva - section->VirtualAddress) + section->PointerToRawData);
         }
     }
 }

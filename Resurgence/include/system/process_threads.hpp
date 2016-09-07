@@ -15,7 +15,9 @@ namespace resurgence
             process_thread(process* owner, PSYSTEM_EXTENDED_THREAD_INFORMATION exThread);
 
         private:
-            process* _process;
+            process*    _process;
+            uint32_t    _id;
+            uintptr_t   _startAddress;
         };
 
         class process_threads
@@ -26,7 +28,7 @@ namespace resurgence
             std::vector<process_thread> get_all_threads();
 
         private:
-            process* _process;
+            process*    _process;
         };
     }
 }

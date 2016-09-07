@@ -249,7 +249,7 @@ NTSTATUS RDrvGetModuleEntry(
     }
 
     for(PLIST_ENTRY listEntry = (PLIST_ENTRY)ldr->InLoadOrderModuleList.Flink;
-        listEntry != &ldr->InLoadOrderModuleList; //Stop when it reaches the beginning again
+        listEntry != &ldr->InLoadOrderModuleList; 
         listEntry = (PLIST_ENTRY)listEntry->Flink) {
 
         PLDR_DATA_TABLE_ENTRY ldrEntry = CONTAINING_RECORD(listEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);

@@ -1,7 +1,7 @@
 #include <system/process_threads.hpp>
 #include <system/process.hpp>
 
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 
 namespace resurgence
 {
@@ -10,6 +10,12 @@ namespace resurgence
         process_thread::process_thread(process* owner, PSYSTEM_EXTENDED_THREAD_INFORMATION exThread)
             : _process(owner)
         {
+            if(_process->get_platform() == platform_x86)
+                _startAddress = reinterpret_cast<uintptr_t>(exThread->Win32StartAddress);
+            else
+                _startAddress = reinterpret_cast<uintptr_t>(exThread->StartAddress);
+
+            _id = reinterpret_cast<uint32_t>(exThread->ClientId.UniqueThread);
         }
 
         process_threads::process_threads(process* proc)
@@ -20,14 +26,8 @@ namespace resurgence
         std::vector<process_thread> process_threads::get_all_threads()
         {
             std::vector<process_thread> threads;
-            misc::winnt::enumerate_processes([&](PSYSTEM_PROCESS_INFORMATION entry) {
-                if(reinterpret_cast<uint32_t>(entry->UniqueProcessId) == _process->get_pid()) {
-                    for(auto i = 0ul; i < entry->ThreadCount; i++) {
-                        PSYSTEM_EXTENDED_THREAD_INFORMATION thread_info = (PSYSTEM_EXTENDED_THREAD_INFORMATION)&entry->Threads[i];
-                        threads.emplace_back(_process, thread_info);
-                    }
-                    return STATUS_SUCCESS;
-                }
+            native::enumerate_process_threads(_process->get_pid(), [&](PSYSTEM_EXTENDED_THREAD_INFORMATION entry) {
+                threads.emplace_back(_process, entry);
                 return STATUS_NOT_FOUND;
             });
             return threads;

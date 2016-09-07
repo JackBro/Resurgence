@@ -1,5 +1,5 @@
 #include <misc/safe_handle.hpp>
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 
 namespace resurgence
 {
@@ -39,12 +39,17 @@ namespace resurgence
             }
             void safe_handle::duplicate(safe_handle& other) const
             {
-                DuplicateHandle(
-                    GetCurrentProcess(), _value,
-                    GetCurrentProcess(), &other._value,
-                    0,
-                    FALSE,
-                    DUPLICATE_SAME_ACCESS);
+                if(_value == GetCurrentProcess())
+                    other._value = GetCurrentProcess();
+                else if(_value == GetCurrentThread())
+                    other._value = GetCurrentThread();
+                else 
+                    DuplicateHandle(
+                        GetCurrentProcess(), _value,
+                        GetCurrentProcess(), &other._value,
+                        0,
+                        FALSE,
+                        DUPLICATE_SAME_ACCESS);
                 return;
             }
             HANDLE safe_handle::get() const
@@ -73,7 +78,7 @@ namespace resurgence
             {
                 _grantedBits = 0;
 
-                auto basic_info = (POBJECT_BASIC_INFORMATION)winnt::query_object_information(_value, ObjectBasicInformation);
+                auto basic_info = (POBJECT_BASIC_INFORMATION)native::query_object_information(_value, ObjectBasicInformation);
 
                 if(basic_info) {
                     _grantedBits = basic_info->GrantedAccess;

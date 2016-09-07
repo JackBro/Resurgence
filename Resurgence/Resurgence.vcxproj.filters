@@ -21,9 +21,6 @@
     <ClInclude Include="include\misc\safe_handle.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\misc\winnt.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\headers.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,11 +63,14 @@
     <ClInclude Include="include\native_functions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\system\symbols\symbol_system.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\misc\native.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\misc\winnt.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="include\system\driver\TDL\TDL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -96,6 +96,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\system\process_threads.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\system\symbols\symbol_system.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\misc\native.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

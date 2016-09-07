@@ -1565,7 +1565,6 @@ typedef struct _PEB
         {
             BOOLEAN ImageUsesLargePages : 1;
             BOOLEAN IsProtectedProcess : 1;
-            BOOLEAN IsLegacyProcess : 1;
             BOOLEAN IsImageDynamicallyRelocated : 1;
             BOOLEAN SkipPatchingUser32Forwarders : 1;
             BOOLEAN IsPackagedProcess : 1;
@@ -1641,7 +1640,6 @@ typedef struct _PEB32
         {
             BOOLEAN ImageUsesLargePages : 1;
             BOOLEAN IsProtectedProcess : 1;
-            BOOLEAN IsLegacyProcess : 1;
             BOOLEAN IsImageDynamicallyRelocated : 1;
             BOOLEAN SkipPatchingUser32Forwarders : 1;
             BOOLEAN IsPackagedProcess : 1;
@@ -2044,3 +2042,14 @@ typedef struct _KUSER_SHARED_DATA_COMPAT
     //incomplete
 
 } KUSER_SHARED_DATA, *PKUSER_SHARED_DATA;
+
+typedef struct _THREAD_BASIC_INFORMATION
+{
+    NTSTATUS ExitStatus;
+    PTEB TebBaseAddress;
+    CLIENT_ID ClientId;
+    ULONG_PTR AffinityMask;
+    KPRIORITY Priority;
+    LONG BasePriority;
+} THREAD_BASIC_INFORMATION;
+typedef THREAD_BASIC_INFORMATION *PTHREAD_BASIC_INFORMATION;

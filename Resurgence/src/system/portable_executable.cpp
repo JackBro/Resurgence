@@ -1,6 +1,6 @@
 #include <system/portable_executable.hpp>
 #include <system/process.hpp>
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 
 #define GET_NT_HEADER_FIELD(field) _is32Bit ? _ntHdr32.field : _ntHdr64.field
 

@@ -208,7 +208,7 @@ typedef enum _KWAIT_REASON
     MaximumWaitReason
 } KWAIT_REASON;
 
-typedef enum _PROCESS_INFORMATION_CLASSEX
+typedef enum _PROCESSINFOCLASS
 {
     ProcessBasicInformation = 0,
     ProcessQuotaLimits = 1,
@@ -273,7 +273,7 @@ typedef enum _PROCESS_INFORMATION_CLASSEX
     ProcessCommandLineInformation = 60,
     ProcessProtectionInformation = 61,
     MaxProcessInfoClass = 62
-} PROCESS_INFORMATION_CLASSEX;
+} PROCESSINFOCLASS;
 
 typedef enum _SYSTEM_INFORMATION_CLASS
 {
@@ -898,6 +898,53 @@ typedef enum _MEMORY_INFORMATION_CLASS
     MemoryRegionInformation,
     MemoryWorkingSetExInformation
 } MEMORY_INFORMATION_CLASS, *PMEMORY_INFORMATION_CLASS;
+
+typedef enum _THREADINFOCLASS
+{
+    ThreadBasicInformation,
+    ThreadTimes,
+    ThreadPriority,
+    ThreadBasePriority,
+    ThreadAffinityMask,
+    ThreadImpersonationToken,
+    ThreadDescriptorTableEntry,
+    ThreadEnableAlignmentFaultFixup,
+    ThreadEventPair_Reusable,
+    ThreadQuerySetWin32StartAddress,
+    ThreadZeroTlsCell,
+    ThreadPerformanceCount,
+    ThreadAmILastThread,
+    ThreadIdealProcessor,
+    ThreadPriorityBoost,
+    ThreadSetTlsArrayAddress,
+    ThreadIsIoPending,
+    ThreadHideFromDebugger,
+    ThreadBreakOnTermination,
+    ThreadSwitchLegacyState,
+    ThreadIsTerminated, 
+    ThreadLastSystemCall,
+    ThreadIoPriority, 
+    ThreadCycleTime,
+    ThreadPagePriority,
+    ThreadActualBasePriority,
+    ThreadTebInformation,
+    ThreadCSwitchMon,
+    ThreadCSwitchPmu,
+    ThreadWow64Context,
+    ThreadGroupInformation,
+    ThreadUmsInformation,
+    ThreadCounterProfiling,
+    ThreadIdealProcessorEx,
+    ThreadCpuAccountingInformation, // since WIN8
+    ThreadSuspendCount, // since WINBLUE
+    ThreadHeterogeneousCpuPolicy, // q: KHETERO_CPU_POLICY // since THRESHOLD
+    ThreadContainerId, 
+    ThreadNameInformation,
+    ThreadSelectedCpuSets,
+    ThreadSystemThreadInformation, 
+    ThreadActualGroupAffinity,
+    MaxThreadInfoClass
+} THREADINFOCLASS;
 
 #define RTL_USER_PROC_CURDIR_CLOSE 0x00000002
 #define RTL_USER_PROC_CURDIR_INHERIT 0x00000003

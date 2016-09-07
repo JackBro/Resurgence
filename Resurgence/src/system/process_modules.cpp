@@ -1,7 +1,7 @@
 #include <system/process_modules.hpp>
 #include <system/process.hpp>
 #include <misc/exceptions.hpp>
-#include <misc/winnt.hpp>
+#include <misc/native.hpp>
 
 #include <algorithm>
 
@@ -33,7 +33,7 @@ namespace resurgence
 
         ///<summary>
         /// Default ctor.
-        ///<summary>
+        ///</summary>
         process_module::process_module()
         {
             RtlZeroMemory(this, sizeof(*this));
@@ -41,7 +41,7 @@ namespace resurgence
 
         ///<summary>
         /// x64 module constructor.
-        ///<summary>
+        ///</summary>
         ///<param name="proc">  The owner process. </param>
         ///<param name="entry"> The loader table entry. </param>
         process_module::process_module(process* proc, PLDR_DATA_TABLE_ENTRY entry)
@@ -62,7 +62,7 @@ namespace resurgence
 
         ///<summary>
         /// x86 module constructor.
-        ///<summary>
+        ///</summary>
         ///<param name="proc">  The owner process. </param>
         ///<param name="entry"> The loader table entry. </param>
         process_module::process_module(process* proc, PLDR_DATA_TABLE_ENTRY32 entry)
@@ -82,7 +82,7 @@ namespace resurgence
 
         ///<summary>
         /// System module constructor.
-        ///<summary>
+        ///</summary>
         ///<param name="proc">  The owner process. </param>
         ///<param name="entry"> The module information. </param>
         process_module::process_module(process* proc, PRTL_PROCESS_MODULE_INFORMATION entry)
@@ -94,12 +94,12 @@ namespace resurgence
             _base = (uint8_t*)entry->ImageBase;
             _size = (size_t)entry->ImageSize;
             _name = (path + entry->OffsetToFileName);
-            _path = misc::winnt::get_dos_path(path);
+            _path = native::get_dos_path(path);
         }
 
         ///<summary>
         /// Gets the portable executable linked with this module.
-        ///<summary>
+        ///</summary>
         const portable_executable&  process_module::get_pe()
         {
             if(!_pe.is_valid())
@@ -110,56 +110,78 @@ namespace resurgence
 
         ///<summary>
         /// Get procedure address.
-        ///<summary>
+        ///</summary>
         ///<param name="name">  The function name. </param>
         ///<returns>
         /// The address, 0 on failure.
         ///</returns>
         uintptr_t process_module::get_proc_address(const std::string& name)
         {
-            IMAGE_EXPORT_DIRECTORY exports;
+            NTSTATUS                status;
+            native::mapped_image    image;
+            ANSI_STRING             asName;
+            PVOID                   address = nullptr;
+            RtlInitAnsiString(&asName, std::data(name));
 
             if(_process->is_system_idle_process()) {
                 return 0;
             }
 
-            if(_process->is_system_process()) {
-                //
-                // We can use the driver here. Just return 0 for now.
-                // 
-                return 0;
+            if(_process->is_current_process()) {
+                status = LdrGetProcedureAddress(_base, &asName, 0, &address);
+                return reinterpret_cast<uintptr_t>(address);
             }
 
-            //Read the PE 
-            _pe = get_pe();
+            status = native::load_mapped_image(_path, image);
 
-            auto exportDirVA = _pe.get_data_directory(IMAGE_DIRECTORY_ENTRY_EXPORT).VirtualAddress;
-            auto status = _process->memory()->read_bytes(_base + exportDirVA, (uint8_t*)&exports, sizeof(IMAGE_EXPORT_DIRECTORY));
+            if(NT_SUCCESS(status)) {
+                PIMAGE_DATA_DIRECTORY   exportDataDirectory;
+                PIMAGE_EXPORT_DIRECTORY exportDir;
 
-            if(!NT_SUCCESS(status)) return 0;
+                if(image.nt_hdrs32)
+                    exportDataDirectory = &image.nt_hdrs32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
+                else
+                    exportDataDirectory = &image.nt_hdrs64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
 
-            ULONG	 numberOfNames = exports.NumberOfNames;
+                exportDir 
+                    = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
+                        native::mapped_image_rva_to_va(image, exportDataDirectory->VirtualAddress)
+                        );
 
-            std::vector<ULONG>  addressOfFunctions(numberOfNames);
-            std::vector<ULONG>  addressOfNames(numberOfNames);
-            std::vector<USHORT> addressOfOrdinals(numberOfNames);
+                auto name_table     = reinterpret_cast<uint32_t*>(native::mapped_image_rva_to_va(image, exportDir->AddressOfNames));
+                auto address_table  = reinterpret_cast<uint32_t*>(native::mapped_image_rva_to_va(image, exportDir->AddressOfFunctions));
+                auto ordinal_table  = reinterpret_cast<uint16_t*>(native::mapped_image_rva_to_va(image, exportDir->AddressOfNameOrdinals));
 
-            _process->memory()->read_bytes(_base + exports.AddressOfFunctions, (uint8_t*)addressOfFunctions.data(), numberOfNames * sizeof(ULONG));
-            _process->memory()->read_bytes(_base + exports.AddressOfNames, (uint8_t*)addressOfNames.data(), numberOfNames * sizeof(ULONG));
-            _process->memory()->read_bytes(_base + exports.AddressOfNameOrdinals, (uint8_t*)addressOfOrdinals.data(), numberOfNames * sizeof(USHORT));
+                if(name_table && address_table && ordinal_table) {
+                    for(ULONG i = 0; i < exportDir->NumberOfNames; i++) {
+                        PCSTR szName = (PCSTR)native::mapped_image_rva_to_va(image, name_table[i]);
+                        uint16_t ordinal = ordinal_table[i];
 
-            for(ULONG i = 0; i < numberOfNames; i++) {
-                std::string szName = _process->memory()->read_string(_base + addressOfNames[i], 64);
-                SHORT ordinal = addressOfOrdinals[i];
+                        if(ordinal >= exportDir->NumberOfFunctions)
+                            return STATUS_PROCEDURE_NOT_FOUND;
 
-                //
-                //Compare it to the name we are looking for
-                // 
-                if(szName == name) {
-                    return (uintptr_t)(_base + addressOfFunctions[ordinal]);
+                        //
+                        //Compare it to the name we are looking for
+                        // 
+                        if(szName == name) {
+                            auto rva = address_table[ordinal];
+                            if((rva >= exportDataDirectory->VirtualAddress) &&
+                                (rva < exportDataDirectory->VirtualAddress + exportDataDirectory->Size)
+                                ) {
+                                // This is a forwarder
+                                set_last_ntstatus(STATUS_NOT_SUPPORTED);
+                            } else {
+                                address = PTR_ADD(_base, rva);
+                            }
+                        }
+                    }
+                } else {
+                    set_last_ntstatus(STATUS_UNSUCCESSFUL);
                 }
-            }
 
+                native::unload_mapped_image(image);
+                return reinterpret_cast<uintptr_t>(address);
+            }
             return 0;
         }
 
@@ -167,7 +189,7 @@ namespace resurgence
         
         ///<summary>
         /// Default ctor.
-        ///<summary>
+        ///</summary>
         ///<param name="proc"> The owner process. </param>
         process_modules::process_modules(process* proc)
             : _process(proc)
@@ -176,7 +198,7 @@ namespace resurgence
 
         ///<summary>
         /// Get process modules.
-        ///<summary>
+        ///</summary>
         ///<returns> A vector with all modules loaded by the process. </returns>
         std::vector<process_module> process_modules::get_all_modules()
         {
@@ -198,12 +220,12 @@ namespace resurgence
 
             if(!_process->is_system_idle_process()) {
                 if(_process->is_system_process()) {
-                    winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
+                    native::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
                         modules.emplace_back(_process, info);
                         return STATUS_NOT_FOUND;
                     });
                 } else if(handle.is_valid()) {
-                    winnt::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                    native::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
                         modules.emplace_back(_process, entry);
                         return STATUS_NOT_FOUND;
                     });
@@ -211,7 +233,7 @@ namespace resurgence
                 #ifdef _WIN64
                     if(_process->get_platform() == platform_x86) {
                         std::vector<process_module> modules32;
-                        winnt::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                        native::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
                             modules32.emplace_back(_process, entry);
                             return STATUS_NOT_FOUND;
                         });
@@ -234,7 +256,7 @@ namespace resurgence
 
         ///<summary>
         /// Get main module.
-        ///<summary>
+        ///</summary>
         ///<returns> The main module. </returns>
         process_module process_modules::get_main_module()
         {
@@ -243,7 +265,7 @@ namespace resurgence
 
         ///<summary>
         /// Get module by name.
-        ///<summary>
+        ///</summary>
         ///<param name="name"> The name. </param>
         ///<returns> 
         /// The module. 
@@ -262,13 +284,13 @@ namespace resurgence
             // 
             if(_process->get_platform() == platform_x64) {
                 set_last_ntstatus(STATUS_ACCESS_DENIED);
-                return modules;
+                return mod;
             }
         #endif
 
             if(!_process->is_system_idle_process()) {
                 if(_process->is_system_process()) {
-                    winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
+                    native::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION info) {
 
                         wchar_t dllname[MAX_PATH] = {NULL};
                         MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (const char*)(info->FullPathName + info->OffsetToFileName), 256, dllname, MAX_PATH);
@@ -283,7 +305,7 @@ namespace resurgence
                 #ifdef _WIN64
                     if(_process->get_platform() == platform_x86) {
                         std::vector<process_module> modules32;
-                        winnt::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                        native::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
                             auto buffer
                                 = _process->memory()->read_unicode_string(
                                     entry->BaseDllName.Buffer,
@@ -295,7 +317,7 @@ namespace resurgence
                             return STATUS_NOT_FOUND;
                         });
                     } else {
-                        winnt::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                        native::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
                             auto buffer
                                 = _process->memory()->read_unicode_string(
                                     entry->BaseDllName.Buffer,
@@ -320,7 +342,7 @@ namespace resurgence
 
         ///<summary>
         /// Get the module that contains the target address.
-        ///<summary>
+        ///</summary>
         ///<param name="address"> The address. </param>
         ///<returns> 
         /// The module. 
@@ -339,13 +361,13 @@ namespace resurgence
             // 
             if(_process->get_platform() == platform_x64) {
                 set_last_ntstatus(STATUS_ACCESS_DENIED);
-                return modules;
+                return mod;
             }
         #endif
 
             if(!_process->is_system_idle_process()) {
                 if(_process->is_system_process()) {
-                    winnt::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION entry) {
+                    native::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION entry) {
                         if(address >= entry->ImageBase && address <= PTR_ADD(entry->ImageBase, entry->ImageSize)) {
                             mod = process_module(_process, entry);
                             return STATUS_SUCCESS;
@@ -353,7 +375,7 @@ namespace resurgence
                         return STATUS_NOT_FOUND;
                     });
                 } else if(handle.is_valid()) {
-                    winnt::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                    native::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
                         if(address >= entry->DllBase && address <= PTR_ADD(entry->DllBase, entry->SizeOfImage)) {
                             mod = process_module(_process, entry);
                             return STATUS_SUCCESS;
@@ -364,7 +386,7 @@ namespace resurgence
                 #ifdef _WIN64
                     if(_process->get_platform() == platform_x86) {
                         std::vector<process_module> modules32;
-                        winnt::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                        native::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
                             if((ULONG)address >= entry->DllBase && (ULONG)address <= entry->DllBase + entry->SizeOfImage) {
                                 mod = process_module(_process, entry);
                                 return STATUS_SUCCESS;
@@ -385,44 +407,74 @@ namespace resurgence
 
         ///<summary>
         /// Get module by load order.
-        ///<summary>
+        ///</summary>
         ///<param name="i"> The module number. </param>
         ///<returns> 
         /// The module. 
         ///</returns>
         process_module process_modules::get_module_by_load_order(uint32_t i)
         {
-            process_module mod;
-            uint32_t current = 0;
+            using namespace misc;
 
-        #ifdef _WIN64
-            if(_process->get_platform() == platform_x86) {
-                misc::winnt::enumerate_process_modules32(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
-                    if(current++ == i) {
-                        mod = process_module(_process, entry);
-                        return STATUS_SUCCESS;
-                    }
-                    return STATUS_NOT_FOUND;
-                });
+            process_module mod;
+
+            int index   = 0;
+            auto id     = _process->get_pid();
+            auto handle = _process->get_handle();
+
+        #ifndef _WIN64
+            //
+            // Cannot retrieve x64 modules from x86
+            // 
+            if(_process->get_platform() == platform_x64) {
+                set_last_ntstatus(STATUS_ACCESS_DENIED);
                 return mod;
-            } else {
-            #endif
-                misc::winnt::enumerate_process_modules(_process->get_handle().get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
-                    if(current++ == i) {
-                        mod = process_module(_process, entry);
-                        return STATUS_SUCCESS;
-                    }
-                    return STATUS_NOT_FOUND;
-                });
-                return mod;
-            #ifdef _WIN64
             }
         #endif
+
+            if(!_process->is_system_idle_process()) {
+                if(_process->is_system_process()) {
+                    native::enumerate_system_modules([&](PRTL_PROCESS_MODULE_INFORMATION entry) {
+                        if(index++ == i) {
+                            mod = process_module(_process, entry);
+                            return STATUS_SUCCESS;
+                        }
+                        return STATUS_NOT_FOUND;
+                    });
+                } else if(handle.is_valid()) {
+                    native::enumerate_process_modules(handle.get(), [&](PLDR_DATA_TABLE_ENTRY entry) {
+                        if(index++ == i) {
+                            mod = process_module(_process, entry);
+                            return STATUS_SUCCESS;
+                        }
+                        return STATUS_NOT_FOUND;
+                    });
+
+                #ifdef _WIN64
+                    if(_process->get_platform() == platform_x86) {
+                        std::vector<process_module> modules32;
+                        native::enumerate_process_modules32(handle.get(), [&](PLDR_DATA_TABLE_ENTRY32 entry) {
+                            if(index++ == i) {
+                                mod = process_module(_process, entry);
+                                return STATUS_SUCCESS;
+                            }
+                            return STATUS_NOT_FOUND;
+                        });
+                    }
+                #endif
+                } else {
+                    //
+                    // Handle was invalid, this is probably caused by the process being protected
+                    // 
+                    set_last_ntstatus(STATUS_ACCESS_DENIED);
+                }
+            }
+            return mod;
         }
 
         ///<summary>
         /// Injects a module.
-        ///<summary>
+        ///</summary>
         ///<param name="path">          The module path. </param>
         ///<param name="injectionType"> The injection type. </param>
         ///<param name="flags">         The injection flags. </param>
@@ -459,7 +511,7 @@ namespace resurgence
 
         ///<summary>
         /// [Internal] Injects a module on a x86 process.
-        ///<summary>
+        ///</summary>
         ///<param name="path">          The module path. </param>
         ///<param name="injectionType"> The injection type. </param>
         ///<param name="module">        The injected module entry. </param>
@@ -507,7 +559,7 @@ namespace resurgence
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), (path.size() + 1) * sizeof(wchar_t));
 
-                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+                auto ret = native::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
                 if(NT_SUCCESS(ret) && module) {
                     ULONG handle = _process->memory()->read<ULONG>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
@@ -552,7 +604,7 @@ namespace resurgence
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), path.size() * sizeof(wchar_t));
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath32), (uint8_t*)&usModulePath32, sizeof(UNICODE_STRING32));
 
-                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+                auto ret = native::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
                 if(NT_SUCCESS(ret) && module) {
                     ULONG handle = _process->memory()->read<ULONG>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
@@ -565,7 +617,7 @@ namespace resurgence
 
         ///<summary>
         /// [Internal] Injects a module on a x86 process.
-        ///<summary>
+        ///</summary>
         ///<param name="path">          The module path. </param>
         ///<param name="injectionType"> The injection type. </param>
         ///<param name="module">        The injected module entry. </param>
@@ -613,7 +665,7 @@ namespace resurgence
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer, codeBuffer, sizeof(INJECTION_BUFFER));
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), (path.size() + 1) * sizeof(wchar_t));
 
-                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+                auto ret = native::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
                 if(NT_SUCCESS(ret)) {
                     HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
@@ -665,7 +717,7 @@ namespace resurgence
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, DllPath), (uint8_t*)std::data(path), path.size() * sizeof(wchar_t));
                 _process->memory()->write_bytes((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModulePath64), (uint8_t*)&usModulePath64, sizeof(UNICODE_STRING));
 
-                auto ret = misc::winnt::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
+                auto ret = native::create_thread(_process->get_handle().get(), remoteBuffer, nullptr, true);
 
                 if(NT_SUCCESS(ret)) {
                     HANDLE handle = _process->memory()->read<HANDLE>((uint8_t*)remoteBuffer + FIELD_OFFSET(INJECTION_BUFFER, ModuleHandle));
