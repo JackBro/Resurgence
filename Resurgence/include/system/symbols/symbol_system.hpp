@@ -53,12 +53,10 @@ namespace resurgence
             symbol_info get_symbol_info_from_name(const std::wstring& name);
 
         private:
-            process*        _process;
-
-            static bool                 s_Initialized;
-            static HANDLE               s_SymbolHandle;
-            static std::vector<DWORD64> s_LoadedModules;
-            static std::mutex           s_LoadedModulesMutex;
+            process*                _process;
+            bool                    _initialized;
+            HANDLE                  _symbolHandle;
+            std::vector<DWORD64>    _loadedModules;
         };
     }
 }

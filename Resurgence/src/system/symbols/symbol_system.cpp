@@ -14,10 +14,10 @@ namespace resurgence
     {
         ULONG_PTR LastFakeHandle = 0;
 
-        bool                    symbol_system::s_Initialized;
-        HANDLE                  symbol_system::s_SymbolHandle;
-        std::vector<DWORD64>    symbol_system::s_LoadedModules;
-        std::mutex              symbol_system::s_LoadedModulesMutex;
+        //bool                    symbol_system::s_Initialized;
+        //HANDLE                  symbol_system::s_SymbolHandle;
+        //std::vector<DWORD64>    symbol_system::s_LoadedModules;
+        //std::mutex              symbol_system::s_LoadedModulesMutex;
 
         symbol_info::symbol_info(process* proc, PSYMBOL_INFOW info, uintptr_t displacement)
         {
@@ -44,7 +44,7 @@ namespace resurgence
                 // We don't have a module name.
                 // Return an address;
                 //
-                swprintf_s(buffer, L"0x%p", (PVOID)info->Address);
+                swprintf_s(buffer, L"0x%llX", static_cast<uintptr_t>(info->Address));
                 _name = buffer;
             } else {
                 if(info->NameLen == 0) {
@@ -52,7 +52,7 @@ namespace resurgence
                     // We have a module name but not a symbol name.
                     // Return module+offset;
                     //
-                    swprintf_s(buffer, L"%ws+0x%p", std::data(moduleName), (PVOID)(info->Address - (uintptr_t)module.get_base()));
+                    swprintf_s(buffer, L"%ws+0x%lX", std::data(moduleName), static_cast<uint32_t>(info->Address - (uintptr_t)module.get_base()));
                     _name = buffer;
                 } else {
                     //
@@ -62,7 +62,7 @@ namespace resurgence
                     if(displacement == 0) {
                         swprintf_s(buffer, L"%ws!%s", std::data(moduleName), info->Name);
                     } else {
-                        swprintf_s(buffer, L"%ws!%s+0x%X", std::data(moduleName), info->Name, static_cast<int>(displacement));
+                        swprintf_s(buffer, L"%ws!%s+0x%lX", std::data(moduleName), info->Name, static_cast<uint32_t>(displacement));
                     }
                     _name = buffer;
                 }
@@ -70,19 +70,20 @@ namespace resurgence
         }
 
         symbol_system::symbol_system(process* proc)
-            : _process(proc)
+            : _process(proc), _initialized(false), _symbolHandle(nullptr)
         {
         }
         symbol_system::~symbol_system()
         {
+            cleanup();
         }
         bool symbol_system::is_initialized()
         {
-            return s_Initialized;
+            return _initialized;
         }
         void symbol_system::initialize()
         {
-            if(s_Initialized) {
+            if(_initialized) {
                 cleanup();
             }
             bool realHandle = false;
@@ -100,7 +101,7 @@ namespace resurgence
                 // Try to open the process with many different accesses.
                 // This handle will be re-used when walking stacks, and doing various other things.
                 for(i = 0; i < sizeof(accesses) / sizeof(ACCESS_MASK); i++) {
-                    if(NT_SUCCESS(native::open_process(&s_SymbolHandle, _process->get_pid(), accesses[i]))) {
+                    if(NT_SUCCESS(native::open_process(&_symbolHandle, _process->get_pid(), accesses[i]))) {
                         realHandle = true;
                         break;
                     }
@@ -117,33 +118,32 @@ namespace resurgence
                 fakeHandle = (HANDLE)_InterlockedExchangeAdd((ULONG_PTR*)&LastFakeHandle, 4);
             #endif
                 // Add one to make sure it isn't divisible by 4 (so it can't be mistaken for a real handle).
-                s_SymbolHandle = (HANDLE)((ULONG_PTR)fakeHandle + 1);
+                _symbolHandle = (HANDLE)((ULONG_PTR)fakeHandle + 1);
             }
 
             SymSetOptions(SYMOPT_DEFERRED_LOADS | SYMOPT_FAVOR_COMPRESSED | SYMOPT_INCLUDE_32BIT_MODULES | SYMOPT_UNDNAME);
-            s_Initialized = !!SymInitialize(s_SymbolHandle, NULL, FALSE);
+            _initialized = !!SymInitialize(_symbolHandle, NULL, FALSE);
         }
         void symbol_system::cleanup()
         {
-            if(!s_Initialized) return;
+            if(!_initialized) return;
 
-            std::lock_guard<std::mutex> loaded_modules_lock(s_LoadedModulesMutex);
-            for(auto& module : s_LoadedModules) {
-                SymUnloadModule64(s_SymbolHandle, module);
+            for(auto& module : _loadedModules) {
+                SymUnloadModule64(_symbolHandle, module);
             }
-            s_LoadedModules.clear();
-            SymCleanup(s_SymbolHandle);
-            s_Initialized = false;
+            _loadedModules.clear();
+            SymCleanup(_symbolHandle);
+            _initialized = false;
         }
         DWORD64 symbol_system::load_module_from_address(uintptr_t address)
         {
-            if(!s_Initialized) return 0;
+            if(!_initialized) return 0;
 
             auto module = _process->modules()->get_module_by_address(reinterpret_cast<uint8_t*>(address));
             
             if(module.get_base() != 0) {
                 auto result = SymLoadModuleExW(
-                    s_SymbolHandle,
+                    _symbolHandle,
                     NULL,
                     std::data(module.get_path()),
                     std::data(module.get_name()),
@@ -153,15 +153,15 @@ namespace resurgence
                     0);
 
                 if(result != 0) {
-                    std::lock_guard<std::mutex> loaded_modules_lock(s_LoadedModulesMutex);
-
-                    if(std::find(std::begin(s_LoadedModules), std::end(s_LoadedModules), result) != std::end(s_LoadedModules)) {
-                        s_LoadedModules.emplace_back(result);
-                    }
-
                     IMAGEHLP_MODULEW64 info;
                     info.SizeOfStruct = sizeof(info);
-                    SymGetModuleInfoW64(s_SymbolHandle, result, &info);
+                    if(SymGetModuleInfoW64(_symbolHandle, result, &info)) {
+                        if(std::find(std::begin(_loadedModules), std::end(_loadedModules), result) != std::end(_loadedModules)) {
+                            _loadedModules.emplace_back(result);
+                        }
+                    } else {
+                        throw misc::win32_exception("SymGetModuleInfoW64 failed", GetLastError());
+                    }
                 }
                 return result;
             }
@@ -177,11 +177,10 @@ namespace resurgence
             symbolBuffer->SizeOfStruct = sizeof(SYMBOL_INFOW);
             symbolBuffer->MaxNameLen = MAX_PATH;
 
-            auto mod = load_module_from_address(address);
+            load_module_from_address(address);
+            if(!SymFromAddrW(_symbolHandle, address, &displacement, symbolBuffer))
+                symbolBuffer->Address = address;
 
-            if(!SymFromAddrW(s_SymbolHandle, address, &displacement, symbolBuffer)) {
-                throw misc::win32_exception("SymFromAddr failed", GetLastError());
-            }
             return symbol_info{_process, symbolBuffer, (uintptr_t)displacement};
         }
         symbol_info symbol_system::get_symbol_info_from_name(const std::wstring& name)
@@ -193,9 +192,8 @@ namespace resurgence
             symbolBuffer->SizeOfStruct = sizeof(SYMBOL_INFOW);
             symbolBuffer->MaxNameLen = MAX_PATH;
 
-            if(!SymFromNameW(s_SymbolHandle, std::data(name), symbolBuffer)) {
-                throw misc::win32_exception("SymFromName failed", GetLastError());
-            }
+            SymFromNameW(_symbolHandle, std::data(name), symbolBuffer);
+
             return symbol_info{_process, symbolBuffer, 0};
         }
     }
